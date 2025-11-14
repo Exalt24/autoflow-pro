@@ -12,7 +12,16 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "migrate": "tsx migrations/run.ts",
-    "test": "tsx --test test/**/*.test.ts"
+    "test": "tsx --test test/**/*.test.ts",
+    "test:connection": "tsx test-connection.ts",
+    "test:realtime": "tsx test-realtime.ts",
+    "test:auth": "tsx test-auth.ts",
+    "test:phase1": "tsx test-phase1.ts",
+    "test:queue": "tsx test-queue.ts",
+    "test:workflow": "tsx test-workflow-service.ts",
+    "test:exec": "tsx test-execution-analytics.ts",
+    "test:api": "tsx test-api-routes.ts",
+    "test:websocket": "tsx test-websocket.ts"
   },
   "keywords": [],
   "author": "",
@@ -30,7 +39,8 @@
     "fastify-plugin": "^5.0.0",
     "ioredis": "^5.8.2",
     "playwright": "^1.56.1",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

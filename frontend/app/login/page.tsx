@@ -1,97 +1,96 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, FormEvent } from "react";
 import Link from "next/link";
-import { signIn } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/Card";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const { error: signInError } = await signIn(email, password);
-
-    if (signInError) {
-      setError(signInError);
+    try {
+      await signIn(email, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to sign in");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    router.push("/dashboard");
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-dark-bg">
-      <div className="bg-dark-card p-8 rounded-lg shadow-lg w-full max-w-md border border-dark-border">
-        <h1 className="text-3xl font-bold text-white mb-6 text-center">
-          Sign In
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Welcome Back</CardTitle>
+          <CardDescription>
+            Sign in to your AutoFlow Pro account
+          </CardDescription>
+        </CardHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-300 mb-1"
-            >
-              Email
-            </label>
-            <input
-              id="email"
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="p-3 rounded-md bg-danger/10 border border-danger text-danger text-sm">
+                {error}
+              </div>
+            )}
+
+            <Input
+              label="Email"
               type="email"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary"
+              autoComplete="email"
             />
-          </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-300 mb-1"
-            >
-              Password
-            </label>
-            <input
-              id="password"
+            <Input
+              label="Password"
               type="password"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary"
+              autoComplete="current-password"
             />
-          </div>
+          </CardContent>
 
-          {error && (
-            <div className="bg-danger/10 border border-danger text-danger px-4 py-2 rounded-md text-sm">
-              {error}
-            </div>
-          )}
+          <CardFooter className="flex flex-col gap-4">
+            <Button type="submit" className="w-full" loading={loading}>
+              Sign In
+            </Button>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
+            <p className="text-sm text-center text-gray-600">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/signup"
+                className="text-primary hover:underline font-medium"
+              >
+                Sign up
+              </Link>
+            </p>
+          </CardFooter>
         </form>
-
-        <p className="mt-4 text-center text-sm text-gray-400">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-primary hover:underline">
-            Sign up
-          </Link>
-        </p>
-      </div>
+      </Card>
     </div>
   );
 }

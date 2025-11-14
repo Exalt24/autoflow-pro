@@ -16,6 +16,6 @@
     "sourceMap": true,
     "types": ["node"]
   },
-  "include": ["src/**/*", "migrations/**/*"],
+  "include": ["src/**/*", "migrations/**/*", "test-*.ts"],
   "exclude": ["node_modules", "dist"]
 }

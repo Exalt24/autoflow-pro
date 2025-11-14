@@ -21,7 +21,12 @@
     "test:workflow": "tsx test-workflow-service.ts",
     "test:exec": "tsx test-execution-analytics.ts",
     "test:api": "tsx test-api-routes.ts",
-    "test:websocket": "tsx test-websocket.ts"
+    "test:websocket": "tsx test-websocket.ts",
+    "test:automation": "tsx test-automation-basic.ts",
+    "test:steps-basic": "tsx test-automation-steps-basic.ts",
+    "test:steps-advanced": "tsx test-automation-steps-advanced.ts",
+    "test:integration": "tsx test-automation-integration.ts",
+    "test:e2e": "tsx test-end-to-end.ts"
   },
   "keywords": [],
   "author": "",

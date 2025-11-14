@@ -33,7 +33,7 @@ async function testAPIRoutes() {
 
     console.log("2️⃣  Testing health endpoint...");
     const healthRes = await fetch(`http://localhost:${env.PORT}/health`);
-    const health = await healthRes.json();
+    const health = (await healthRes.json()) as { status: string };
     if (health.status !== "ok") {
       throw new Error("Health check failed");
     }
@@ -46,7 +46,7 @@ async function testAPIRoutes() {
     if (!profileRes.ok) {
       throw new Error(`Profile fetch failed: ${profileRes.status}`);
     }
-    const profile = await profileRes.json();
+    const profile = (await profileRes.json()) as { id: string };
     if (profile.id !== testUser.id) {
       throw new Error("Profile ID mismatch");
     }
@@ -77,7 +77,7 @@ async function testAPIRoutes() {
     if (!createWorkflowRes.ok) {
       throw new Error(`Workflow creation failed: ${createWorkflowRes.status}`);
     }
-    const workflow = await createWorkflowRes.json();
+    const workflow = (await createWorkflowRes.json()) as { id: string };
     workflowId = workflow.id;
     console.log("   ✅ Workflow created\n");
 
@@ -88,7 +88,7 @@ async function testAPIRoutes() {
     if (!getWorkflowRes.ok) {
       throw new Error(`Workflow retrieval failed: ${getWorkflowRes.status}`);
     }
-    const retrievedWorkflow = await getWorkflowRes.json();
+    const retrievedWorkflow = (await getWorkflowRes.json()) as { id: string };
     if (retrievedWorkflow.id !== workflowId) {
       throw new Error("Workflow ID mismatch");
     }
@@ -101,7 +101,9 @@ async function testAPIRoutes() {
     if (!listWorkflowsRes.ok) {
       throw new Error(`Workflow list failed: ${listWorkflowsRes.status}`);
     }
-    const workflowsResponse = await listWorkflowsRes.json();
+    const workflowsResponse = (await listWorkflowsRes.json()) as {
+      workflows: any[];
+    };
     if (
       !Array.isArray(workflowsResponse.workflows) ||
       workflowsResponse.workflows.length === 0
@@ -127,7 +129,9 @@ async function testAPIRoutes() {
     if (!updateWorkflowRes.ok) {
       throw new Error(`Workflow update failed: ${updateWorkflowRes.status}`);
     }
-    const updatedWorkflow = await updateWorkflowRes.json();
+    const updatedWorkflow = (await updateWorkflowRes.json()) as {
+      name: string;
+    };
     if (updatedWorkflow.name !== "Updated Test Workflow") {
       throw new Error("Workflow name not updated");
     }
@@ -144,7 +148,7 @@ async function testAPIRoutes() {
     if (!duplicateRes.ok) {
       throw new Error(`Workflow duplication failed: ${duplicateRes.status}`);
     }
-    const duplicatedWorkflow = await duplicateRes.json();
+    const duplicatedWorkflow = (await duplicateRes.json()) as { name: string };
     if (!duplicatedWorkflow.name.includes("Copy")) {
       throw new Error("Duplicated workflow name incorrect");
     }
@@ -165,7 +169,10 @@ async function testAPIRoutes() {
     if (!executeRes.ok) {
       throw new Error(`Workflow execution failed: ${executeRes.status}`);
     }
-    const execution = await executeRes.json();
+    const execution = (await executeRes.json()) as {
+      jobId: string;
+      executionId: string;
+    };
     if (!execution.jobId || !execution.executionId) {
       throw new Error("Missing jobId or executionId in response");
     }
@@ -179,7 +186,9 @@ async function testAPIRoutes() {
     if (!listExecutionsRes.ok) {
       throw new Error(`Execution list failed: ${listExecutionsRes.status}`);
     }
-    const executionsResponse = await listExecutionsRes.json();
+    const executionsResponse = (await listExecutionsRes.json()) as {
+      executions: any[];
+    };
     if (!Array.isArray(executionsResponse.executions)) {
       throw new Error("Invalid executions response");
     }
@@ -192,7 +201,7 @@ async function testAPIRoutes() {
     if (!statsRes.ok) {
       throw new Error(`Analytics stats failed: ${statsRes.status}`);
     }
-    const stats = await statsRes.json();
+    const stats = (await statsRes.json()) as { totalWorkflows: number };
     if (typeof stats.totalWorkflows !== "number") {
       throw new Error("Invalid stats response");
     }
@@ -205,7 +214,7 @@ async function testAPIRoutes() {
     if (!trendsRes.ok) {
       throw new Error(`Analytics trends failed: ${trendsRes.status}`);
     }
-    const trends = await trendsRes.json();
+    const trends = (await trendsRes.json()) as any[];
     if (!Array.isArray(trends)) {
       throw new Error("Invalid trends response");
     }
@@ -218,7 +227,7 @@ async function testAPIRoutes() {
     if (!usageRes.ok) {
       throw new Error(`Analytics usage failed: ${usageRes.status}`);
     }
-    const usage = await usageRes.json();
+    const usage = (await usageRes.json()) as { workflowsCount: number };
     if (typeof usage.workflowsCount !== "number") {
       throw new Error("Invalid usage response");
     }
@@ -231,7 +240,7 @@ async function testAPIRoutes() {
     if (!scheduledJobsRes.ok) {
       throw new Error(`Scheduled jobs failed: ${scheduledJobsRes.status}`);
     }
-    const scheduledJobs = await scheduledJobsRes.json();
+    const scheduledJobs = (await scheduledJobsRes.json()) as { jobs: any[] };
     if (!Array.isArray(scheduledJobs.jobs)) {
       throw new Error("Invalid scheduled jobs response");
     }

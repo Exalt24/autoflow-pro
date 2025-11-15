@@ -3,6 +3,9 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import { env } from "./config/environment.js";
 import { testSupabaseConnection } from "./config/supabase.js";
+import { queueService } from "./services/QueueService.js";
+import { schedulerService } from "./services/SchedulerService.js";
+import { processWorkflowJob } from "./services/WorkerProcessor.js";
 import { workflowRoutes } from "./api/workflows.js";
 import { executionRoutes } from "./api/executions.js";
 import { analyticsRoutes } from "./api/analytics.js";
@@ -38,21 +41,17 @@ fastify.setErrorHandler((error, request, reply) => {
   });
 });
 
-fastify.get("/health", async (request, reply) => {
-  return {
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    environment: env.NODE_ENV,
-  };
-});
+fastify.get("/health", async () => ({
+  status: "ok",
+  timestamp: new Date().toISOString(),
+  environment: env.NODE_ENV,
+}));
 
-fastify.get("/", async (request, reply) => {
-  return {
-    name: "AutoFlow Pro API",
-    version: "1.0.0",
-    status: "operational",
-  };
-});
+fastify.get("/", async () => ({
+  name: "AutoFlow Pro API",
+  version: "1.0.0",
+  status: "operational",
+}));
 
 await fastify.register(workflowRoutes, { prefix: "/api" });
 await fastify.register(executionRoutes, { prefix: "/api" });
@@ -62,60 +61,21 @@ await fastify.register(userRoutes, { prefix: "/api" });
 
 const start = async () => {
   try {
-    console.log("\n🚀 Starting AutoFlow Pro API Server...\n");
+    console.log("\n🚀 Starting AutoFlow Pro API...\n");
 
     await testSupabaseConnection();
-    console.log("✅ Supabase connection verified\n");
-
+    queueService.setWorker(processWorkflowJob);
     await fastify.listen({ port: env.PORT, host: "0.0.0.0" });
-
-    const wsServer = initializeWebSocket(fastify.server, env.CORS_ORIGIN);
-    console.log("✅ WebSocket server initialized\n");
+    initializeWebSocket(fastify.server, env.CORS_ORIGIN);
+    await schedulerService.initialize();
 
     console.log(`
-╔═══════════════════════════════════════════════════╗
-║                                                   ║
-║   🤖 AutoFlow Pro API Server                     ║
-║                                                   ║
-║   Environment: ${env.NODE_ENV.padEnd(33)}║
-║   Port: ${env.PORT.toString().padEnd(41)}║
-║   CORS: ${env.CORS_ORIGIN.padEnd(41)}║
-║                                                   ║
-║   Status: 🟢 Running                              ║
-║   All routes registered                           ║
-║   WebSocket: ✅ Active                            ║
-║                                                   ║
-╚═══════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════╗
+║  🤖 AutoFlow Pro API                               ║
+║  Port: ${env.PORT} | Environment: ${env.NODE_ENV.padEnd(18)}║
+║  WebSocket: ✅ | Queue: ✅ | Scheduler: ✅          ║
+╚════════════════════════════════════════════════════╝
     `);
-
-    console.log("\n📋 Available API Routes:\n");
-    console.log("   Health Check:");
-    console.log("   GET  /health");
-    console.log("   GET  /\n");
-    console.log("   Workflows:");
-    console.log("   GET    /api/workflows");
-    console.log("   GET    /api/workflows/:id");
-    console.log("   POST   /api/workflows");
-    console.log("   PUT    /api/workflows/:id");
-    console.log("   DELETE /api/workflows/:id");
-    console.log("   POST   /api/workflows/:id/duplicate");
-    console.log("   POST   /api/workflows/:id/execute\n");
-    console.log("   Executions:");
-    console.log("   GET    /api/executions");
-    console.log("   GET    /api/executions/:id");
-    console.log("   GET    /api/executions/:id/logs");
-    console.log("   DELETE /api/executions/:id\n");
-    console.log("   Analytics:");
-    console.log("   GET    /api/analytics/stats");
-    console.log("   GET    /api/analytics/trends");
-    console.log("   GET    /api/analytics/top-workflows");
-    console.log("   GET    /api/analytics/usage");
-    console.log("   GET    /api/analytics/slowest-workflows");
-    console.log("   GET    /api/analytics/failed-workflows\n");
-    console.log("   User:");
-    console.log("   GET    /api/user/profile\n");
-    console.log("   Scheduled Jobs (Phase 5):");
-    console.log("   GET    /api/scheduled-jobs\n");
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
@@ -123,9 +83,10 @@ const start = async () => {
 };
 
 const shutdown = async () => {
-  console.log("\n\n🛑 Shutting down gracefully...");
+  console.log("\n🛑 Shutting down...");
+  await schedulerService.shutdown();
+  await queueService.close();
   await fastify.close();
-  console.log("✅ Server closed");
   process.exit(0);
 };
 

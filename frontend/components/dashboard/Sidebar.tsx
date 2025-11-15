@@ -9,6 +9,7 @@ import {
   Play,
   BarChart3,
   Settings,
+  Clock,
 } from "lucide-react";
 
 interface NavItem {
@@ -23,6 +24,7 @@ const navItems: NavItem[] = [
   { name: "Executions", href: "/dashboard/executions", icon: Play },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Scheduled Jobs", href: "/dashboard/scheduled-jobs", icon: Clock },
 ];
 
 export function Sidebar() {
@@ -32,7 +34,7 @@ export function Sidebar() {
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <Link href="/dashboard">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-linear-to-r from-primary to-secondary bg-clip-text text-transparent">
             AutoFlow Pro
           </h1>
         </Link>

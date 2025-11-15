@@ -1,8 +1,9 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #012326;
 }
 
 @theme inline {
@@ -11,21 +12,27 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Custom project colors */
-  --color-primary: #3b82f6;
-  --color-secondary: #8b5cf6;
-  --color-success: #10b981;
-  --color-danger: #ef4444;
-  --color-warning: #f59e0b;
-  --color-dark-bg: #0f172a;
-  --color-dark-card: #1e293b;
-  --color-dark-border: #334155;
+  /* AutoFlow Pro Color Scheme */
+  --color-primary: #6a9ba6;
+  --color-secondary: #346c73;
+  --color-success: #a3c9d9;
+  --color-danger: #012326;
+  --color-warning: #103b40;
+  --color-info: #a3c9d9;
+
+  --color-dark-bg: #012326;
+  --color-dark-card: #103b40;
+  --color-dark-border: #346c73;
+
+  --color-light-bg: #a3c9d9;
+  --color-light-card: #ffffff;
+  --color-light-border: #6a9ba6;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #012326;
+    --foreground: #a3c9d9;
   }
 }
 

@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ExecutionList } from "@/components/execution/ExecutionList";
 import { executionsApi, Execution } from "@/lib/api";
 
@@ -10,7 +9,7 @@ export default function ExecutionsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  const fetchExecutions = async () => {
+  const fetchExecutions = useCallback(async () => {
     setLoading(true);
     try {
       const result = await executionsApi.list({ page, limit: 10 });
@@ -21,11 +20,11 @@ export default function ExecutionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
 
   useEffect(() => {
     fetchExecutions();
-  }, [page]);
+  }, [fetchExecutions]);
 
   if (loading) {
     return (
@@ -56,7 +55,6 @@ export default function ExecutionsPage() {
           View and manage workflow execution history
         </p>
       </div>
-
       <ExecutionList
         initialExecutions={executions}
         initialTotal={total}

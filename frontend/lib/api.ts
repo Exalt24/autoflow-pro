@@ -17,25 +17,35 @@ async function apiRequest<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ error: "Request failed" }));
-    throw new Error(error.error || error.message || "Request failed");
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({
+          error: `HTTP ${response.status}: ${response.statusText}`,
+        }));
+      throw new Error(error.error || error.message || "Request failed");
+    }
+
+    // Handle empty responses (like DELETE)
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      return {} as T;
+    }
+
+    return response.json();
+  } catch (error) {
+    // Catch network errors (backend not running)
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      throw new Error(`Cannot connect to ${API_URL}. Is the backend running?`);
+    }
+    throw error;
   }
-
-  // Handle empty responses (like DELETE)
-  const contentType = response.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
-    return {} as T;
-  }
-
-  return response.json();
 }
 
 // Workflows
@@ -288,4 +298,93 @@ export interface UserProfile {
 
 export const userApi = {
   getProfile: () => apiRequest<UserProfile>("/user/profile"),
+};
+
+// Scheduled Jobs
+export interface ScheduledJob {
+  id: string;
+  workflow_id: string;
+  user_id: string;
+  cron_schedule: string;
+  next_run_at: string;
+  last_run_at?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaginatedScheduledJobs {
+  scheduledJobs: ScheduledJob[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export const scheduledJobsApi = {
+  list: (params?: {
+    page?: number;
+    limit?: number;
+    workflowId?: string;
+    isActive?: boolean;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set("page", params.page.toString());
+    if (params?.limit) queryParams.set("limit", params.limit.toString());
+    if (params?.workflowId) queryParams.set("workflowId", params.workflowId);
+    if (params?.isActive !== undefined)
+      queryParams.set("isActive", params.isActive.toString());
+
+    return apiRequest<PaginatedScheduledJobs>(
+      `/scheduled-jobs?${queryParams.toString()}`
+    );
+  },
+
+  getById: (id: string) => apiRequest<ScheduledJob>(`/scheduled-jobs/${id}`),
+
+  create: (data: {
+    workflowId: string;
+    cronSchedule: string;
+    isActive?: boolean;
+  }) =>
+    apiRequest<ScheduledJob>("/scheduled-jobs", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: string, data: { cronSchedule?: string; isActive?: boolean }) =>
+    apiRequest<ScheduledJob>(`/scheduled-jobs/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    apiRequest<void>(`/scheduled-jobs/${id}`, { method: "DELETE" }),
+
+  getNextRuns: (id: string, count?: number) => {
+    const queryParams = new URLSearchParams();
+    if (count) queryParams.set("count", count.toString());
+    return apiRequest<{ cronSchedule: string; nextRuns: string[] }>(
+      `/scheduled-jobs/${id}/next-runs?${queryParams.toString()}`
+    );
+  },
+
+  getHistory: (id: string, limit?: number) => {
+    const queryParams = new URLSearchParams();
+    if (limit) queryParams.set("limit", limit.toString());
+    return apiRequest<{
+      scheduledJobId: string;
+      executions: Execution[];
+      total: number;
+    }>(`/scheduled-jobs/${id}/history?${queryParams.toString()}`);
+  },
+
+  getStats: (id: string) =>
+    apiRequest<{
+      consecutiveFailures: number;
+      lastFailureAt: string | null;
+      recentFailureRate: number;
+      totalRecentExecutions: number;
+      isPaused: boolean;
+    }>(`/scheduled-jobs/${id}/stats`),
 };

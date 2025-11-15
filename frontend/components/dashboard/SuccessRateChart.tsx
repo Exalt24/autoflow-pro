@@ -1,5 +1,4 @@
 "use client";
-
 import { Card } from "@/components/ui/Card";
 import { UserStats } from "@/lib/api";
 import {
@@ -12,7 +11,7 @@ import {
 } from "recharts";
 
 interface SuccessRateChartProps {
-  stats: UserStats;
+  stats: UserStats | null; // Make it explicitly nullable
   loading?: boolean;
 }
 
@@ -20,7 +19,8 @@ export function SuccessRateChart({
   stats,
   loading = false,
 }: SuccessRateChartProps) {
-  if (loading) {
+  if (loading || !stats) {
+    // Add null check here
     return (
       <Card>
         <div className="p-6">

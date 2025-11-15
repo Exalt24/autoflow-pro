@@ -1,6 +1,6 @@
 "use client";
 
-import { WorkflowStep, StepType } from "@/lib/api";
+import { WorkflowStep } from "@/lib/api";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { StepTypeSelector, getStepTypeLabel } from "./StepTypeSelector";

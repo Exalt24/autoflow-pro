@@ -95,7 +95,7 @@ export function LogViewer({
                       </span>
                     )}
                   </div>
-                  <p className="whitespace-pre-wrap break-words">
+                  <p className="whitespace-pre-wrap wrap-break-word">
                     {log.message}
                   </p>
                 </div>

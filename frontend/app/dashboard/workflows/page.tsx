@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { WorkflowList } from "@/components/workflow/WorkflowList";
 import { CreateWorkflowModal } from "@/components/workflow/CreateWorkflowModal";
@@ -14,7 +13,7 @@ export default function WorkflowsPage() {
   const [loading, setLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  const fetchWorkflows = async () => {
+  const fetchWorkflows = useCallback(async () => {
     setLoading(true);
     try {
       const result = await workflowsApi.list({ page, limit: 10 });
@@ -25,11 +24,11 @@ export default function WorkflowsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
 
   useEffect(() => {
     fetchWorkflows();
-  }, [page]);
+  }, [fetchWorkflows]);
 
   if (loading) {
     return (
@@ -67,7 +66,6 @@ export default function WorkflowsPage() {
             Create Workflow
           </Button>
         </div>
-
         <WorkflowList
           initialWorkflows={workflows}
           initialTotal={total}
@@ -75,7 +73,6 @@ export default function WorkflowsPage() {
           initialLimit={10}
         />
       </div>
-
       <CreateWorkflowModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}

@@ -26,7 +26,11 @@
     "test:steps-basic": "tsx test-automation-steps-basic.ts",
     "test:steps-advanced": "tsx test-automation-steps-advanced.ts",
     "test:integration": "tsx test-automation-integration.ts",
-    "test:e2e": "tsx test-end-to-end.ts"
+    "test:e2e": "tsx test-end-to-end.ts",
+    "test:scheduled": "tsx test-scheduled-jobs.ts",
+    "test:scheduler": "tsx test-scheduler.ts",
+    "test:scheduled-api": "tsx test-scheduled-api.ts",
+    "test:failures": "tsx test-failure-monitoring.ts"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +42,7 @@
     "@fastify/sensible": "^6.0.0",
     "@supabase/supabase-js": "^2.81.1",
     "bullmq": "^5.63.1",
+    "cron-parser": "^5.4.0",
     "dotenv": "^17.2.3",
     "fastify": "^5.0.0",
     "fastify-cli": "^7.4.1",

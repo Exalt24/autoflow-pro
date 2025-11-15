@@ -11,11 +11,11 @@ import { Workflow, Zap, BarChart3 } from "lucide-react";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-secondary/5 to-primary/10">
+    <div className="min-h-screen bg-linear-to-br from-primary/10 via-secondary/5 to-primary/10">
       <nav className="border-b bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-linear-to-r from-primary to-secondary bg-clip-text text-transparent">
               AutoFlow Pro
             </h1>
             <div className="flex gap-3">
@@ -32,7 +32,7 @@ export default function HomePage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
-          <h2 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+          <h2 className="text-5xl font-bold mb-6 bg-linear-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
             Browser Automation Made Simple
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">

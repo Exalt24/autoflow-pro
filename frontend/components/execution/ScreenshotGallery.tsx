@@ -1,9 +1,9 @@
 "use client";
-
 import { useState } from "react";
+import Image from "next/image";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
-import { Image as ImageIcon, Download, X } from "lucide-react";
+import { Image as ImageIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface Screenshot {
@@ -62,10 +62,11 @@ export function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
                 className="group relative aspect-video bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
                 onClick={() => setSelectedImage(screenshot)}
               >
-                <img
+                <Image
                   src={screenshot.url}
                   alt={`Screenshot ${index + 1}`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform"
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center">
                   <ImageIcon className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -89,11 +90,14 @@ export function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
           size="xl"
         >
           <div className="relative">
-            <img
-              src={selectedImage.url}
-              alt="Full screenshot"
-              className="w-full rounded-lg"
-            />
+            <div className="relative w-full aspect-video">
+              <Image
+                src={selectedImage.url}
+                alt="Full screenshot"
+                fill
+                className="object-contain rounded-lg"
+              />
+            </div>
             <div className="flex items-center justify-end gap-2 mt-4">
               <Button
                 variant="secondary"

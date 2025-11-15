@@ -23,9 +23,11 @@ export default function AnalyticsPage() {
   const [usage, setUsage] = useState<UsageQuota | null>(null);
   const [timeRange, setTimeRange] = useState(7);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // Add error state
 
   const fetchData = async (days: number) => {
     setLoading(true);
+    setError(null); // Reset error
     try {
       const [statsData, trendsData, topWorkflowsData, usageData] =
         await Promise.all([
@@ -41,6 +43,9 @@ export default function AnalyticsPage() {
       setUsage(usageData);
     } catch (error) {
       console.error("Failed to fetch analytics data:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to load analytics data"
+      );
     } finally {
       setLoading(false);
     }
@@ -99,6 +104,23 @@ export default function AnalyticsPage() {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   };
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card className="max-w-md">
+          <div className="p-6 text-center">
+            <p className="text-red-600 font-semibold mb-2">
+              Failed to load analytics
+            </p>
+            <p className="text-gray-600 text-sm mb-4">{error}</p>
+            <Button onClick={() => fetchData(timeRange)}>Retry</Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -170,13 +192,13 @@ export default function AnalyticsPage() {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <ExecutionVolumeChart data={trends} loading={loading} />
-        <SuccessRateChart stats={stats!} loading={loading} />
+        <SuccessRateChart stats={stats} loading={loading} /> {/* REMOVED ! */}
       </div>
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <TopWorkflowsChart data={topWorkflows} loading={loading} />
-        <UsageQuotaCard quota={usage!} loading={loading} />
+        <UsageQuotaCard quota={usage} loading={loading} /> {/* REMOVED ! */}
       </div>
 
       {/* Performance Insights */}

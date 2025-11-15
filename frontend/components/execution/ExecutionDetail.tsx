@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Execution, LogEntry, executionsApi, workflowsApi } from "@/lib/api";
+import { Execution, LogEntry, workflowsApi } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +10,7 @@ import { ScreenshotGallery } from "./ScreenshotGallery";
 import { DataViewer } from "./DataViewer";
 import { formatDate, formatDuration, getStatusColor } from "@/lib/utils";
 import { Clock, Calendar, Play, AlertCircle } from "lucide-react";
-import { subscribeToExecution, disconnectWebSocket } from "@/lib/websocket";
+import { subscribeToExecution } from "@/lib/websocket";
 
 interface ExecutionDetailProps {
   execution: Execution;

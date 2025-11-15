@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/Button";
 import { LogOut, User, ChevronDown } from "lucide-react";
 
 export function UserMenu() {

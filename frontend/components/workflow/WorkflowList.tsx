@@ -13,6 +13,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Network,
 } from "lucide-react";
 import { formatDate, getStatusColor } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -223,6 +224,18 @@ export function WorkflowList({
                       >
                         <Play className="h-4 w-4 mr-2" />
                         Execute
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/workflows/${workflow.id}/builder`
+                          )
+                        }
+                        title="Visual Builder"
+                      >
+                        <Network className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="secondary"

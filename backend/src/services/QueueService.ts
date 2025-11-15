@@ -138,6 +138,36 @@ class QueueService {
     };
   }
 
+  async addRepeatableJob(
+    data: Omit<WorkflowJobData, "executionId">,
+    cronSchedule: string,
+    jobId: string
+  ): Promise<void> {
+    await this.queue.add("execute-workflow-scheduled", data as any, {
+      repeat: {
+        pattern: cronSchedule,
+        key: jobId,
+      },
+      jobId: `scheduled-${jobId}`,
+    });
+    console.log(`✓ Repeatable job ${jobId} added with cron: ${cronSchedule}`);
+  }
+
+  async removeRepeatableJob(
+    jobId: string,
+    cronSchedule: string
+  ): Promise<void> {
+    await this.queue.removeRepeatable("execute-workflow-scheduled", {
+      pattern: cronSchedule,
+      key: jobId,
+    });
+    console.log(`✓ Repeatable job ${jobId} removed`);
+  }
+
+  async getRepeatableJobs() {
+    return await this.queue.getRepeatableJobs();
+  }
+
   setWorker(
     processor: (job: Job<WorkflowJobData>) => Promise<JobResult>
   ): void {

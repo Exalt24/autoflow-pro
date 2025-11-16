@@ -71,6 +71,72 @@ export const STEP_TYPES = {
     category: "Logic",
     color: "#103B40",
   },
+  set_variable: {
+    label: "Set Variable",
+    description: "Store a value in a variable",
+    category: "Data",
+    color: "#A3C9D9",
+  },
+  extract_to_variable: {
+    label: "Extract to Variable",
+    description: "Extract and store in variable",
+    category: "Data",
+    color: "#A3C9D9",
+  },
+  download_file: {
+    label: "Download File",
+    description: "Download file and store in storage",
+    category: "Data",
+    color: "#A3C9D9",
+  },
+  drag_drop: {
+    label: "Drag & Drop",
+    description: "Drag element to target",
+    category: "Interaction",
+    color: "#346C73",
+  },
+  set_cookie: {
+    label: "Set Cookie",
+    description: "Set browser cookie",
+    category: "Advanced",
+    color: "#012326",
+  },
+  get_cookie: {
+    label: "Get Cookie",
+    description: "Read browser cookie",
+    category: "Advanced",
+    color: "#012326",
+  },
+  set_localstorage: {
+    label: "Set localStorage",
+    description: "Store data in localStorage",
+    category: "Advanced",
+    color: "#012326",
+  },
+  get_localstorage: {
+    label: "Get localStorage",
+    description: "Read from localStorage",
+    category: "Advanced",
+    color: "#012326",
+  },
+  select_dropdown: {
+    label: "Select Dropdown",
+    description: "Select option from dropdown",
+    category: "Interaction",
+    color: "#346C73",
+  },
+  right_click: {
+    label: "Right Click",
+    description: "Right click element",
+    category: "Interaction",
+    color: "#346C73",
+  },
+  double_click: {
+    label: "Double Click",
+    description: "Double click element",
+    category: "Interaction",
+    color: "#346C73",
+  },
 } as const;
 
 export const CATEGORIES = [

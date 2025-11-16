@@ -195,7 +195,18 @@ export type StepType =
   | "press_key"
   | "execute_js"
   | "conditional"
-  | "loop";
+  | "loop"
+  | "set_variable"
+  | "extract_to_variable"
+  | "download_file"
+  | "drag_drop"
+  | "set_cookie"
+  | "get_cookie"
+  | "set_localstorage"
+  | "get_localstorage"
+  | "select_dropdown"
+  | "right_click"
+  | "double_click";
 
 export interface StepConfig {
   [key: string]: unknown;

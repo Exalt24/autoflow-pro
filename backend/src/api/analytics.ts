@@ -114,4 +114,24 @@ export async function analyticsRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  fastify.get(
+    "/analytics/errors",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      try {
+        const { limit } = request.query as { limit?: string };
+        const errors = await analyticsService.getErrorAnalysis(
+          request.user!.id,
+          limit ? parseInt(limit) : 10
+        );
+        return reply.send(errors);
+      } catch (error: any) {
+        return reply.status(500).send({
+          error: "Failed to fetch error analysis",
+          message: error.message,
+        });
+      }
+    }
+  );
 }

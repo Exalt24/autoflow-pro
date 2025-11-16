@@ -30,7 +30,13 @@
     "test:scheduled": "tsx test-scheduled-jobs.ts",
     "test:scheduler": "tsx test-scheduler.ts",
     "test:scheduled-api": "tsx test-scheduled-api.ts",
-    "test:failures": "tsx test-failure-monitoring.ts"
+    "test:failures": "tsx test-failure-monitoring.ts",
+    "test:variables": "tsx test-variables.ts",
+    "test:conditional": "tsx test-conditional.ts",
+    "test:loop": "tsx test-loop.ts",
+    "test:download": "tsx test-download.ts",
+    "test:advanced": "tsx test-advanced.ts",
+    "test:errors": "tsx test-analytics-errors.ts"
   },
   "keywords": [],
   "author": "",

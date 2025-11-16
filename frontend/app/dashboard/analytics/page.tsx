@@ -7,12 +7,16 @@ import { ExecutionVolumeChart } from "@/components/dashboard/ExecutionVolumeChar
 import { SuccessRateChart } from "@/components/dashboard/SuccessRateChart";
 import { TopWorkflowsChart } from "@/components/dashboard/TopWorkflowsChart";
 import { UsageQuotaCard } from "@/components/dashboard/UsageQuotaCard";
+import { ErrorAnalysisTable } from "@/components/dashboard/ErrorAnalysisTable";
+import { ExecutionDurationChart } from "@/components/dashboard/ExecutionDurationChart";
 import {
   analyticsApi,
   UserStats,
   ExecutionTrend,
   TopWorkflow,
   UsageQuota,
+  ErrorAnalysis,
+  SlowestWorkflow,
 } from "@/lib/api";
 import { Download, Calendar } from "lucide-react";
 
@@ -21,26 +25,38 @@ export default function AnalyticsPage() {
   const [trends, setTrends] = useState<ExecutionTrend[]>([]);
   const [topWorkflows, setTopWorkflows] = useState<TopWorkflow[]>([]);
   const [usage, setUsage] = useState<UsageQuota | null>(null);
+  const [errors, setErrors] = useState<ErrorAnalysis[]>([]);
+  const [slowest, setSlowest] = useState<SlowestWorkflow[]>([]);
   const [timeRange, setTimeRange] = useState(7);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // Add error state
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async (days: number) => {
     setLoading(true);
-    setError(null); // Reset error
+    setError(null);
     try {
-      const [statsData, trendsData, topWorkflowsData, usageData] =
-        await Promise.all([
-          analyticsApi.getStats(),
-          analyticsApi.getTrends(days),
-          analyticsApi.getTopWorkflows(10),
-          analyticsApi.getUsage(),
-        ]);
+      const [
+        statsData,
+        trendsData,
+        topWorkflowsData,
+        usageData,
+        errorsData,
+        slowestData,
+      ] = await Promise.all([
+        analyticsApi.getStats(),
+        analyticsApi.getTrends(days),
+        analyticsApi.getTopWorkflows(10),
+        analyticsApi.getUsage(),
+        analyticsApi.getErrors(10),
+        analyticsApi.getSlowestWorkflows(10),
+      ]);
 
       setStats(statsData);
       setTrends(trendsData);
       setTopWorkflows(topWorkflowsData);
       setUsage(usageData);
+      setErrors(errorsData);
+      setSlowest(slowestData);
     } catch (error) {
       console.error("Failed to fetch analytics data:", error);
       setError(
@@ -61,6 +77,8 @@ export default function AnalyticsPage() {
       trends,
       topWorkflows,
       usage,
+      errors,
+      slowest,
       exportedAt: new Date().toISOString(),
     };
 
@@ -105,7 +123,6 @@ export default function AnalyticsPage() {
     document.body.removeChild(a);
   };
 
-  // Show error state
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -192,13 +209,19 @@ export default function AnalyticsPage() {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <ExecutionVolumeChart data={trends} loading={loading} />
-        <SuccessRateChart stats={stats} loading={loading} /> {/* REMOVED ! */}
+        <SuccessRateChart stats={stats} loading={loading} />
       </div>
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <TopWorkflowsChart data={topWorkflows} loading={loading} />
-        <UsageQuotaCard quota={usage} loading={loading} /> {/* REMOVED ! */}
+        <ExecutionDurationChart data={slowest} loading={loading} />
+      </div>
+
+      {/* Charts Row 3 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <UsageQuotaCard quota={usage} loading={loading} />
+        <ErrorAnalysisTable data={errors} loading={loading} />
       </div>
 
       {/* Performance Insights */}

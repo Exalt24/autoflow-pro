@@ -32,6 +32,14 @@ interface UsageQuota {
   storageLimit: number;
 }
 
+interface ErrorAnalysis {
+  errorMessage: string;
+  count: number;
+  lastOccurred: string;
+  affectedWorkflows: number;
+  affectedExecutions: string[];
+}
+
 class AnalyticsService {
   async getUserStats(userId: string): Promise<UsageStats> {
     const [workflowsCount, executionsStats, monthlyExecutions] =
@@ -229,6 +237,68 @@ class AnalyticsService {
       .filter((w) => w.executionCount > 0 && w.successRate < 100)
       .sort((a, b) => a.successRate - b.successRate)
       .slice(0, limit);
+  }
+
+  async getErrorAnalysis(
+    userId: string,
+    limit: number = 10
+  ): Promise<ErrorAnalysis[]> {
+    const { data: executions, error } = await supabase
+      .from("executions")
+      .select("id, workflow_id, error_message, completed_at")
+      .eq("user_id", userId)
+      .eq("status", "failed")
+      .not("error_message", "is", null)
+      .order("completed_at", { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to get error analysis: ${error.message}`);
+    }
+
+    const errorMap = new Map<
+      string,
+      {
+        count: number;
+        lastOccurred: string;
+        workflows: Set<string>;
+        executions: string[];
+      }
+    >();
+
+    (executions || []).forEach((e) => {
+      const errorMsg = e.error_message || "Unknown error";
+      if (!errorMap.has(errorMsg)) {
+        errorMap.set(errorMsg, {
+          count: 0,
+          lastOccurred: e.completed_at || "",
+          workflows: new Set(),
+          executions: [],
+        });
+      }
+      const errorData = errorMap.get(errorMsg)!;
+      errorData.count++;
+      errorData.workflows.add(e.workflow_id);
+      errorData.executions.push(e.id);
+      if (
+        !errorData.lastOccurred ||
+        (e.completed_at && e.completed_at > errorData.lastOccurred)
+      ) {
+        errorData.lastOccurred = e.completed_at || "";
+      }
+    });
+
+    const errors = Array.from(errorMap.entries())
+      .map(([errorMessage, data]) => ({
+        errorMessage,
+        count: data.count,
+        lastOccurred: data.lastOccurred,
+        affectedWorkflows: data.workflows.size,
+        affectedExecutions: data.executions.slice(0, 5),
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+
+    return errors;
   }
 
   private async getWorkflowCount(userId: string): Promise<number> {

@@ -12,7 +12,6 @@ async function apiRequest<T>(
     ...(options.headers as Record<string, string>),
   };
 
-  // Only set Content-Type if there's a body
   if (options.body) {
     headers["Content-Type"] = "application/json";
   }
@@ -24,12 +23,29 @@ async function apiRequest<T>(
     });
 
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({
-          error: `HTTP ${response.status}: ${response.statusText}`,
-        }));
-      throw new Error(error.error || error.message || "Request failed");
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+      try {
+        const errorData = await response.json();
+
+        // Handle different error response formats
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error && typeof errorData.error === "string") {
+          errorMessage = errorData.error;
+        } else if (errorData.error?.message) {
+          errorMessage = errorData.error.message;
+        }
+
+        // Special handling for rate limits
+        if (response.status === 429) {
+          errorMessage = `Rate limit exceeded. ${errorMessage}`;
+        }
+      } catch {
+        // If JSON parsing fails, use default message
+      }
+
+      throw new Error(errorMessage);
     }
 
     // Handle empty responses (like DELETE)
@@ -44,6 +60,7 @@ async function apiRequest<T>(
     if (error instanceof TypeError && error.message.includes("fetch")) {
       throw new Error(`Cannot connect to ${API_URL}. Is the backend running?`);
     }
+    // Re-throw API errors as-is
     throw error;
   }
 }
@@ -251,6 +268,21 @@ export interface UsageQuota {
   storageUsed: number;
 }
 
+export interface ErrorAnalysis {
+  errorMessage: string;
+  count: number;
+  lastOccurred: string;
+  affectedWorkflows: number;
+  affectedExecutions: string[];
+}
+
+export interface SlowestWorkflow {
+  workflowId: string;
+  workflowName: string;
+  averageDuration: number;
+  executionCount: number;
+}
+
 export const analyticsApi = {
   getStats: () => apiRequest<UserStats>("/analytics/stats"),
 
@@ -275,7 +307,7 @@ export const analyticsApi = {
   getSlowestWorkflows: (limit?: number) => {
     const queryParams = new URLSearchParams();
     if (limit) queryParams.set("limit", limit.toString());
-    return apiRequest<TopWorkflow[]>(
+    return apiRequest<SlowestWorkflow[]>(
       `/analytics/slowest-workflows?${queryParams.toString()}`
     );
   },
@@ -285,6 +317,14 @@ export const analyticsApi = {
     if (limit) queryParams.set("limit", limit.toString());
     return apiRequest<TopWorkflow[]>(
       `/analytics/failed-workflows?${queryParams.toString()}`
+    );
+  },
+
+  getErrors: (limit?: number) => {
+    const queryParams = new URLSearchParams();
+    if (limit) queryParams.set("limit", limit.toString());
+    return apiRequest<ErrorAnalysis[]>(
+      `/analytics/errors?${queryParams.toString()}`
     );
   },
 };

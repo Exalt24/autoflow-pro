@@ -7,6 +7,15 @@ export interface ExecutionContext {
   definition: WorkflowDefinition;
   variables: Record<string, unknown>;
   extractedData: Record<string, unknown>;
+  loopContext?: LoopContext;
+}
+
+export interface LoopContext {
+  stepId: string;
+  totalIterations: number;
+  currentIteration: number;
+  currentElement?: unknown;
+  shouldBreak: boolean;
 }
 
 export interface StepResult {

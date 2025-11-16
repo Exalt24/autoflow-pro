@@ -83,14 +83,45 @@ const start = async () => {
 };
 
 const shutdown = async () => {
-  console.log("\n🛑 Shutting down...");
-  await schedulerService.shutdown();
-  await queueService.close();
-  await fastify.close();
-  process.exit(0);
+  console.log("\n🛑 Shutting down gracefully...");
+
+  try {
+    const shutdownTimeout = setTimeout(() => {
+      console.log("⚠️  Shutdown timeout - forcing exit");
+      process.exit(1);
+    }, 10000);
+
+    console.log("  ⏳ Stopping scheduler...");
+    await schedulerService.shutdown();
+
+    console.log("  ⏳ Closing queue...");
+    await queueService.close();
+
+    console.log("  ⏳ Closing Fastify server...");
+    await fastify.close();
+
+    clearTimeout(shutdownTimeout);
+    console.log("✅ Shutdown complete\n");
+    process.exit(0);
+  } catch (err) {
+    console.error("❌ Error during shutdown:", err);
+    process.exit(1);
+  }
 };
 
+// Handle signals properly
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
+
+// Handle uncaught errors
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err);
+  shutdown();
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+  shutdown();
+});
 
 start();

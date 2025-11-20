@@ -3,7 +3,7 @@
 ## Base URL
 
 - **Development**: `http://localhost:4000/api`
-- **Production**: `https://your-backend.onrender.com/api`
+- **Production**: `https://autoflow-pro-api.onrender.com/api`
 
 ## Authentication
 
@@ -647,7 +647,7 @@ GET /health/live
 **Connection**:
 
 ```javascript
-const socket = io("https://your-backend.onrender.com", {
+const socket = io("https://autoflow-pro-api.onrender.com", {
   auth: { token: "your-jwt-token" },
 });
 ```

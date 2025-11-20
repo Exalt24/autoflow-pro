@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react", "@xyflow/react", "recharts"],
   },
 
+  turbopack: {},
+
   images: {
     remotePatterns: [
       {

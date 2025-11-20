@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Execution, executionsApi } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -40,7 +40,7 @@ export function ExecutionList({
 
   const totalPages = Math.ceil(total / limit);
 
-  const fetchExecutions = async () => {
+  const fetchExecutions = useCallback(async () => {
     setLoading(true);
     try {
       const result = await executionsApi.list({
@@ -55,11 +55,18 @@ export function ExecutionList({
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, statusFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    fetchExecutions();
+  }, [fetchExecutions]);
 
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value as typeof statusFilter);
-    setPage(1);
   };
 
   const handleView = (execution: Execution) => {
@@ -123,11 +130,7 @@ export function ExecutionList({
               {statusFilter !== "all" && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setStatusFilter("all");
-                    setPage(1);
-                    fetchExecutions();
-                  }}
+                  onClick={() => setStatusFilter("all")}
                 >
                   Clear Filter
                 </Button>
@@ -213,10 +216,7 @@ export function ExecutionList({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setPage(page - 1);
-                  fetchExecutions();
-                }}
+                onClick={() => setPage(page - 1)}
                 disabled={page === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -227,10 +227,7 @@ export function ExecutionList({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setPage(page + 1);
-                  fetchExecutions();
-                }}
+                onClick={() => setPage(page + 1)}
                 disabled={page === totalPages}
               >
                 <ChevronRight className="h-4 w-4" />

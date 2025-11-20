@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import { TopWorkflow } from "@/lib/api";
 import {
@@ -18,10 +19,19 @@ interface TopWorkflowsChartProps {
   loading?: boolean;
 }
 
-export function TopWorkflowsChart({
+const TopWorkflowsChart = memo(function TopWorkflowsChart({
   data,
   loading = false,
 }: TopWorkflowsChartProps) {
+  const chartData = useMemo(
+    () =>
+      data.map((item) => ({
+        name: truncate(item.workflowName, 20),
+        executions: item.executionCount,
+      })),
+    [data]
+  );
+
   if (loading) {
     return (
       <Card>
@@ -46,11 +56,6 @@ export function TopWorkflowsChart({
     );
   }
 
-  const chartData = data.map((item) => ({
-    name: truncate(item.workflowName, 20),
-    executions: item.executionCount,
-  }));
-
   return (
     <Card>
       <div className="p-6">
@@ -69,4 +74,6 @@ export function TopWorkflowsChart({
       </div>
     </Card>
   );
-}
+});
+
+export default TopWorkflowsChart;

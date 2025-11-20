@@ -1,11 +1,12 @@
 "use client";
+
 import { Card } from "@/components/ui/Card";
 import { UsageQuota } from "@/lib/api";
 import { formatBytes } from "@/lib/utils";
 import { AlertTriangle } from "lucide-react";
 
 interface UsageQuotaCardProps {
-  quota: UsageQuota | null; // Make it explicitly nullable
+  quota: UsageQuota | null;
   loading?: boolean;
 }
 
@@ -35,7 +36,7 @@ const QuotaBar = ({
     </div>
     <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
       <div
-        className={`h-full ${getProgressColor(percentage)} transition-all`} // Fixed syntax
+        className={`h-full ${getProgressColor(percentage)} transition-all`}
         style={{ width: `${Math.min(percentage, 100)}%` }}
       />
     </div>
@@ -48,12 +49,11 @@ const QuotaBar = ({
   </div>
 );
 
-export function UsageQuotaCard({
+export default function UsageQuotaCard({
   quota,
   loading = false,
 }: UsageQuotaCardProps) {
   if (loading || !quota) {
-    // Add null check here
     return (
       <Card>
         <div className="p-6">

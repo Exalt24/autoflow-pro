@@ -10,7 +10,10 @@ interface ErrorAnalysisTableProps {
   loading: boolean;
 }
 
-export function ErrorAnalysisTable({ data, loading }: ErrorAnalysisTableProps) {
+export default function ErrorAnalysisTable({
+  data,
+  loading,
+}: ErrorAnalysisTableProps) {
   const router = useRouter();
 
   if (loading) {
@@ -76,7 +79,7 @@ export function ErrorAnalysisTable({ data, loading }: ErrorAnalysisTableProps) {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                    <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {error.errorMessage}
                     </p>

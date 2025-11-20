@@ -19,6 +19,8 @@ class QueueService {
   private queue: Queue<WorkflowJobData>;
   private worker: Worker<WorkflowJobData, JobResult> | null = null;
   private queueEvents: QueueEvents;
+  private redisCommandCount = 0;
+  private commandCountResetTime = Date.now();
 
   constructor() {
     const connection = createRedisClient();
@@ -59,6 +61,10 @@ class QueueService {
     });
   }
 
+  private trackCommand() {
+    this.redisCommandCount++;
+  }
+
   async addJob(
     data: WorkflowJobData,
     options?: {
@@ -66,6 +72,7 @@ class QueueService {
       delay?: number;
     }
   ): Promise<Job<WorkflowJobData>> {
+    this.trackCommand();
     const job = await this.queue.add("execute-workflow", data, {
       priority: options?.priority,
       delay: options?.delay,
@@ -78,6 +85,7 @@ class QueueService {
   }
 
   async getJob(jobId: string): Promise<Job<WorkflowJobData> | undefined> {
+    this.trackCommand();
     return await this.queue.getJob(jobId);
   }
 
@@ -87,6 +95,7 @@ class QueueService {
     result?: JobResult;
     failedReason?: string;
   } | null> {
+    this.trackCommand();
     const job = await this.getJob(jobId);
     if (!job) return null;
 
@@ -104,6 +113,7 @@ class QueueService {
   }
 
   async removeJob(jobId: string): Promise<void> {
+    this.trackCommand();
     const job = await this.getJob(jobId);
     if (job) {
       await job.remove();
@@ -112,11 +122,13 @@ class QueueService {
   }
 
   async pauseQueue(): Promise<void> {
+    this.trackCommand();
     await this.queue.pause();
     console.log("⏸ Queue paused");
   }
 
   async resumeQueue(): Promise<void> {
+    this.trackCommand();
     await this.queue.resume();
     console.log("▶ Queue resumed");
   }
@@ -128,6 +140,7 @@ class QueueService {
     failed: number;
     delayed: number;
   }> {
+    this.trackCommand();
     const counts = await this.queue.getJobCounts();
     return {
       waiting: counts.waiting || 0,
@@ -143,6 +156,7 @@ class QueueService {
     cronSchedule: string,
     jobId: string
   ): Promise<void> {
+    this.trackCommand();
     await this.queue.add("execute-workflow-scheduled", data as any, {
       repeat: {
         pattern: cronSchedule,
@@ -157,6 +171,7 @@ class QueueService {
     jobId: string,
     cronSchedule: string
   ): Promise<void> {
+    this.trackCommand();
     await this.queue.removeRepeatable("execute-workflow-scheduled", {
       pattern: cronSchedule,
       key: jobId,
@@ -165,7 +180,32 @@ class QueueService {
   }
 
   async getRepeatableJobs() {
+    this.trackCommand();
     return await this.queue.getRepeatableJobs();
+  }
+
+  getRedisStats(): {
+    commandCount: number;
+    timePeriodMs: number;
+    commandsPerMinute: number;
+    dailyProjection: number;
+  } {
+    const timePeriodMs = Date.now() - this.commandCountResetTime;
+    const commandsPerMinute =
+      timePeriodMs > 0 ? (this.redisCommandCount / timePeriodMs) * 60000 : 0;
+    const dailyProjection = commandsPerMinute * 60 * 24;
+
+    return {
+      commandCount: this.redisCommandCount,
+      timePeriodMs,
+      commandsPerMinute: Math.round(commandsPerMinute),
+      dailyProjection: Math.round(dailyProjection),
+    };
+  }
+
+  resetRedisStats(): void {
+    this.redisCommandCount = 0;
+    this.commandCountResetTime = Date.now();
   }
 
   setWorker(

@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { ExecutionVolumeChart } from "@/components/dashboard/ExecutionVolumeChart";
-import { SuccessRateChart } from "@/components/dashboard/SuccessRateChart";
-import { UsageQuotaCard } from "@/components/dashboard/UsageQuotaCard";
+import ExecutionVolumeChart from "@/components/dashboard/ExecutionVolumeChart";
+import SuccessRateChart from "@/components/dashboard/SuccessRateChart";
+import UsageQuotaCard from "@/components/dashboard/UsageQuotaCard";
 import {
   analyticsApi,
   workflowsApi,

@@ -11,12 +11,40 @@ import { executionRoutes } from "./api/executions.js";
 import { analyticsRoutes } from "./api/analytics.js";
 import { scheduledJobRoutes } from "./api/scheduled-jobs.js";
 import { userRoutes } from "./api/user.js";
+import { archivalRoutes } from "./api/archival.js";
+import { healthRoutes } from "./api/health.js";
 import { initializeWebSocket } from "./websocket/index.js";
+import { archivalService } from "./services/ArchivalService.js";
+import { registerSecurityHeaders } from "./middleware/securityHeaders.js";
+import { sanitizeRequest } from "./middleware/sanitize.js";
+import { logger, logError, logInfo, logArchival } from "./utils/logger.js";
 
 const fastify = Fastify({
-  logger: {
-    level: env.NODE_ENV === "development" ? "info" : "warn",
-  },
+  logger: false,
+  disableRequestLogging: true,
+});
+
+await registerSecurityHeaders(fastify);
+fastify.addHook("onRequest", sanitizeRequest);
+
+fastify.addHook("onRequest", async (request, reply) => {
+  request.startTime = Date.now();
+});
+
+fastify.addHook("onResponse", async (request, reply) => {
+  const duration = Date.now() - (request.startTime || Date.now());
+  const userId = (request as any).user?.id;
+
+  logger.info(
+    {
+      method: request.method,
+      url: request.url,
+      statusCode: reply.statusCode,
+      duration,
+      userId,
+    },
+    `${request.method} ${request.url}`
+  );
 });
 
 await fastify.register(cors, {
@@ -32,20 +60,21 @@ await fastify.register(rateLimit, {
 });
 
 fastify.setErrorHandler((error, request, reply) => {
-  fastify.log.error(error);
+  const err = error instanceof Error ? error : new Error(String(error));
+
+  logError(err, {
+    method: request.method,
+    url: request.url,
+    userId: (request as any).user?.id,
+  });
+
   const statusCode = (error as any).statusCode || 500;
   reply.status(statusCode).send({
-    error: (error as Error).name || "Internal Server Error",
-    message: (error as Error).message,
+    error: err.name || "Internal Server Error",
+    message: err.message,
     statusCode,
   });
 });
-
-fastify.get("/health", async () => ({
-  status: "ok",
-  timestamp: new Date().toISOString(),
-  environment: env.NODE_ENV,
-}));
 
 fastify.get("/", async () => ({
   name: "AutoFlow Pro API",
@@ -53,75 +82,123 @@ fastify.get("/", async () => ({
   status: "operational",
 }));
 
+await fastify.register(healthRoutes);
 await fastify.register(workflowRoutes, { prefix: "/api" });
 await fastify.register(executionRoutes, { prefix: "/api" });
 await fastify.register(analyticsRoutes, { prefix: "/api" });
 await fastify.register(scheduledJobRoutes, { prefix: "/api" });
 await fastify.register(userRoutes, { prefix: "/api" });
+await fastify.register(archivalRoutes, { prefix: "/api" });
+
+function setupDailyArchival() {
+  const runArchival = async () => {
+    try {
+      logInfo("Starting daily archival");
+      const result = await archivalService.archiveBatch();
+      logArchival(result.successful, result.failed, result.total);
+    } catch (error: any) {
+      logError(error, { context: "daily_archival" });
+    }
+  };
+
+  const scheduleNextRun = () => {
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(2, 0, 0, 0);
+
+    if (next <= now) {
+      next.setDate(next.getDate() + 1);
+    }
+
+    const msUntilNext = next.getTime() - now.getTime();
+
+    setTimeout(() => {
+      runArchival();
+      setInterval(runArchival, 24 * 60 * 60 * 1000);
+    }, msUntilNext);
+  };
+
+  scheduleNextRun();
+}
 
 const start = async () => {
   try {
-    console.log("\n🚀 Starting AutoFlow Pro API...\n");
+    logInfo("Starting AutoFlow Pro API");
 
     await testSupabaseConnection();
+    logInfo("Supabase connection verified");
+
     queueService.setWorker(processWorkflowJob);
+    logInfo("Queue worker initialized");
+
     await fastify.listen({ port: env.PORT, host: "0.0.0.0" });
+    logInfo(`Server listening on port ${env.PORT}`);
+
     initializeWebSocket(fastify.server, env.CORS_ORIGIN);
+    logInfo("WebSocket server initialized");
+
     await schedulerService.initialize();
+    logInfo("Scheduler service initialized");
+
+    setupDailyArchival();
+    logInfo("Daily archival scheduled");
 
     console.log(`
 ╔════════════════════════════════════════════════════╗
 ║  🤖 AutoFlow Pro API                               ║
 ║  Port: ${env.PORT} | Environment: ${env.NODE_ENV.padEnd(18)}║
 ║  WebSocket: ✅ | Queue: ✅ | Scheduler: ✅          ║
+║  Archival: ✅ (Daily at 2:00 AM)                   ║
+║  Security: ✅ | Monitoring: ✅                      ║
 ╚════════════════════════════════════════════════════╝
     `);
   } catch (err) {
-    fastify.log.error(err);
+    logError(err as Error, { context: "startup" });
     process.exit(1);
   }
 };
 
 const shutdown = async () => {
-  console.log("\n🛑 Shutting down gracefully...");
-
+  logInfo("Shutting down gracefully");
   try {
     const shutdownTimeout = setTimeout(() => {
-      console.log("⚠️  Shutdown timeout - forcing exit");
+      logger.warn("Shutdown timeout - forcing exit");
       process.exit(1);
     }, 10000);
 
-    console.log("  ⏳ Stopping scheduler...");
     await schedulerService.shutdown();
-
-    console.log("  ⏳ Closing queue...");
     await queueService.close();
-
-    console.log("  ⏳ Closing Fastify server...");
     await fastify.close();
 
     clearTimeout(shutdownTimeout);
-    console.log("✅ Shutdown complete\n");
+    logInfo("Shutdown complete");
     process.exit(0);
   } catch (err) {
-    console.error("❌ Error during shutdown:", err);
+    logError(err as Error, { context: "shutdown" });
     process.exit(1);
   }
 };
 
-// Handle signals properly
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
-// Handle uncaught errors
 process.on("uncaughtException", (err) => {
-  console.error("❌ Uncaught Exception:", err);
+  logError(err, { context: "uncaught_exception" });
   shutdown();
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+  logError(new Error(String(reason)), {
+    context: "unhandled_rejection",
+    promise: String(promise),
+  });
   shutdown();
 });
+
+declare module "fastify" {
+  interface FastifyRequest {
+    startTime?: number;
+  }
+}
 
 start();

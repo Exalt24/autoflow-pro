@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { ExecutionList } from "@/components/execution/ExecutionList";
 import { executionsApi, Execution } from "@/lib/api";
@@ -6,7 +7,7 @@ import { executionsApi, Execution } from "@/lib/api";
 export default function ExecutionsPage() {
   const [executions, setExecutions] = useState<Execution[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
   const [loading, setLoading] = useState(true);
 
   const fetchExecutions = useCallback(async () => {

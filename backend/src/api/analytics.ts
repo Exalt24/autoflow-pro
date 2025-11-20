@@ -134,4 +134,79 @@ export async function analyticsRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  fastify.get(
+    "/analytics/resources",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      try {
+        const resources = await analyticsService.getResourceUsage(
+          request.user!.id
+        );
+        return reply.send(resources);
+      } catch (error: any) {
+        return reply.status(500).send({
+          error: "Failed to fetch resource usage",
+          message: error.message,
+        });
+      }
+    }
+  );
+
+  fastify.get(
+    "/analytics/retention-policy",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      try {
+        const { archivalService } = await import(
+          "../services/ArchivalService.js"
+        );
+        const retentionDays = await archivalService.getUserRetentionDays(
+          request.user!.id
+        );
+        return reply.send({ retentionDays });
+      } catch (error: any) {
+        return reply.status(500).send({
+          error: "Failed to fetch retention policy",
+          message: error.message,
+        });
+      }
+    }
+  );
+
+  fastify.put(
+    "/analytics/retention-policy",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      try {
+        const { retentionDays } = request.body as { retentionDays: number };
+
+        if (![7, 30, 90].includes(retentionDays)) {
+          return reply.status(400).send({
+            error: "Invalid retention days",
+            message: "Retention days must be 7, 30, or 90",
+          });
+        }
+
+        const { archivalService } = await import(
+          "../services/ArchivalService.js"
+        );
+        await archivalService.updateUserRetentionDays(
+          request.user!.id,
+          retentionDays
+        );
+
+        return reply.send({
+          success: true,
+          retentionDays,
+          message: "Retention policy updated successfully",
+        });
+      } catch (error: any) {
+        return reply.status(500).send({
+          error: "Failed to update retention policy",
+          message: error.message,
+        });
+      }
+    }
+  );
 }

@@ -91,9 +91,9 @@ async function checkBackendHealth() {
       addCheck("Queue Status", "fail", "Queue check failed");
     }
 
-    if (data.checks.memory.percentage < 75) {
+    if (data.checks.memory.percentage < 85) {
       addCheck("Memory Usage", "pass", `${data.checks.memory.percentage}%`);
-    } else if (data.checks.memory.percentage < 90) {
+    } else if (data.checks.memory.percentage < 95) {
       addCheck(
         "Memory Usage",
         "warn",

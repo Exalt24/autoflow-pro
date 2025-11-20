@@ -20,7 +20,6 @@ function validateEnvironment(): Environment {
     "SUPABASE_URL",
     "SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_KEY",
-    "CORS_ORIGIN",
   ];
 
   for (const key of required) {
@@ -59,7 +58,7 @@ function validateEnvironment(): Environment {
     CLOUDFLARE_R2_SECRET_ACCESS_KEY:
       process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
     CLOUDFLARE_R2_BUCKET_NAME: process.env.CLOUDFLARE_R2_BUCKET_NAME,
-    CORS_ORIGIN: process.env.CORS_ORIGIN!,
+    CORS_ORIGIN: process.env.CORS_ORIGIN || "*",
   };
 }
 

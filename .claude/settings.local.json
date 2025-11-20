@@ -10,7 +10,13 @@
       "Bash(npm install)",
       "Bash(npm start)",
       "Bash(timeout 3 cat:*)",
-      "WebFetch(domain:autoflow-pro-api.onrender.com)"
+      "WebFetch(domain:autoflow-pro-api.onrender.com)",
+      "WebFetch(domain:autoflow-pro.vercel.app)",
+      "Bash(set:*)",
+      "Bash(npx tsx:*)",
+      "Bash($env:FRONTEND_URL=\"https://autoflow-pro.vercel.app\")",
+      "Bash($env:BACKEND_URL=\"https://autoflow-pro-api.onrender.com\")",
+      "Bash(FRONTEND_URL=https://autoflow-pro.vercel.app BACKEND_URL=https://autoflow-pro-api.onrender.com npx tsx:*)"
     ],
     "deny": [],
     "ask": []

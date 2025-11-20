@@ -2,6 +2,12 @@
 
 Complete full-stack browser automation platform with visual workflow builder, distributed job queue, real-time monitoring, and multi-tenant architecture.
 
+## Live Demo
+
+- 🌐 **Frontend**: https://autoflow-pro.vercel.app
+- 🔧 **Backend API**: https://autoflow-pro-api.onrender.com
+- 📊 **Health Check**: https://autoflow-pro-api.onrender.com/health
+
 ## Features
 
 - **Visual Workflow Builder**: Drag-and-drop interface with React Flow

@@ -81,14 +81,11 @@ export async function processWorkflowJob(
           log.stepId
         );
 
-        wsServer?.broadcastToExecution(executionId, "execution:log", {
-          executionId,
-          log: {
-            timestamp: new Date().toISOString(),
-            level: log.level,
-            message: log.message,
-            step_id: log.stepId,
-          },
+        wsServer?.broadcastLogToExecution(executionId, {
+          timestamp: new Date().toISOString(),
+          level: log.level,
+          message: log.message,
+          step_id: log.stepId,
         });
       },
 

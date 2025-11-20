@@ -1,14 +1,21 @@
--- AutoFlow Pro Complete Database Schema
--- Run this ONCE in Supabase SQL Editor
+-- AutoFlow Pro Complete Database Schema with Performance Optimizations
+-- Run this in Supabase SQL Editor (idempotent - safe to re-run)
+-- WARNING: This deletes ALL users and data - only use for testing/development!
 
--- Clean slate
+-- Delete all users first (CASCADE will clean up related data)
+DELETE FROM auth.users;
+
+-- Clean slate - Drop everything
 DROP TABLE IF EXISTS execution_logs CASCADE;
 DROP TABLE IF EXISTS scheduled_jobs CASCADE;
 DROP TABLE IF EXISTS executions CASCADE;
 DROP TABLE IF EXISTS usage_quotas CASCADE;
 DROP TABLE IF EXISTS workflows CASCADE;
 DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+DROP FUNCTION IF EXISTS get_execution_trends CASCADE;
+DROP FUNCTION IF EXISTS get_workflow_usage CASCADE;
 
+-- Drop storage policies
 DROP POLICY IF EXISTS "Users upload own workflow attachments" ON storage.objects;
 DROP POLICY IF EXISTS "Users read own workflow attachments" ON storage.objects;
 DROP POLICY IF EXISTS "Users delete own workflow attachments" ON storage.objects;
@@ -16,9 +23,13 @@ DROP POLICY IF EXISTS "Users upload own screenshots" ON storage.objects;
 DROP POLICY IF EXISTS "Users read own screenshots" ON storage.objects;
 DROP POLICY IF EXISTS "Users delete own screenshots" ON storage.objects;
 
+-- Delete objects first (foreign key constraint), then buckets
+DELETE FROM storage.objects WHERE bucket_id IN ('workflow-attachments', 'execution-screenshots');
 DELETE FROM storage.buckets WHERE id IN ('workflow-attachments', 'execution-screenshots');
 
+-- Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Tables
 CREATE TABLE workflows (
@@ -65,6 +76,7 @@ CREATE TABLE usage_quotas (
   executions_count INTEGER NOT NULL DEFAULT 0,
   executions_limit INTEGER NOT NULL DEFAULT 50,
   storage_used BIGINT NOT NULL DEFAULT 0,
+  retention_days INTEGER NOT NULL DEFAULT 30 CHECK (retention_days IN (7, 30, 90)),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -78,18 +90,28 @@ CREATE TABLE execution_logs (
   metadata JSONB DEFAULT '{}'::jsonb
 );
 
--- Indexes
+-- Indexes (Original + Performance Optimizations)
 CREATE INDEX idx_workflows_user_id ON workflows(user_id);
 CREATE INDEX idx_workflows_status ON workflows(status);
 CREATE INDEX idx_workflows_user_created ON workflows(user_id, created_at DESC);
+CREATE INDEX idx_workflows_name_trgm ON workflows USING gin (name gin_trgm_ops);
+CREATE INDEX idx_workflows_description_trgm ON workflows USING gin (description gin_trgm_ops);
+
 CREATE INDEX idx_executions_workflow_id ON executions(workflow_id);
 CREATE INDEX idx_executions_user_id ON executions(user_id);
 CREATE INDEX idx_executions_status ON executions(status);
 CREATE INDEX idx_executions_user_started ON executions(user_id, started_at DESC);
 CREATE INDEX idx_executions_archived ON executions(archived) WHERE archived = FALSE;
+CREATE INDEX idx_executions_started_at ON executions(started_at DESC);
+CREATE INDEX idx_executions_user_started_active ON executions(user_id, started_at DESC) WHERE archived = FALSE;
+CREATE INDEX idx_executions_workflow_user ON executions(workflow_id, user_id) WHERE archived = FALSE;
+
 CREATE INDEX idx_scheduled_jobs_user_id ON scheduled_jobs(user_id);
 CREATE INDEX idx_scheduled_jobs_next_run ON scheduled_jobs(next_run_at) WHERE is_active = TRUE;
 CREATE INDEX idx_scheduled_jobs_workflow_id ON scheduled_jobs(workflow_id);
+
+CREATE INDEX idx_usage_quotas_retention ON usage_quotas(user_id, retention_days);
+
 CREATE INDEX idx_execution_logs_execution_id ON execution_logs(execution_id);
 CREATE INDEX idx_execution_logs_timestamp ON execution_logs(timestamp DESC);
 
@@ -135,6 +157,70 @@ CREATE TRIGGER update_workflows_updated_at BEFORE UPDATE ON workflows FOR EACH R
 CREATE TRIGGER update_scheduled_jobs_updated_at BEFORE UPDATE ON scheduled_jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_usage_quotas_updated_at BEFORE UPDATE ON usage_quotas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Performance SQL Functions
+CREATE OR REPLACE FUNCTION get_execution_trends(
+  p_user_id UUID,
+  p_days INTEGER,
+  p_start_date TIMESTAMPTZ
+)
+RETURNS TABLE (
+  date TEXT,
+  total BIGINT,
+  successful BIGINT,
+  failed BIGINT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    DATE(started_at)::TEXT AS date,
+    COUNT(*)::BIGINT AS total,
+    COUNT(*) FILTER (WHERE status = 'completed')::BIGINT AS successful,
+    COUNT(*) FILTER (WHERE status = 'failed')::BIGINT AS failed
+  FROM executions
+  WHERE
+    user_id = p_user_id
+    AND started_at >= p_start_date
+  GROUP BY DATE(started_at)
+  ORDER BY DATE(started_at) ASC;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+CREATE OR REPLACE FUNCTION get_workflow_usage(
+  p_user_id UUID,
+  p_limit INTEGER
+)
+RETURNS TABLE (
+  workflow_id UUID,
+  workflow_name TEXT,
+  execution_count BIGINT,
+  success_rate NUMERIC,
+  average_duration NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    w.id AS workflow_id,
+    w.name AS workflow_name,
+    COUNT(e.id)::BIGINT AS execution_count,
+    ROUND(
+      (COUNT(e.id) FILTER (WHERE e.status = 'completed')::NUMERIC / NULLIF(COUNT(e.id), 0)::NUMERIC) * 100,
+      2
+    ) AS success_rate,
+    ROUND(AVG(e.duration)::NUMERIC, 2) AS average_duration
+  FROM workflows w
+  LEFT JOIN executions e ON e.workflow_id = w.id AND e.archived = FALSE
+  WHERE w.user_id = p_user_id
+  GROUP BY w.id, w.name
+  HAVING COUNT(e.id) > 0
+  ORDER BY COUNT(e.id) DESC
+  LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- Grant execute permissions
+GRANT EXECUTE ON FUNCTION get_execution_trends TO authenticated;
+GRANT EXECUTE ON FUNCTION get_workflow_usage TO authenticated;
+
 -- Storage Buckets
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES 
@@ -159,3 +245,13 @@ CREATE POLICY "Users read own screenshots" ON storage.objects FOR SELECT TO auth
 
 CREATE POLICY "Users delete own screenshots" ON storage.objects FOR DELETE TO authenticated
   USING (bucket_id = 'execution-screenshots' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Comments for documentation
+COMMENT ON INDEX idx_executions_started_at IS 'Optimizes date range queries and trends';
+COMMENT ON INDEX idx_executions_user_started_active IS 'Covering index for active user execution lists';
+COMMENT ON INDEX idx_executions_workflow_user IS 'Optimizes workflow-specific queries';
+COMMENT ON INDEX idx_workflows_name_trgm IS 'Enables fast fuzzy text search on workflow names';
+COMMENT ON INDEX idx_workflows_description_trgm IS 'Enables fast fuzzy text search on workflow descriptions';
+COMMENT ON COLUMN usage_quotas.retention_days IS 'Number of days to retain execution data before archival (7, 30, or 90 days)';
+COMMENT ON FUNCTION get_execution_trends IS 'SQL aggregation for execution trends - replaces JavaScript processing';
+COMMENT ON FUNCTION get_workflow_usage IS 'SQL aggregation for workflow analytics - replaces JavaScript processing';

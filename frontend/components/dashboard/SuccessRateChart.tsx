@@ -1,4 +1,6 @@
 "use client";
+
+import { memo, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import { UserStats } from "@/lib/api";
 import {
@@ -11,16 +13,29 @@ import {
 } from "recharts";
 
 interface SuccessRateChartProps {
-  stats: UserStats | null; // Make it explicitly nullable
+  stats: UserStats | null;
   loading?: boolean;
 }
 
-export function SuccessRateChart({
+const SuccessRateChart = memo(function SuccessRateChart({
   stats,
   loading = false,
 }: SuccessRateChartProps) {
+  const chartData = useMemo(() => {
+    if (!stats) return [];
+
+    const successCount = Math.round(
+      stats.totalExecutions * (stats.successRate / 100)
+    );
+    const failureCount = stats.totalExecutions - successCount;
+
+    return [
+      { name: "Success", value: successCount, color: "#10b981" },
+      { name: "Failed", value: failureCount, color: "#ef4444" },
+    ];
+  }, [stats]);
+
   if (loading || !stats) {
-    // Add null check here
     return (
       <Card>
         <div className="p-6">
@@ -30,16 +45,6 @@ export function SuccessRateChart({
       </Card>
     );
   }
-
-  const successCount = Math.round(
-    stats.totalExecutions * (stats.successRate / 100)
-  );
-  const failureCount = stats.totalExecutions - successCount;
-
-  const data = [
-    { name: "Success", value: successCount, color: "#10b981" },
-    { name: "Failed", value: failureCount, color: "#ef4444" },
-  ];
 
   if (stats.totalExecutions === 0) {
     return (
@@ -53,6 +58,8 @@ export function SuccessRateChart({
       </Card>
     );
   }
+
+  const successCount = chartData[0].value;
 
   return (
     <Card>
@@ -69,7 +76,7 @@ export function SuccessRateChart({
         <ResponsiveContainer width="100%" height={240}>
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               cx="50%"
               cy="50%"
               labelLine={false}
@@ -80,7 +87,7 @@ export function SuccessRateChart({
               fill="#8884d8"
               dataKey="value"
             >
-              {data.map((entry, index) => (
+              {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
@@ -91,4 +98,6 @@ export function SuccessRateChart({
       </div>
     </Card>
   );
-}
+});
+
+export default SuccessRateChart;

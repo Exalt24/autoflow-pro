@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { WorkflowList } from "@/components/workflow/WorkflowList";
@@ -9,7 +10,7 @@ import { Plus } from "lucide-react";
 export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
   const [loading, setLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
 

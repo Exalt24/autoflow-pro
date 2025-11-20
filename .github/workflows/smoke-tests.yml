@@ -1,0 +1,56 @@
+name: Production Smoke Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+jobs:
+  smoke-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Run smoke tests
+        run: |
+          npx tsx scripts/smoke-test.ts
+        env:
+          API_URL: ${{ secrets.BACKEND_URL }}
+
+      - name: Run production verification
+        run: |
+          npx tsx scripts/verify-production.ts
+        env:
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "⚠️ Smoke tests failed!"
+          echo "Check the logs above for details"
+
+  health-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Check backend health
+        run: |
+          npx tsx scripts/health-check.ts
+        env:
+          API_URL: ${{ secrets.BACKEND_URL }}

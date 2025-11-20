@@ -119,6 +119,7 @@ export interface Database {
           executions_count: number;
           executions_limit: number;
           storage_used: number;
+          retention_days: number;
           updated_at: string;
         };
         Insert: {
@@ -127,6 +128,7 @@ export interface Database {
           executions_count?: number;
           executions_limit?: number;
           storage_used?: number;
+          retention_days?: number;
           updated_at?: string;
         };
         Update: {
@@ -135,6 +137,7 @@ export interface Database {
           executions_count?: number;
           executions_limit?: number;
           storage_used?: number;
+          retention_days?: number;
           updated_at?: string;
         };
       };

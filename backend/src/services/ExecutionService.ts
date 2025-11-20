@@ -1,4 +1,5 @@
 import { supabase } from "../config/supabase.js";
+import { cacheService } from "../config/cache.js";
 import type { Database } from "../types/database.js";
 
 type ExecutionRow = Database["public"]["Tables"]["executions"]["Row"];
@@ -50,6 +51,8 @@ class ExecutionService {
     }
 
     await this.incrementUserExecutionCount(input.userId);
+    await this.invalidateAnalyticsCache(input.userId); // ADD THIS LINE
+
     console.log(
       `✓ Created execution ${data.id} for workflow ${input.workflowId}`
     );
@@ -184,6 +187,8 @@ class ExecutionService {
 
         input.completedAt = completedAt;
         input.duration = duration;
+
+        await this.invalidateAnalyticsCache(userId); // ADD THIS LINE
       }
     }
 
@@ -284,6 +289,7 @@ class ExecutionService {
       throw new Error(`Failed to delete execution: ${error.message}`);
     }
 
+    await this.invalidateAnalyticsCache(userId); // ADD THIS LINE
     console.log(`✓ Deleted execution ${executionId}`);
   }
 
@@ -344,6 +350,10 @@ class ExecutionService {
     if (error && error.code !== "23505") {
       console.error(`Failed to update execution count: ${error.message}`);
     }
+  }
+
+  private async invalidateAnalyticsCache(userId: string): Promise<void> {
+    await cacheService.del(`*:${userId}*`);
   }
 }
 

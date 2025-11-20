@@ -1,24 +1,58 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, Suspense, lazy } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { ExecutionVolumeChart } from "@/components/dashboard/ExecutionVolumeChart";
-import { SuccessRateChart } from "@/components/dashboard/SuccessRateChart";
-import { TopWorkflowsChart } from "@/components/dashboard/TopWorkflowsChart";
-import { UsageQuotaCard } from "@/components/dashboard/UsageQuotaCard";
-import { ErrorAnalysisTable } from "@/components/dashboard/ErrorAnalysisTable";
-import { ExecutionDurationChart } from "@/components/dashboard/ExecutionDurationChart";
 import {
   analyticsApi,
+  archivalApi,
   UserStats,
   ExecutionTrend,
   TopWorkflow,
   UsageQuota,
   ErrorAnalysis,
   SlowestWorkflow,
+  ResourceUsage,
+  ArchivalStats as ArchivalStatsType,
 } from "@/lib/api";
 import { Download, Calendar } from "lucide-react";
+
+const ExecutionVolumeChart = lazy(
+  () => import("@/components/dashboard/ExecutionVolumeChart")
+);
+const SuccessRateChart = lazy(
+  () => import("@/components/dashboard/SuccessRateChart")
+);
+const TopWorkflowsChart = lazy(
+  () => import("@/components/dashboard/TopWorkflowsChart")
+);
+const ExecutionDurationChart = lazy(
+  () => import("@/components/dashboard/ExecutionDurationChart")
+);
+const UsageQuotaCard = lazy(
+  () => import("@/components/dashboard/UsageQuotaCard")
+);
+const ErrorAnalysisTable = lazy(
+  () => import("@/components/dashboard/ErrorAnalysisTable")
+);
+const ArchivalStats = lazy(
+  () => import("@/components/dashboard/ArchivalStats")
+);
+const ArchivalControls = lazy(
+  () => import("@/components/dashboard/ArchivalControls")
+);
+const ResourceUsageCard = lazy(
+  () => import("@/components/dashboard/ResourceUsageCard")
+);
+
+const ChartSkeleton = () => (
+  <Card>
+    <div className="p-6">
+      <div className="h-6 w-48 bg-gray-200 animate-pulse rounded mb-4" />
+      <div className="h-80 bg-gray-200 animate-pulse rounded" />
+    </div>
+  </Card>
+);
 
 export default function AnalyticsPage() {
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -27,6 +61,10 @@ export default function AnalyticsPage() {
   const [usage, setUsage] = useState<UsageQuota | null>(null);
   const [errors, setErrors] = useState<ErrorAnalysis[]>([]);
   const [slowest, setSlowest] = useState<SlowestWorkflow[]>([]);
+  const [archivalStats, setArchivalStats] = useState<ArchivalStatsType | null>(
+    null
+  );
+  const [resources, setResources] = useState<ResourceUsage | null>(null);
   const [timeRange, setTimeRange] = useState(7);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +80,8 @@ export default function AnalyticsPage() {
         usageData,
         errorsData,
         slowestData,
+        archivalStatsData,
+        resourcesData,
       ] = await Promise.all([
         analyticsApi.getStats(),
         analyticsApi.getTrends(days),
@@ -49,6 +89,8 @@ export default function AnalyticsPage() {
         analyticsApi.getUsage(),
         analyticsApi.getErrors(10),
         analyticsApi.getSlowestWorkflows(10),
+        archivalApi.getStats(),
+        analyticsApi.getResources(),
       ]);
 
       setStats(statsData);
@@ -57,6 +99,8 @@ export default function AnalyticsPage() {
       setUsage(usageData);
       setErrors(errorsData);
       setSlowest(slowestData);
+      setArchivalStats(archivalStatsData);
+      setResources(resourcesData);
     } catch (error) {
       console.error("Failed to fetch analytics data:", error);
       setError(
@@ -71,18 +115,32 @@ export default function AnalyticsPage() {
     fetchData(timeRange);
   }, [timeRange]);
 
-  const handleExportJSON = () => {
-    const data = {
+  const exportData = useMemo(
+    () => ({
       stats,
       trends,
       topWorkflows,
       usage,
       errors,
       slowest,
+      archivalStats,
+      resources,
       exportedAt: new Date().toISOString(),
-    };
+    }),
+    [
+      stats,
+      trends,
+      topWorkflows,
+      usage,
+      errors,
+      slowest,
+      archivalStats,
+      resources,
+    ]
+  );
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
+  const handleExportJSON = () => {
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
       type: "application/json",
     });
     const url = window.URL.createObjectURL(blob);
@@ -121,6 +179,10 @@ export default function AnalyticsPage() {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+  };
+
+  const handleArchiveComplete = () => {
+    fetchData(timeRange);
   };
 
   if (error) {
@@ -208,20 +270,49 @@ export default function AnalyticsPage() {
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <ExecutionVolumeChart data={trends} loading={loading} />
-        <SuccessRateChart stats={stats} loading={loading} />
+        <Suspense fallback={<ChartSkeleton />}>
+          <ExecutionVolumeChart data={trends} loading={loading} />
+        </Suspense>
+        <Suspense fallback={<ChartSkeleton />}>
+          <SuccessRateChart stats={stats} loading={loading} />
+        </Suspense>
       </div>
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <TopWorkflowsChart data={topWorkflows} loading={loading} />
-        <ExecutionDurationChart data={slowest} loading={loading} />
+        <Suspense fallback={<ChartSkeleton />}>
+          <TopWorkflowsChart data={topWorkflows} loading={loading} />
+        </Suspense>
+        <Suspense fallback={<ChartSkeleton />}>
+          <ExecutionDurationChart data={slowest} loading={loading} />
+        </Suspense>
       </div>
 
       {/* Charts Row 3 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <UsageQuotaCard quota={usage} loading={loading} />
-        <ErrorAnalysisTable data={errors} loading={loading} />
+        <Suspense fallback={<ChartSkeleton />}>
+          <UsageQuotaCard quota={usage} loading={loading} />
+        </Suspense>
+        <Suspense fallback={<ChartSkeleton />}>
+          <ErrorAnalysisTable data={errors} loading={loading} />
+        </Suspense>
+      </div>
+
+      {/* Archival Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <Suspense fallback={<ChartSkeleton />}>
+          <ArchivalStats stats={archivalStats} loading={loading} />
+        </Suspense>
+        <Suspense fallback={<ChartSkeleton />}>
+          <ArchivalControls onArchiveComplete={handleArchiveComplete} />
+        </Suspense>
+      </div>
+
+      {/* Resource Monitoring */}
+      <div className="mb-8">
+        <Suspense fallback={<ChartSkeleton />}>
+          <ResourceUsageCard resources={resources} loading={loading} />
+        </Suspense>
       </div>
 
       {/* Performance Insights */}

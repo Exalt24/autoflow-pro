@@ -49,7 +49,7 @@ export function ExecutionDetail({
           setExecution((prev) => ({
             ...prev,
             status: "completed",
-            extracted_data: data.data,
+            extracted_data: data.extractedData,
           }));
         },
         onFailed: (error) => {

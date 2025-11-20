@@ -20,22 +20,26 @@ async function checkHealth() {
 
     if (data.status === "healthy") {
       console.log("✅ Service is healthy\n");
-      process.exit(0);
+      return 0;
     } else if (data.status === "degraded") {
       console.log("⚠️  Service is degraded but operational\n");
-      process.exit(0);
+      return 0;
     } else {
       console.log("❌ Service is unhealthy\n");
-      process.exit(1);
+      return 1;
     }
   } catch (error) {
     console.error("\n❌ Health check failed:");
     console.error(error instanceof Error ? error.message : error);
     console.error("\n");
-    process.exit(1);
+    return 1;
   }
 }
 
-checkHealth();
+checkHealth().then((exitCode) => {
+  if (exitCode !== 0) {
+    process.exitCode = exitCode;
+  }
+});
 
 export {};

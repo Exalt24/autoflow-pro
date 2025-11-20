@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import { ExecutionTrend } from "@/lib/api";
 import {
@@ -18,10 +19,24 @@ interface ExecutionVolumeChartProps {
   loading?: boolean;
 }
 
-export function ExecutionVolumeChart({
+const ExecutionVolumeChart = memo(function ExecutionVolumeChart({
   data,
   loading = false,
 }: ExecutionVolumeChartProps) {
+  const chartData = useMemo(
+    () =>
+      data.map((item) => ({
+        date: new Date(item.date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
+        Total: item.count,
+        Success: item.successCount,
+        Failed: item.failureCount,
+      })),
+    [data]
+  );
+
   if (loading) {
     return (
       <Card>
@@ -45,16 +60,6 @@ export function ExecutionVolumeChart({
       </Card>
     );
   }
-
-  const chartData = data.map((item) => ({
-    date: new Date(item.date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }),
-    Total: item.count,
-    Success: item.successCount,
-    Failed: item.failureCount,
-  }));
 
   return (
     <Card>
@@ -92,4 +97,6 @@ export function ExecutionVolumeChart({
       </div>
     </Card>
   );
-}
+});
+
+export default ExecutionVolumeChart;

@@ -327,6 +327,20 @@ export const analyticsApi = {
       `/analytics/errors?${queryParams.toString()}`
     );
   },
+
+  getResources: () => apiRequest<ResourceUsage>("/analytics/resources"),
+
+  getRetentionPolicy: () =>
+    apiRequest<RetentionPolicy>("/analytics/retention-policy"),
+
+  updateRetentionPolicy: (retentionDays: number) =>
+    apiRequest<{ success: boolean; retentionDays: number; message: string }>(
+      "/analytics/retention-policy",
+      {
+        method: "PUT",
+        body: JSON.stringify({ retentionDays }),
+      }
+    ),
 };
 
 // User
@@ -427,4 +441,68 @@ export const scheduledJobsApi = {
       totalRecentExecutions: number;
       isPaused: boolean;
     }>(`/scheduled-jobs/${id}/stats`),
+};
+
+// Archival
+export interface ArchivalStats {
+  totalExecutions: number;
+  archivedExecutions: number;
+  activeExecutions: number;
+  eligibleForArchival: number;
+}
+
+export interface ArchivalResult {
+  total: number;
+  successful: number;
+  failed: number;
+  results: {
+    executionId: string;
+    archived: boolean;
+    r2Key: string | null;
+    error?: string;
+  }[];
+}
+
+export interface ResourceUsage {
+  render: {
+    hoursUsed: number;
+    hoursLimit: number;
+    percentageUsed: number;
+  };
+  redis: {
+    commandsUsed: number;
+    commandsLimit: number;
+    percentageUsed: number;
+    commandsPerMinute: number;
+  };
+  supabase: {
+    bandwidthUsed: number;
+    bandwidthLimit: number;
+    percentageUsed: number;
+  };
+  r2: {
+    storageUsed: number;
+    storageLimit: number;
+    percentageUsed: number;
+  };
+}
+
+export interface RetentionPolicy {
+  retentionDays: number;
+}
+
+export const archivalApi = {
+  getStats: () => apiRequest<ArchivalStats>("/archival/stats"),
+
+  getEligible: () =>
+    apiRequest<{ count: number; executionIds: string[] }>("/archival/eligible"),
+
+  archiveBatch: () =>
+    apiRequest<ArchivalResult>("/archival/archive", { method: "POST" }),
+
+  restore: (id: string) =>
+    apiRequest<{ success: boolean; executionId: string }>(
+      `/archival/restore/${id}`,
+      { method: "POST" }
+    ),
 };

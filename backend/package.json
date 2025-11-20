@@ -36,14 +36,23 @@
     "test:loop": "tsx test-loop.ts",
     "test:download": "tsx test-download.ts",
     "test:advanced": "tsx test-advanced.ts",
-    "test:errors": "tsx test-analytics-errors.ts"
+    "test:errors": "tsx test-analytics-errors.ts",
+    "test:r2": "tsx test-r2.ts",
+    "test:archival": "tsx test-archival.ts",
+    "test:performance": "tsx test-performance.ts",
+    "test:ws-optimization": "tsx test-websocket-optimization.ts",
+    "test:resources": "tsx test-resource-monitoring.ts",
+    "test:retention": "tsx test-retention-policy.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.932.0",
+    "@aws-sdk/s3-request-presigner": "^3.932.0",
     "@fastify/autoload": "^6.0.0",
     "@fastify/cors": "^11.1.0",
+    "@fastify/helmet": "^13.0.2",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/sensible": "^6.0.0",
     "@supabase/supabase-js": "^2.81.1",
@@ -54,12 +63,16 @@
     "fastify-cli": "^7.4.1",
     "fastify-plugin": "^5.0.0",
     "ioredis": "^5.8.2",
+    "pino": "^10.1.0",
+    "pino-pretty": "^13.1.2",
     "playwright": "^1.56.1",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "validator": "^13.15.23"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "@types/validator": "^13.15.10",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }

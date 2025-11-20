@@ -15,10 +15,9 @@ dist/
 build/
 
 # Environment variables
-.env
 .env*
-.env.local
-.env.production
+!.env.example
+!.env.production.example
 
 # Logs
 *.log

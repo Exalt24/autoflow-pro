@@ -1,0 +1,30 @@
+{
+  "name": "autoflow-pro",
+  "version": "1.0.0",
+  "description": "Complete full-stack browser automation platform with visual workflow builder, distributed job queue, real-time monitoring, and multi-tenant architecture.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "smoke-test": "tsx scripts/smoke-test.ts",
+    "health-check": "tsx scripts/health-check.ts",
+    "verify-prod": "tsx scripts/verify-production.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Exalt24/autoflow-pro.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Exalt24/autoflow-pro/issues"
+  },
+  "homepage": "https://github.com/Exalt24/autoflow-pro#readme",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.20.6"
+  }
+}

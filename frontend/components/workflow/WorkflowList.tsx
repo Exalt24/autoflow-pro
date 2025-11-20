@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Workflow, workflowsApi } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { useDebounce } from "@/lib/hooks";
 import {
   Play,
   Copy,
@@ -47,15 +48,17 @@ export function WorkflowList({
   );
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const debouncedSearch = useDebounce(search, 300);
+
   const totalPages = Math.ceil(total / limit);
 
-  const fetchWorkflows = async () => {
+  const fetchWorkflows = useCallback(async () => {
     setLoading(true);
     try {
       const result = await workflowsApi.list({
         page,
         limit,
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
       });
       setWorkflows(result.workflows);
@@ -65,16 +68,18 @@ export function WorkflowList({
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, debouncedSearch, statusFilter]);
 
-  const handleSearch = () => {
+  useEffect(() => {
     setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
+  useEffect(() => {
     fetchWorkflows();
-  };
+  }, [fetchWorkflows]);
 
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value as typeof statusFilter);
-    setPage(1);
   };
 
   const handleExecute = async (workflow: Workflow) => {
@@ -137,7 +142,6 @@ export function WorkflowList({
                 placeholder="Search workflows..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="w-full h-10 pl-10 pr-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -176,8 +180,6 @@ export function WorkflowList({
                   onClick={() => {
                     setSearch("");
                     setStatusFilter("all");
-                    setPage(1);
-                    fetchWorkflows();
                   }}
                 >
                   Clear Filters
@@ -271,10 +273,7 @@ export function WorkflowList({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setPage(page - 1);
-                  fetchWorkflows();
-                }}
+                onClick={() => setPage(page - 1)}
                 disabled={page === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -285,10 +284,7 @@ export function WorkflowList({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setPage(page + 1);
-                  fetchWorkflows();
-                }}
+                onClick={() => setPage(page + 1)}
                 disabled={page === totalPages}
               >
                 <ChevronRight className="h-4 w-4" />

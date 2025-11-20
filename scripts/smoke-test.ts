@@ -162,16 +162,16 @@ async function runTests() {
       .forEach((r) => {
         console.log(`  - ${r.name}: ${r.error}`);
       });
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   console.log("✅ All smoke tests passed!\n");
-  process.exit(0);
 }
 
 runTests().catch((error) => {
   console.error("Test runner failed:", error);
-  process.exit(1);
+  process.exitCode = 1;
 });
 
 export {};

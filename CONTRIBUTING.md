@@ -6,14 +6,14 @@
 2. **Clone your fork**:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/autoflow-pro.git
+git clone https://github.com/Exalt24/autoflow-pro.git
 cd autoflow-pro
 ```
 
 3. **Add upstream remote**:
 
 ```bash
-git remote add upstream https://github.com/ORIGINAL_OWNER/autoflow-pro.git
+git remote add upstream https://github.com/Exalt24/autoflow-pro.git
 ```
 
 4. **Create a branch**:

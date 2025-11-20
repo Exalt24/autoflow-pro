@@ -54,7 +54,7 @@ Complete full-stack browser automation platform with visual workflow builder, di
 1. **Clone repository**:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/autoflow-pro.git
+git clone https://github.com/Exalt24/autoflow-pro.git
 cd autoflow-pro
 ```
 

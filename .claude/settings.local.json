@@ -5,7 +5,12 @@
       "Bash(npm run lint:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nchore: update GitHub repository URLs and prepare for deployment\n\n- Replace placeholder GitHub URLs with actual repo (Exalt24/autoflow-pro)\n- Update README.md, CONTRIBUTING.md, DEPLOYMENT.md\n- Modify health-check, smoke-test, and verify-production scripts\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm install)",
+      "Bash(npm start)",
+      "Bash(timeout 3 cat:*)",
+      "WebFetch(domain:autoflow-pro-api.onrender.com)"
     ],
     "deny": [],
     "ask": []

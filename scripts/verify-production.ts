@@ -225,7 +225,8 @@ async function runVerification() {
 
   if (failed > 0) {
     console.log("❌ Production verification failed\n");
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   if (warned > 0) {
@@ -233,13 +234,11 @@ async function runVerification() {
   } else {
     console.log("✅ Production verification passed!\n");
   }
-
-  process.exit(0);
 }
 
 runVerification().catch((error) => {
   console.error("Verification failed:", error);
-  process.exit(1);
+  process.exitCode = 1;
 });
 
 export {};

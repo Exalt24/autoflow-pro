@@ -117,7 +117,7 @@ git commit -m "Initial commit - production ready"
 
 # Create repo on GitHub (via web interface)
 # Then add remote and push:
-git remote add origin https://github.com/YOUR_USERNAME/autoflow-pro.git
+git remote add origin https://github.com/Exalt24/autoflow-pro.git
 git branch -M main
 git push -u origin main
 ```

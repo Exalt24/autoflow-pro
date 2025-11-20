@@ -165,7 +165,7 @@ Click **"Advanced"** → **"Add Environment Variable"**:
 1. Click **"Create Web Service"**
 2. Wait 5-10 minutes for build and deploy
 3. Once deployed, copy the URL (e.g., `https://autoflow-pro-api.onrender.com`)
-4. Test health endpoint: Visit `https://your-url.onrender.com/health`
+4. Test health endpoint: Visit `https://autoflow-pro-api.onrender.com/health`
 5. Should see: `{"status":"healthy",...}`
 
 ### 5.4 Update CORS_ORIGIN
@@ -194,12 +194,12 @@ Click **"Advanced"** → **"Add Environment Variable"**:
 
 Click **"Environment Variables"**:
 
-| Key                             | Value                                   |
-| ------------------------------- | --------------------------------------- |
-| `NEXT_PUBLIC_API_URL`           | `https://your-backend.onrender.com/api` |
-| `NEXT_PUBLIC_WS_URL`            | `https://your-backend.onrender.com`     |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase URL                       |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon key                           |
+| Key                             | Value                                       |
+| ------------------------------- | ------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`           | `https://autoflow-pro-api.onrender.com/api` |
+| `NEXT_PUBLIC_WS_URL`            | `https://autoflow-pro-api.onrender.com`     |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase URL                           |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon key                               |
 
 ### 6.3 Deploy
 
@@ -212,7 +212,7 @@ Click **"Environment Variables"**:
 1. Go back to Render dashboard
 2. Navigate to your backend service → **Environment**
 3. Edit `CORS_ORIGIN` variable
-4. Set to: `https://your-frontend.vercel.app`
+4. Set to: `https://autoflow-pro.vercel.app`
 5. Service will auto-redeploy
 
 ---
@@ -222,10 +222,10 @@ Click **"Environment Variables"**:
 ### 7.1 Update Site URL
 
 1. Go to Supabase project → **Authentication** → **URL Configuration**
-2. Set **Site URL**: `https://your-frontend.vercel.app`
+2. Set **Site URL**: `https://autoflow-pro.vercel.app`
 3. Add **Redirect URLs**:
-   - `https://your-frontend.vercel.app/auth/callback`
-   - `https://your-frontend.vercel.app/dashboard`
+   - `https://autoflow-pro.vercel.app/auth/callback`
+   - `https://autoflow-pro.vercel.app/dashboard`
 4. Click **"Save"**
 
 ### 7.2 Configure Email Templates (Optional)
@@ -246,7 +246,7 @@ Click **"Environment Variables"**:
 4. Configure:
    - **Monitor Type**: HTTP(s)
    - **Friendly Name**: AutoFlow Pro API
-   - **URL**: `https://your-backend.onrender.com/health`
+   - **URL**: `https://autoflow-pro-api.onrender.com/health`
    - **Monitoring Interval**: 5 minutes
 5. Click **"Create Monitor"**
 
@@ -307,7 +307,7 @@ Click **"Environment Variables"**:
 
 ### 10.1 Backend Health
 
-Visit: `https://your-backend.onrender.com/health`
+Visit: `https://autoflow-pro-api.onrender.com/health`
 
 Expected:
 
@@ -322,7 +322,7 @@ Expected:
 
 ### 10.2 Frontend Access
 
-1. Visit: `https://your-frontend.vercel.app`
+1. Visit: `https://autoflow-pro.vercel.app`
 2. Should see landing page
 3. Click **"Sign Up"**
 4. Create test account

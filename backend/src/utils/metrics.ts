@@ -85,8 +85,8 @@ export async function getHealthStatus(): Promise<HealthStatus> {
   const redisStatus = metrics.redis.connected ? "pass" : "fail";
 
   let memoryStatus: "pass" | "warn" | "fail" = "pass";
-  if (metrics.memory.percentage > 90) memoryStatus = "fail";
-  else if (metrics.memory.percentage > 75) memoryStatus = "warn";
+  if (metrics.memory.percentage > 95) memoryStatus = "fail";
+  else if (metrics.memory.percentage > 85) memoryStatus = "warn";
 
   const allPass =
     dbStatus === "pass" &&
@@ -96,8 +96,7 @@ export async function getHealthStatus(): Promise<HealthStatus> {
   const anyFail =
     dbStatus === "fail" ||
     queueStatus === "fail" ||
-    redisStatus === "fail" ||
-    memoryStatus === "fail";
+    redisStatus === "fail";
 
   let status: "healthy" | "degraded" | "unhealthy" = "healthy";
   if (anyFail) status = "unhealthy";

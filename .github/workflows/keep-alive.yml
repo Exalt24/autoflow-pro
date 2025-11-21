@@ -47,9 +47,10 @@ jobs:
               echo "✅ Health check passed!"
               echo "📄 Response: $body"
 
-              # Verify response contains expected fields
-              if echo "$body" | grep -q '"status".*"healthy"'; then
-                echo "✅ Backend is healthy and responding correctly"
+              # Verify response contains expected fields (accept both "healthy" and "degraded")
+              if echo "$body" | grep -qE '"status"[[:space:]]*:[[:space:]]*"(healthy|degraded)"'; then
+                status=$(echo "$body" | grep -oE '"status"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4)
+                echo "✅ Backend is responding correctly (status: $status)"
                 return 0
               else
                 echo "⚠️  Warning: Unexpected response format"

@@ -236,28 +236,33 @@ Click **"Environment Variables"**:
 
 ---
 
-## Step 8: Setup UptimeRobot Monitoring
+## Step 8: Setup GitHub Actions Monitoring
 
-### 8.1 Create Monitor
+### 8.1 Enable GitHub Actions
 
-1. Go to https://uptimerobot.com
-2. Sign up / Log in
-3. Click **"Add New Monitor"**
-4. Configure:
-   - **Monitor Type**: HTTP(s)
-   - **Friendly Name**: AutoFlow Pro API
-   - **URL**: `https://autoflow-pro-api.onrender.com/health`
-   - **Monitoring Interval**: 5 minutes
-5. Click **"Create Monitor"**
+The repository includes a keep-alive workflow (`.github/workflows/keep-alive.yml`) that:
+- Pings backend every 5 minutes
+- Retries 4 times with 20-second delays
+- Handles cold starts (90-second timeout)
+- Prevents Render spin-down
 
-### 8.2 Add Alert Contacts
+**The workflow is automatically enabled when you push to GitHub.** No additional setup needed!
 
-1. Go to **"My Settings"** → **"Alert Contacts"**
-2. Add your email
-3. Verify email
-4. Enable notifications for new monitor
+### 8.2 Verify Workflow
 
-**Why 5 minutes?** Prevents Render free tier from spinning down (inactive after 15 minutes).
+1. Go to GitHub repository → **Actions** tab
+2. You should see **"Keep Backend Alive"** workflow
+3. Wait 5 minutes for first run
+4. Click on workflow run to see logs
+5. Should show: ✅ BACKEND IS ALIVE
+
+### 8.3 Enable Email Notifications (Optional)
+
+1. Go to GitHub → **Settings** → **Notifications**
+2. Enable **"Actions"** under Email notifications
+3. You'll get emails when workflow fails
+
+**Why GitHub Actions?** More reliable than UptimeRobot - handles cold starts with retry logic and longer timeouts.
 
 ---
 
@@ -385,8 +390,8 @@ Expected:
 - [ ] WebSocket real-time updates work
 - [ ] Scheduled jobs create and run
 - [ ] Analytics display correctly
-- [ ] UptimeRobot monitor shows "Up"
-- [ ] GitHub Actions workflows pass (if configured)
+- [ ] GitHub Actions keep-alive workflow is running
+- [ ] Keep-alive workflow shows successful health checks
 
 ---
 
@@ -437,14 +442,14 @@ Expected:
 
 ## Cost Breakdown (Free Tier)
 
-| Service       | Free Tier                               | Usage            |
-| ------------- | --------------------------------------- | ---------------- |
-| Vercel        | 100GB bandwidth, unlimited sites        | Frontend hosting |
-| Render        | 750 hours/month, spins down after 15min | Backend API      |
-| Supabase      | 500MB DB, 2GB bandwidth, 50K MAU        | Database & Auth  |
-| Upstash       | 10K commands/day                        | Redis queue      |
-| Cloudflare R2 | 10GB storage, 1M reads                  | Archival         |
-| UptimeRobot   | 50 monitors, 5min interval              | Monitoring       |
+| Service        | Free Tier                               | Usage            |
+| -------------- | --------------------------------------- | ---------------- |
+| Vercel         | 100GB bandwidth, unlimited sites        | Frontend hosting |
+| Render         | 750 hours/month, spins down after 15min | Backend API      |
+| Supabase       | 500MB DB, 2GB bandwidth, 50K MAU        | Database & Auth  |
+| Upstash        | 10K commands/day                        | Redis queue      |
+| Cloudflare R2  | 10GB storage, 1M reads                  | Archival         |
+| GitHub Actions | 2000 minutes/month                      | Keep-alive       |
 
 **Total Monthly Cost**: $0
 

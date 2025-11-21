@@ -112,7 +112,7 @@ See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for complete deployment guide.
 - Database: Supabase (free tier)
 - Queue: Upstash Redis (free tier)
 - Storage: Cloudflare R2 (free tier)
-- Monitoring: UptimeRobot (free tier)
+- Monitoring: GitHub Actions (free tier)
 
 ## Documentation
 
@@ -247,7 +247,7 @@ npm run build            # Production build
 - Health check endpoints
 - System metrics
 - Resource tracking
-- UptimeRobot monitoring
+- GitHub Actions keep-alive (5-minute intervals)
 - Error logging with Pino
 
 ## License

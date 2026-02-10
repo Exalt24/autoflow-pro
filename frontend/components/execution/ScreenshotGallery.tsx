@@ -3,6 +3,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
+import { Toast } from "@/components/ui/Toast";
 import { Image as ImageIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -18,6 +19,7 @@ interface ScreenshotGalleryProps {
 
 export function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
   const [selectedImage, setSelectedImage] = useState<Screenshot | null>(null);
+  const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
 
   const handleDownload = async (screenshot: Screenshot) => {
     try {
@@ -33,7 +35,7 @@ export function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
       document.body.removeChild(a);
     } catch (error) {
       console.error("Failed to download screenshot:", error);
-      alert("Failed to download screenshot");
+      setToast({message: "Failed to download screenshot", type: "error"});
     }
   };
 
@@ -50,6 +52,7 @@ export function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
 
   return (
     <>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <Card>
         <div className="p-4 border-b">
           <h3 className="font-medium">Screenshots ({screenshots.length})</h3>

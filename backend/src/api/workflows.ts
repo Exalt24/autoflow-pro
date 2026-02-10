@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import validator from "validator";
 import { authenticate } from "../middleware/authenticate.js";
 import { workflowService } from "../services/WorkflowService.js";
 import { executionService } from "../services/ExecutionService.js";
@@ -19,8 +20,8 @@ export async function workflowRoutes(fastify: FastifyInstance) {
 
         const workflows = await workflowService.listWorkflows({
           userId: request.user!.id,
-          page: page ? parseInt(page) : 1,
-          limit: limit ? parseInt(limit) : 10,
+          page: page ? (parseInt(page) || 1) : 1,
+          limit: limit ? (parseInt(limit) || 10) : 10,
           search,
           status: status as "draft" | "active" | "archived",
         });
@@ -40,6 +41,9 @@ export async function workflowRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         const workflow = await workflowService.getWorkflowById(
           id,
           request.user!.id
@@ -100,6 +104,9 @@ export async function workflowRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         const { name, description, definition, status } = request.body as {
           name?: string;
           description?: string;
@@ -132,6 +139,9 @@ export async function workflowRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         await workflowService.deleteWorkflow(id, request.user!.id);
 
         return reply.send({ success: true });
@@ -149,6 +159,9 @@ export async function workflowRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         const workflow = await workflowService.duplicateWorkflow(
           id,
           request.user!.id
@@ -174,6 +187,9 @@ export async function workflowRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
 
         const workflow = await workflowService.getWorkflowById(
           id,

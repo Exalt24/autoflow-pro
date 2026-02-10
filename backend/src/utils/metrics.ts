@@ -1,5 +1,6 @@
 import { queueService } from "../services/QueueService.js";
 import { supabase } from "../config/supabase.js";
+import { redisClient } from "../config/redis.js";
 
 export interface SystemMetrics {
   uptime: number;
@@ -58,7 +59,7 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
       responseTime: dbResponseTime,
     },
     redis: {
-      connected: true,
+      connected: redisClient?.status === "ready",
       commandsPerMinute: redisStats.commandsPerMinute,
     },
   };

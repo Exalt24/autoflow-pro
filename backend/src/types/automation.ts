@@ -26,9 +26,9 @@ export interface StepResult {
 }
 
 export interface BrowserResources {
-  browser: import("playwright").Browser | null;
-  context: import("playwright").BrowserContext | null;
-  page: import("playwright").Page | null;
+  browser: import("playwright-core").Browser | null;
+  context: import("playwright-core").BrowserContext | null;
+  page: import("playwright-core").Page | null;
 }
 
 export interface EngineConfig {

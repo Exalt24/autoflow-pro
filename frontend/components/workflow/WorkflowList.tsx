@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { Workflow, workflowsApi } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { Toast } from "@/components/ui/Toast";
 import { useDebounce } from "@/lib/hooks";
 import {
   Play,
@@ -26,7 +27,7 @@ interface WorkflowListProps {
   initialLimit: number;
 }
 
-export function WorkflowList({
+export const WorkflowList = memo(function WorkflowList({
   initialWorkflows,
   initialTotal,
   initialPage,
@@ -47,6 +48,7 @@ export function WorkflowList({
     null
   );
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -78,43 +80,43 @@ export function WorkflowList({
     fetchWorkflows();
   }, [fetchWorkflows]);
 
-  const handleStatusFilter = (value: string) => {
+  const handleStatusFilter = useCallback((value: string) => {
     setStatusFilter(value as typeof statusFilter);
-  };
+  }, []);
 
-  const handleExecute = async (workflow: Workflow) => {
+  const handleExecute = useCallback(async (workflow: Workflow) => {
     setActionLoading(workflow.id);
     try {
       const result = await workflowsApi.execute(workflow.id);
-      alert(`Workflow execution started! Execution ID: ${result.executionId}`);
+      setToast({message: `Workflow execution started! Execution ID: ${result.executionId}`, type: "success"});
       router.refresh();
     } catch (error) {
       console.error("Failed to execute workflow:", error);
-      alert("Failed to start workflow execution");
+      setToast({message: "Failed to start workflow execution", type: "error"});
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [router]);
 
-  const handleDuplicate = async (workflow: Workflow) => {
+  const handleDuplicate = useCallback(async (workflow: Workflow) => {
     setActionLoading(workflow.id);
     try {
       await workflowsApi.duplicate(workflow.id);
       fetchWorkflows();
     } catch (error) {
       console.error("Failed to duplicate workflow:", error);
-      alert("Failed to duplicate workflow");
+      setToast({message: "Failed to duplicate workflow", type: "error"});
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [fetchWorkflows]);
 
-  const confirmDelete = (workflow: Workflow) => {
+  const confirmDelete = useCallback((workflow: Workflow) => {
     setWorkflowToDelete(workflow);
     setDeleteModalOpen(true);
-  };
+  }, []);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!workflowToDelete) return;
 
     setActionLoading(workflowToDelete.id);
@@ -125,14 +127,15 @@ export function WorkflowList({
       fetchWorkflows();
     } catch (error) {
       console.error("Failed to delete workflow:", error);
-      alert("Failed to delete workflow");
+      setToast({message: "Failed to delete workflow", type: "error"});
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [workflowToDelete, fetchWorkflows]);
 
   return (
     <>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="flex-1">
@@ -327,4 +330,4 @@ export function WorkflowList({
       </Modal>
     </>
   );
-}
+});

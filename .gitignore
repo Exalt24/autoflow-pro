@@ -52,3 +52,8 @@ next-env.d.ts
 *.swp
 *.swo
 *~
+
+# Temporary files
+CRM_Platform_Meeting_Script.md
+Listing.txt
+.claude

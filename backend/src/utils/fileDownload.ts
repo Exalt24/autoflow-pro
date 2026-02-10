@@ -1,4 +1,4 @@
-import type { Page, Download } from "playwright";
+import type { Page, Download } from "playwright-core";
 import { uploadFile, getUserFilePath } from "../config/storage.js";
 
 export interface DownloadResult {

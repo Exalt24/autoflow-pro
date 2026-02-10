@@ -8,6 +8,7 @@ interface Environment {
   SUPABASE_ANON_KEY: string;
   SUPABASE_SERVICE_KEY: string;
   UPSTASH_REDIS_URL?: string;
+  BROWSER_WS_URL?: string;
   CLOUDFLARE_R2_ACCOUNT_ID?: string;
   CLOUDFLARE_R2_ACCESS_KEY_ID?: string;
   CLOUDFLARE_R2_SECRET_ACCESS_KEY?: string;
@@ -20,6 +21,7 @@ function validateEnvironment(): Environment {
     "SUPABASE_URL",
     "SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_KEY",
+    "UPSTASH_REDIS_URL",
   ];
 
   for (const key of required) {
@@ -53,12 +55,13 @@ function validateEnvironment(): Environment {
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY!,
     SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY!,
     UPSTASH_REDIS_URL: process.env.UPSTASH_REDIS_URL,
+    BROWSER_WS_URL: process.env.BROWSER_WS_URL,
     CLOUDFLARE_R2_ACCOUNT_ID: process.env.CLOUDFLARE_R2_ACCOUNT_ID,
     CLOUDFLARE_R2_ACCESS_KEY_ID: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
     CLOUDFLARE_R2_SECRET_ACCESS_KEY:
       process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
     CLOUDFLARE_R2_BUCKET_NAME: process.env.CLOUDFLARE_R2_BUCKET_NAME,
-    CORS_ORIGIN: process.env.CORS_ORIGIN || "*",
+    CORS_ORIGIN: process.env.CORS_ORIGIN || "https://autoflow-pro.vercel.app",
   };
 }
 

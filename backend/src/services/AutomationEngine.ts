@@ -3,7 +3,7 @@ import {
   type Browser,
   type BrowserContext,
   type Page,
-} from "playwright";
+} from "playwright-core";
 import type {
   ExecutionContext,
   StepResult,
@@ -1252,6 +1252,13 @@ export class AutomationEngine {
   }
 
   private async launchBrowser(): Promise<Browser> {
+    const remoteWsUrl = process.env.BROWSER_WS_URL;
+
+    if (remoteWsUrl) {
+      const browser = await chromium.connectOverCDP(remoteWsUrl);
+      return browser;
+    }
+
     const browser = await chromium.launch({
       headless: this.config.headless,
       args: [

@@ -9,6 +9,7 @@ import {
   type ScheduledJob,
   type Execution,
 } from "@/lib/api";
+import { Toast } from "@/components/ui/Toast";
 import { NextRunsPreview } from "@/components/scheduled-jobs/NextRunsPreview";
 import { EditScheduledJobModal } from "@/components/scheduled-jobs/EditScheduledJobModal";
 import { FailureStats } from "@/components/scheduled-jobs/FailureStats";
@@ -24,6 +25,7 @@ export default function ScheduledJobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
 
   const fetchJobDetails = useCallback(async () => {
     setLoading(true);
@@ -58,11 +60,12 @@ export default function ScheduledJobDetailPage() {
       await fetchJobDetails();
       router.refresh();
     } catch (err) {
-      alert(
-        `Failed to update job: ${
+      setToast({
+        message: `Failed to update job: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
-      );
+        }`,
+        type: "error",
+      });
     } finally {
       setActionLoading(false);
     }
@@ -94,6 +97,7 @@ export default function ScheduledJobDetailPage() {
 
   return (
     <div className="p-8">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <button
         onClick={() => router.back()}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"

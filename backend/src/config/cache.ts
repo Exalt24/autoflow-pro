@@ -33,14 +33,11 @@ export class CacheService {
     }
   }
 
-  async del(pattern: string): Promise<void> {
+  async del(key: string): Promise<void> {
     try {
-      const keys = await redisClient.keys(pattern);
-      if (keys.length > 0) {
-        await redisClient.del(...keys);
-      }
+      await redisClient.del(key);
     } catch (error) {
-      console.error(`Cache delete error for pattern ${pattern}:`, error);
+      console.error(`Cache delete error for key ${key}:`, error);
     }
   }
 

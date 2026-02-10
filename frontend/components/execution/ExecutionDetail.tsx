@@ -18,12 +18,19 @@ interface ExecutionDetailProps {
   execution: Execution;
 }
 
+interface Screenshot {
+  url: string;
+  stepId: string;
+  timestamp: string;
+}
+
 export function ExecutionDetail({
   execution: initialExecution,
 }: ExecutionDetailProps) {
   const router = useRouter();
   const [execution, setExecution] = useState(initialExecution);
   const [logs, setLogs] = useState<LogEntry[]>(initialExecution.logs || []);
+  const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [workflowName, setWorkflowName] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
@@ -51,6 +58,19 @@ export function ExecutionDetail({
     };
     fetchLogs();
 
+    // Fetch screenshots from storage
+    const fetchScreenshots = async () => {
+      try {
+        const result = await executionsApi.getScreenshots(execution.id);
+        setScreenshots(result.screenshots);
+      } catch (error) {
+        console.error("Failed to fetch screenshots:", error);
+      }
+    };
+    if (execution.status === "completed" || execution.status === "failed") {
+      fetchScreenshots();
+    }
+
     // Subscribe to real-time updates if execution is running
     if (execution.status === "running" || execution.status === "queued") {
       const cleanup = subscribeToExecution(execution.id, {
@@ -69,6 +89,13 @@ export function ExecutionDetail({
             status: "completed",
             extracted_data: data.extractedData,
           }));
+          // Fetch screenshots now that execution is complete
+          executionsApi
+            .getScreenshots(execution.id)
+            .then((result) => setScreenshots(result.screenshots))
+            .catch((err) =>
+              console.error("Failed to fetch screenshots:", err)
+            );
         },
         onFailed: (error) => {
           setExecution((prev) => ({
@@ -98,9 +125,6 @@ export function ExecutionDetail({
       setLoading(false);
     }
   };
-
-  // Use actual screenshots from execution data; show empty state if none
-  const screenshots = (execution as any).screenshots || [];
 
   return (
     <div className="space-y-6">

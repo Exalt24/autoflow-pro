@@ -326,7 +326,7 @@ export class AutomationEngine {
       });
       await page
         .waitForLoadState("networkidle", { timeout: 5000 })
-        .catch(() => {});
+        .catch(() => { console.log("Network idle timeout - continuing"); });
       return { success: true, data: { url: page.url() } };
     } catch (error: any) {
       return { success: false, error: `Navigation failed: ${error.message}` };
@@ -382,6 +382,7 @@ export class AutomationEngine {
     const selector = step.config.selector as string;
     const attribute = step.config.attribute as string;
     const multiple = step.config.multiple as boolean;
+    const fieldName = step.config.fieldName as string;
 
     if (!selector) {
       return { success: false, error: "Selector is required for extract step" };
@@ -402,7 +403,7 @@ export class AutomationEngine {
           }
         }
 
-        return { success: true, data: results };
+        return { success: true, data: fieldName ? { [fieldName]: results } : results };
       } else {
         await page.waitForSelector(selector, {
           state: "attached",
@@ -411,10 +412,10 @@ export class AutomationEngine {
 
         if (attribute) {
           const value = await page.getAttribute(selector, attribute);
-          return { success: true, data: value };
+          return { success: true, data: fieldName ? { [fieldName]: value } : value };
         } else {
           const text = await page.textContent(selector);
-          return { success: true, data: text?.trim() };
+          return { success: true, data: fieldName ? { [fieldName]: text?.trim() } : text?.trim() };
         }
       }
     } catch (error: any) {
@@ -633,7 +634,7 @@ export class AutomationEngine {
           }
           try {
             const element = page.locator(selector).first();
-            result = await element.isVisible({ timeout: 1000 });
+            result = await element.isVisible({ timeout: this.config.timeout });
           } catch {
             result = false;
           }
@@ -869,6 +870,7 @@ export class AutomationEngine {
       const selector = step.config.selector as string;
       const url = step.config.url as string;
       const waitForDownload = step.config.waitForDownload !== false;
+      const triggerMethod = (step.config.triggerMethod as string) || "click";
 
       if (!selector && !url) {
         return {
@@ -882,7 +884,9 @@ export class AutomationEngine {
         timeout: this.config.timeout,
       });
 
-      if (selector) {
+      if (triggerMethod === "navigate" && url) {
+        await page.goto(url, { waitUntil: "domcontentloaded" });
+      } else if (selector) {
         await page.click(selector);
       } else if (url) {
         await page.goto(url, { waitUntil: "domcontentloaded" });
@@ -1016,12 +1020,21 @@ export class AutomationEngine {
         return { success: false, error: "Cookie name and value are required" };
       }
 
+      let cookieDomain = domain;
+      if (!cookieDomain) {
+        try {
+          cookieDomain = new URL(page.url()).hostname;
+        } catch {
+          cookieDomain = "";
+        }
+      }
+
       const context = page.context();
       await context.addCookies([
         {
           name,
           value,
-          domain: domain || new URL(page.url()).hostname,
+          domain: cookieDomain,
           path,
         },
       ]);
@@ -1131,7 +1144,7 @@ export class AutomationEngine {
         return localStorage.getItem(key);
       }, key);
 
-      if (variableName && value) {
+      if (variableName) {
         context.variables[variableName] = value;
       }
 
@@ -1256,6 +1269,7 @@ export class AutomationEngine {
 
     if (remoteWsUrl) {
       const browser = await chromium.connectOverCDP(remoteWsUrl);
+      this.activeBrowsers.add(browser);
       return browser;
     }
 

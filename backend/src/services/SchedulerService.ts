@@ -242,19 +242,20 @@ export class SchedulerService {
   async getJobFailureStats(jobId: string) {
     const tracker = this.failureTracker[jobId];
 
+    const jobResult = await supabase
+      .from("scheduled_jobs")
+      .select("workflow_id")
+      .eq("id", jobId)
+      .single();
+
+    if (!jobResult.data) {
+      throw new Error("Scheduled job not found");
+    }
+
     const { data: recentExecutions } = await supabase
       .from("executions")
       .select("status")
-      .eq(
-        "workflow_id",
-        (
-          await supabase
-            .from("scheduled_jobs")
-            .select("workflow_id")
-            .eq("id", jobId)
-            .single()
-        ).data?.workflow_id || ""
-      )
+      .eq("workflow_id", jobResult.data.workflow_id)
       .order("started_at", { ascending: false })
       .limit(20);
 

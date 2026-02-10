@@ -243,6 +243,7 @@ class ExecutionService {
     total: number;
     page: number;
     limit: number;
+    totalPages: number;
   }> {
     const execution = await this.getExecutionById(executionId, userId);
     if (!execution) {
@@ -269,6 +270,7 @@ class ExecutionService {
       total: count || 0,
       page,
       limit,
+      totalPages: Math.ceil((count || 0) / limit),
     };
   }
 

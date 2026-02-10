@@ -30,9 +30,9 @@ const ExecutionVolumeChart = memo(function ExecutionVolumeChart({
           month: "short",
           day: "numeric",
         }),
-        Total: item.count,
-        Success: item.successCount,
-        Failed: item.failureCount,
+        Total: item.total,
+        Success: item.successful,
+        Failed: item.failed,
       })),
     [data]
   );

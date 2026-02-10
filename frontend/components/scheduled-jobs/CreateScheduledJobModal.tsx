@@ -29,6 +29,13 @@ export function CreateScheduledJobModal({
   useEffect(() => {
     if (open) {
       fetchWorkflows();
+    } else {
+      setError("");
+      setWorkflowId("");
+      setCronSchedule("0 9 * * *");
+      setIsActive(true);
+      setShowCustomCron(false);
+      setLoading(false);
     }
   }, [open]);
 

@@ -75,6 +75,18 @@ export const reactFlowToWorkflow = (
     currentNode = nextEdge ? nodeMap.get(nextEdge.target) : undefined;
   }
 
+  // Include any disconnected nodes so they aren't lost on save
+  for (const node of nodes) {
+    if (!visited.has(node.id)) {
+      orderedSteps.push({
+        id: node.id,
+        type: node.data.type,
+        config: node.data.config,
+        position: node.position,
+      });
+    }
+  }
+
   return { steps: orderedSteps };
 };
 

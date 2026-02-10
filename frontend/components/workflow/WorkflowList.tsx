@@ -77,7 +77,32 @@ export const WorkflowList = memo(function WorkflowList({
   }, [debouncedSearch, statusFilter]);
 
   useEffect(() => {
-    fetchWorkflows();
+    let cancelled = false;
+    const doFetch = async () => {
+      setLoading(true);
+      try {
+        const result = await workflowsApi.list({
+          page,
+          limit,
+          search: debouncedSearch || undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        });
+        if (!cancelled) {
+          setWorkflows(result.workflows);
+          setTotal(result.total);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to fetch workflows:", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+    doFetch();
+    return () => { cancelled = true; };
   }, [fetchWorkflows]);
 
   const handleStatusFilter = useCallback((value: string) => {

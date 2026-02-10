@@ -27,7 +27,7 @@ export async function analyticsRoutes(fastify: FastifyInstance) {
         const { days } = request.query as { days?: string };
         const trends = await analyticsService.getExecutionTrends(
           request.user!.id,
-          days ? parseInt(days) : 30
+          days ? (parseInt(days) || 30) : 30
         );
         return reply.send(trends);
       } catch (error: any) {
@@ -47,7 +47,7 @@ export async function analyticsRoutes(fastify: FastifyInstance) {
         const { limit } = request.query as { limit?: string };
         const workflows = await analyticsService.getTopWorkflows(
           request.user!.id,
-          limit ? parseInt(limit) : 10
+          limit ? (parseInt(limit) || 10) : 10
         );
         return reply.send(workflows);
       } catch (error: any) {
@@ -83,7 +83,7 @@ export async function analyticsRoutes(fastify: FastifyInstance) {
         const { limit } = request.query as { limit?: string };
         const workflows = await analyticsService.getSlowestWorkflows(
           request.user!.id,
-          limit ? parseInt(limit) : 10
+          limit ? (parseInt(limit) || 10) : 10
         );
         return reply.send(workflows);
       } catch (error: any) {
@@ -103,7 +103,7 @@ export async function analyticsRoutes(fastify: FastifyInstance) {
         const { limit } = request.query as { limit?: string };
         const workflows = await analyticsService.getFailedWorkflows(
           request.user!.id,
-          limit ? parseInt(limit) : 10
+          limit ? (parseInt(limit) || 10) : 10
         );
         return reply.send(workflows);
       } catch (error: any) {
@@ -123,7 +123,7 @@ export async function analyticsRoutes(fastify: FastifyInstance) {
         const { limit } = request.query as { limit?: string };
         const errors = await analyticsService.getErrorAnalysis(
           request.user!.id,
-          limit ? parseInt(limit) : 10
+          limit ? (parseInt(limit) || 10) : 10
         );
         return reply.send(errors);
       } catch (error: any) {

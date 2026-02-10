@@ -22,6 +22,14 @@ export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
 ): (...args: Parameters<T>) => void {
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   return useCallback(
     (...args: Parameters<T>) => {
       if (timeoutRef.current) {

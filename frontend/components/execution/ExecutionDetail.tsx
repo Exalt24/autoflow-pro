@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Execution, LogEntry, workflowsApi } from "@/lib/api";
+import { Execution, LogEntry, workflowsApi, executionsApi } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -39,6 +39,17 @@ export function ExecutionDetail({
       }
     };
     fetchWorkflow();
+
+    // Fetch logs from dedicated endpoint (logs are stored in execution_logs table, not in execution record)
+    const fetchLogs = async () => {
+      try {
+        const result = await executionsApi.getLogs(execution.id, { limit: 1000 });
+        setLogs(result.logs);
+      } catch (error) {
+        console.error("Failed to fetch logs:", error);
+      }
+    };
+    fetchLogs();
 
     // Subscribe to real-time updates if execution is running
     if (execution.status === "running" || execution.status === "queued") {

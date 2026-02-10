@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { type EdgeProps, getBezierPath, BaseEdge } from "@xyflow/react";
+import { type EdgeProps, getBezierPath, BaseEdge, useReactFlow } from "@xyflow/react";
 
 export function EdgeDeleteButton({
   id,
@@ -22,9 +22,10 @@ export function EdgeDeleteButton({
     targetPosition,
   });
 
+  const { deleteElements } = useReactFlow();
+
   const onEdgeClick = () => {
-    const win = window as Window & { _deleteEdge?: (edgeId: string) => void };
-    win._deleteEdge?.(id);
+    deleteElements({ edges: [{ id }] });
   };
 
   return (

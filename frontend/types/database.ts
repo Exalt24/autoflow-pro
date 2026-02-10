@@ -217,17 +217,19 @@ export interface StepConfig {
 }
 
 export interface LogEntry {
+  id?: string;
   timestamp: string;
   level: "info" | "warn" | "error";
   message: string;
   step_id?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface Workflow {
   id: string;
   user_id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   definition: WorkflowDefinition;
   status: "draft" | "active" | "archived";
   created_at: string;
@@ -244,4 +246,7 @@ export interface Execution {
   duration?: number;
   logs?: LogEntry[];
   extracted_data?: Record<string, unknown>;
+  error_message?: string;
+  archived?: boolean;
+  r2_key?: string | null;
 }

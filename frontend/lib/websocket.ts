@@ -27,7 +27,7 @@ export interface ExecutionLogsBatch {
   executionId: string;
   logs: Array<{
     timestamp: string;
-    level: string;
+    level: "info" | "warn" | "error";
     message: string;
     step_id?: string;
   }>;

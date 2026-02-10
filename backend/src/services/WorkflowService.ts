@@ -92,7 +92,7 @@ class WorkflowService {
 
     let query = supabase
       .from("workflows")
-      .select("id, user_id, name, description, status, created_at, updated_at", { count: "exact" })
+      .select("id, user_id, name, description, definition, status, created_at, updated_at", { count: "exact" })
       .eq("user_id", options.userId);
 
     if (options.status) {

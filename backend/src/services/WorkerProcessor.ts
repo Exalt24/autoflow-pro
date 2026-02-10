@@ -129,9 +129,8 @@ export async function processWorkflowJob(
         );
         const duration = startedExecution
           ? Math.round(
-              (new Date(completedAt).getTime() -
-                new Date(startedExecution.started_at).getTime()) /
-                1000
+              new Date(completedAt).getTime() -
+                new Date(startedExecution.started_at).getTime()
             )
           : 0;
 
@@ -182,9 +181,8 @@ export async function processWorkflowJob(
     );
     const duration = startedExecution
       ? Math.round(
-          (new Date(completedAt).getTime() -
-            new Date(startedExecution.started_at).getTime()) /
-            1000
+          new Date(completedAt).getTime() -
+            new Date(startedExecution.started_at).getTime()
         )
       : 0;
 

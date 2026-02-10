@@ -251,6 +251,15 @@ export const executionsApi = {
     }>(`/executions/${id}/logs?${queryParams.toString()}`);
   },
 
+  getScreenshots: (id: string) =>
+    apiRequest<{
+      screenshots: Array<{
+        url: string;
+        stepId: string;
+        timestamp: string;
+      }>;
+    }>(`/executions/${id}/screenshots`),
+
   delete: (id: string) =>
     apiRequest<void>(`/executions/${id}`, { method: "DELETE" }),
 };

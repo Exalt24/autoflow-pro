@@ -58,11 +58,22 @@ export class AutomationEngine {
       resources.browser = await this.launchBrowser();
       this.activeBrowsers.add(resources.browser);
 
-      resources.context = await resources.browser.newContext({
+      const contextOptions: {
+        viewport: { width: number; height: number };
+        userAgent?: string;
+      } = {
         viewport: { width: 1920, height: 1080 },
-        userAgent:
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      });
+      };
+
+      // Only set a custom userAgent for local browsers.
+      // When using a remote CDP browser (Steel.dev), let it use its own
+      // anti-detection fingerprint — overriding it triggers CAPTCHAs.
+      if (!process.env.BROWSER_WS_URL) {
+        contextOptions.userAgent =
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+      }
+
+      resources.context = await resources.browser.newContext(contextOptions);
 
       resources.page = await resources.context.newPage();
       resources.page.setDefaultTimeout(this.config.timeout);

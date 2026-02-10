@@ -181,8 +181,8 @@ class ExecutionService {
       if (execution) {
         const completedAt = new Date().toISOString();
         const startedAt = new Date(execution.started_at);
-        const duration = Math.floor(
-          (new Date(completedAt).getTime() - startedAt.getTime()) / 1000
+        const duration = Math.round(
+          new Date(completedAt).getTime() - startedAt.getTime()
         );
 
         input.completedAt = completedAt;

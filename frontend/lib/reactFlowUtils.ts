@@ -12,15 +12,6 @@ export const workflowToReactFlow = (
   }
 
   const nodes: WorkflowNode[] = definition.steps.map((step, index) => {
-    const stepInfo = STEP_TYPES[step.type as keyof typeof STEP_TYPES];
-    const label = step.config.url
-      ? `${stepInfo.label}: ${step.config.url}`
-      : step.config.selector
-      ? `${stepInfo.label}: ${step.config.selector}`
-      : step.config.fieldName
-      ? `Extract: ${step.config.fieldName}`
-      : stepInfo.label;
-
     return {
       id: step.id,
       type: "custom",
@@ -28,7 +19,7 @@ export const workflowToReactFlow = (
       data: {
         type: step.type,
         config: step.config,
-        label,
+        label: getNodeLabel(step.type, step.config as Record<string, unknown>),
         isValid: validateNodeConfig(step.type, step.config),
       },
     };
@@ -94,6 +85,9 @@ export const generateNodeId = (): string => {
   return `step-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
+const truncate = (str: string, max = 30): string =>
+  str.length > max ? `${str.substring(0, max)}...` : str;
+
 export const getNodeLabel = (
   type: string,
   config: Record<string, unknown>
@@ -101,15 +95,52 @@ export const getNodeLabel = (
   const stepInfo = STEP_TYPES[type as keyof typeof STEP_TYPES];
   if (!stepInfo) return type;
 
-  if (config.url)
-    return `${stepInfo.label}: ${String(config.url).substring(0, 30)}${
-      String(config.url).length > 30 ? "..." : ""
-    }`;
-  if (config.selector)
-    return `${stepInfo.label}: ${String(config.selector).substring(0, 30)}${
-      String(config.selector).length > 30 ? "..." : ""
-    }`;
-  if (config.fieldName) return `Extract: ${String(config.fieldName)}`;
-  if (config.key) return `Press: ${String(config.key)}`;
-  return stepInfo.label;
+  switch (type) {
+    case "navigate":
+      return config.url ? `Navigate: ${truncate(String(config.url))}` : stepInfo.label;
+    case "click":
+    case "scroll":
+    case "hover":
+    case "right_click":
+    case "double_click":
+      return config.selector ? `${stepInfo.label}: ${truncate(String(config.selector))}` : stepInfo.label;
+    case "fill":
+      if (config.selector && config.value)
+        return `Fill: ${truncate(String(config.selector), 20)} = "${truncate(String(config.value), 15)}"`;
+      return config.selector ? `Fill: ${truncate(String(config.selector))}` : stepInfo.label;
+    case "extract":
+      return config.fieldName ? `Extract: ${String(config.fieldName)}` : stepInfo.label;
+    case "wait":
+      if (config.selector) return `Wait: ${truncate(String(config.selector))}`;
+      return config.duration ? `Wait: ${config.duration}ms` : stepInfo.label;
+    case "screenshot":
+      return config.fullPage ? "Screenshot (Full Page)" : stepInfo.label;
+    case "press_key":
+      return config.key ? `Press: ${String(config.key)}` : stepInfo.label;
+    case "execute_js":
+      return "Execute JavaScript";
+    case "conditional":
+      return config.conditionType ? `If: ${String(config.conditionType).replace(/_/g, " ")}` : stepInfo.label;
+    case "loop":
+      if (config.loopType === "count") return `Loop: ${config.count || "?"} times`;
+      return config.selector ? `Loop: ${truncate(String(config.selector))}` : stepInfo.label;
+    case "set_variable":
+      return config.variableName ? `Set: ${String(config.variableName)}` : stepInfo.label;
+    case "extract_to_variable":
+      return config.variableName ? `Extract → ${String(config.variableName)}` : stepInfo.label;
+    case "download_file":
+      return config.triggerMethod === "url" ? "Download (URL)" : "Download (Click)";
+    case "drag_drop":
+      return config.sourceSelector ? `Drag: ${truncate(String(config.sourceSelector), 20)}` : stepInfo.label;
+    case "set_cookie":
+    case "get_cookie":
+      return config.name ? `${stepInfo.label}: ${String(config.name)}` : stepInfo.label;
+    case "set_localstorage":
+    case "get_localstorage":
+      return config.key ? `${stepInfo.label}: ${String(config.key)}` : stepInfo.label;
+    case "select_dropdown":
+      return config.selector ? `Select: ${truncate(String(config.selector))}` : stepInfo.label;
+    default:
+      return stepInfo.label;
+  }
 };

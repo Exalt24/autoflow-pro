@@ -184,6 +184,18 @@ export function ConfigPanel({
                 Leave empty to extract text content
               </p>
             </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="extractMultiple"
+                checked={(config.multiple as boolean) || false}
+                onChange={(e) => handleChange("multiple", e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300"
+              />
+              <label htmlFor="extractMultiple" className="text-sm font-medium text-gray-700">
+                Extract multiple elements (returns array)
+              </label>
+            </div>
           </>
         )}
 

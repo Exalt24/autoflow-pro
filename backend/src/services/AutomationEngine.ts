@@ -406,7 +406,7 @@ export class AutomationEngine {
         return { success: true, data: fieldName ? { [fieldName]: results } : results };
       } else {
         await page.waitForSelector(selector, {
-          state: "attached",
+          state: "visible",
           timeout: this.config.timeout,
         });
 

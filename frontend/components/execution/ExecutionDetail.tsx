@@ -60,6 +60,9 @@ export function ExecutionDetail({
         onLog: (update) => {
           setLogs((prev) => [...prev, update.log]);
         },
+        onLogsBatch: (update) => {
+          setLogs((prev) => [...prev, ...update.logs]);
+        },
         onCompleted: (data) => {
           setExecution((prev) => ({
             ...prev,

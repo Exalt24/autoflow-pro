@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Toast } from "@/components/ui/Toast";
 import { useParams, useRouter } from "next/navigation";
 import { ReactFlowProvider } from "@xyflow/react";
@@ -31,6 +31,8 @@ function WorkflowBuilderContent() {
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
+  const [liveNodes, setLiveNodes] = useState<WorkflowNode[]>([]);
+  const [liveEdges, setLiveEdges] = useState<Edge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -87,8 +89,20 @@ function WorkflowBuilderContent() {
     []
   );
 
-  const state = flowCanvasRef.current?.getState() || { nodes, edges };
-  const validationErrors = validateWorkflow(state.nodes, state.edges);
+  const handleFlowStateChange = useCallback(
+    (updatedNodes: WorkflowNode[], updatedEdges: Edge[]) => {
+      setLiveNodes(updatedNodes);
+      setLiveEdges(updatedEdges);
+    },
+    []
+  );
+
+  const currentNodes = liveNodes.length > 0 ? liveNodes : nodes;
+  const currentEdges = liveEdges.length > 0 ? liveEdges : edges;
+  const validationErrors = useMemo(
+    () => validateWorkflow(currentNodes, currentEdges),
+    [currentNodes, currentEdges]
+  );
   const errorCount = validationErrors.filter(
     (e) => e.severity === "error"
   ).length;
@@ -117,7 +131,7 @@ function WorkflowBuilderContent() {
   };
 
   const selectedNode = selectedNodeId
-    ? state.nodes.find((n) => n.id === selectedNodeId) || null
+    ? currentNodes.find((n) => n.id === selectedNodeId) || null
     : null;
 
   if (loading) {
@@ -192,7 +206,7 @@ function WorkflowBuilderContent() {
             onAutoLayout={() => flowCanvasRef.current?.autoLayout()}
             onValidate={() => setShowValidation(true)}
             onClear={handleClearAll}
-            hasNodes={state.nodes.length > 0}
+            hasNodes={currentNodes.length > 0}
             errorCount={errorCount}
             warningCount={warningCount}
           />
@@ -208,6 +222,7 @@ function WorkflowBuilderContent() {
             initialNodes={nodes}
             initialEdges={edges}
             onNodeClick={handleNodeClick}
+            onStateChange={handleFlowStateChange}
           />
         </div>
         {selectedNode && (

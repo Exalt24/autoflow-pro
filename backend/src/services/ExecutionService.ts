@@ -163,6 +163,7 @@ class ExecutionService {
       throw new Error(`Failed to update execution: ${error.message}`);
     }
 
+    await this.invalidateAnalyticsCache(userId);
     console.log(`✓ Updated execution ${executionId} status: ${input.status}`);
     return data;
   }
@@ -305,6 +306,7 @@ class ExecutionService {
       throw new Error(`Failed to mark execution as archived: ${error.message}`);
     }
 
+    await this.invalidateAnalyticsCache(userId);
     console.log(`✓ Marked execution ${executionId} as archived`);
   }
 

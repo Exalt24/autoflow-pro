@@ -1,5 +1,6 @@
 import { supabase } from "../config/supabase.js";
 import { uploadToR2, deleteFromR2, r2Enabled } from "../config/r2.js";
+import { cacheService } from "../config/cache.js";
 
 interface ArchivalResult {
   executionId: string;
@@ -188,6 +189,8 @@ export class ArchivalService {
         );
       }
 
+      await this.invalidateAnalyticsCache(execution.user_id);
+
       return {
         executionId,
         archived: true,
@@ -266,6 +269,8 @@ export class ArchivalService {
         throw new Error(`Failed to restore execution: ${updateError.message}`);
       }
 
+      await this.invalidateAnalyticsCache(execution.user_id);
+
       return true;
     } catch (error: any) {
       console.error("Restore execution failed:", error);
@@ -327,6 +332,17 @@ export class ArchivalService {
       eligibleForArchival: eligibleRes.count || 0,
       retentionDays: userId ? retentionDays : undefined,
     };
+  }
+
+  private async invalidateAnalyticsCache(userId: string): Promise<void> {
+    await Promise.all([
+      cacheService.del(`stats:${userId}`),
+      cacheService.del(`trends:${userId}`),
+      cacheService.del(`top-workflows:${userId}`),
+      cacheService.del(`errors:${userId}`),
+      cacheService.del(`quota:${userId}`),
+      cacheService.del(`resources:${userId}`),
+    ]);
   }
 }
 

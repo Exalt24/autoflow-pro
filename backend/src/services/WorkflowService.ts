@@ -1,4 +1,5 @@
 import { supabase } from "../config/supabase.js";
+import { cacheService } from "../config/cache.js";
 import type { Database } from "../types/database.js";
 
 type WorkflowRow = Database["public"]["Tables"]["workflows"]["Row"];
@@ -51,6 +52,7 @@ class WorkflowService {
     }
 
     await this.updateUserWorkflowCount(input.userId);
+    await this.invalidateAnalyticsCache(input.userId);
     console.log(`✓ Created workflow ${data.id} for user ${input.userId}`);
 
     return data;
@@ -155,6 +157,7 @@ class WorkflowService {
       throw new Error(`Failed to update workflow: ${error.message}`);
     }
 
+    await this.invalidateAnalyticsCache(userId);
     console.log(`✓ Updated workflow ${workflowId}`);
     return data;
   }
@@ -171,6 +174,7 @@ class WorkflowService {
     }
 
     await this.updateUserWorkflowCount(userId);
+    await this.invalidateAnalyticsCache(userId);
     console.log(`✓ Deleted workflow ${workflowId}`);
   }
 
@@ -262,6 +266,16 @@ class WorkflowService {
     if (error && error.code !== "23505") {
       console.error(`Failed to update workflow count: ${error.message}`);
     }
+  }
+
+  private async invalidateAnalyticsCache(userId: string): Promise<void> {
+    await Promise.all([
+      cacheService.del(`stats:${userId}`),
+      cacheService.del(`trends:${userId}`),
+      cacheService.del(`top-workflows:${userId}`),
+      cacheService.del(`quota:${userId}`),
+      cacheService.del(`resources:${userId}`),
+    ]);
   }
 }
 

@@ -39,16 +39,65 @@ export function DataViewer({ data, executionId }: DataViewerProps) {
   const handleDownloadCSV = () => {
     const rows: string[][] = [];
 
-    // Handle simple flat objects
-    if (typeof data === "object" && !Array.isArray(data)) {
-      rows.push(["Field", "Value"]);
-      Object.entries(data).forEach(([key, value]) => {
-        rows.push([key, String(value)]);
-      });
+    // Flatten nested extracted data into CSV rows.
+    // Structure is typically: { "step-id": { fieldName: value | value[] } }
+    const flatEntries: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value)
+      ) {
+        // Nested object (step data) — lift inner fields up
+        for (const [innerKey, innerValue] of Object.entries(
+          value as Record<string, unknown>
+        )) {
+          flatEntries[innerKey] = innerValue;
+        }
+      } else {
+        flatEntries[key] = value;
+      }
     }
 
+    // Check if all values are arrays of the same length (table format)
+    const arrayEntries = Object.entries(flatEntries).filter(
+      ([, v]) => Array.isArray(v)
+    );
+    const scalarEntries = Object.entries(flatEntries).filter(
+      ([, v]) => !Array.isArray(v)
+    );
+
+    if (arrayEntries.length > 0) {
+      // Array data — each array becomes a column, each element a row
+      const headers = arrayEntries.map(([k]) => k);
+      rows.push(headers);
+
+      const maxLen = Math.max(
+        ...arrayEntries.map(([, v]) => (v as unknown[]).length)
+      );
+      for (let i = 0; i < maxLen; i++) {
+        rows.push(
+          arrayEntries.map(([, v]) => {
+            const arr = v as unknown[];
+            return i < arr.length ? String(arr[i]) : "";
+          })
+        );
+      }
+    }
+
+    // Append scalar values as Field/Value pairs
+    if (scalarEntries.length > 0) {
+      if (rows.length > 0) rows.push([]); // blank separator
+      rows.push(["Field", "Value"]);
+      for (const [key, value] of scalarEntries) {
+        rows.push([key, String(value)]);
+      }
+    }
+
+    const escapeCell = (cell: string) =>
+      `"${cell.replace(/"/g, '""')}"`;
     const csv = rows
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .map((row) => row.map(escapeCell).join(","))
       .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);

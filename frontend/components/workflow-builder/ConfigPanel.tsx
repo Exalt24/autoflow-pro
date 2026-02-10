@@ -290,8 +290,8 @@ export function ConfigPanel({
               JavaScript Code <span className="text-red-500">*</span>
             </label>
             <textarea
-              value={(config.script as string) || ""}
-              onChange={(e) => handleChange("script", e.target.value)}
+              value={(config.code as string) || ""}
+              onChange={(e) => handleChange("code", e.target.value)}
               placeholder="return document.title;"
               rows={6}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"

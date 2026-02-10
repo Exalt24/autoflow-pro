@@ -124,7 +124,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Avg Duration"
-          value={stats ? formatDuration(stats.avgExecutionTime) : "0s"}
+          value={stats ? formatDuration(stats.averageDuration) : "0s"}
           icon={Clock}
           loading={!stats}
         />

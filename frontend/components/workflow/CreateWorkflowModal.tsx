@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { WorkflowForm } from "./WorkflowForm";
 import { workflowsApi, WorkflowDefinition } from "@/lib/api";
@@ -20,6 +20,13 @@ export function CreateWorkflowModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!open) {
+      setError(null);
+      setIsLoading(false);
+    }
+  }, [open]);
 
   const handleSubmit = async (data: {
     name: string;

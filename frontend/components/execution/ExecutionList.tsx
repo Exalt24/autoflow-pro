@@ -64,7 +64,31 @@ export const ExecutionList = memo(function ExecutionList({
   }, [statusFilter]);
 
   useEffect(() => {
-    fetchExecutions();
+    let cancelled = false;
+    const doFetch = async () => {
+      setLoading(true);
+      try {
+        const result = await executionsApi.list({
+          page,
+          limit,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        });
+        if (!cancelled) {
+          setExecutions(result.executions);
+          setTotal(result.total);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to fetch executions:", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+    doFetch();
+    return () => { cancelled = true; };
   }, [fetchExecutions]);
 
   const handleStatusFilter = useCallback((value: string) => {

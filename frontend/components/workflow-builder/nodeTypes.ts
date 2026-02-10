@@ -34,7 +34,7 @@ export const createDefaultConfig = (type: StepType): StepConfig => {
     case "press_key":
       return { key: "Enter" };
     case "execute_js":
-      return { script: "" };
+      return { code: "" };
     case "conditional":
       return { conditionType: "element_exists", selector: "" };
     case "loop":
@@ -95,9 +95,9 @@ export const validateNodeConfig = (
       return !!config.key && typeof config.key === "string";
     case "execute_js":
       return (
-        !!config.script &&
-        typeof config.script === "string" &&
-        config.script.trim().length > 0
+        !!config.code &&
+        typeof config.code === "string" &&
+        config.code.trim().length > 0
       );
     case "conditional":
       const condType = config.conditionType as string;

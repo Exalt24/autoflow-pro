@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { scheduledJobsApi, workflowsApi, type Workflow } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { CronPresetSelector } from "./CronPresetSelector";
+import { NextRunsPreview } from "./NextRunsPreview";
 
 interface CreateScheduledJobModalProps {
   open: boolean;
@@ -125,6 +126,8 @@ export function CreateScheduledJobModal({
             onCustom={() => setShowCustomCron(true)}
             showCustom={showCustomCron}
           />
+
+          <NextRunsPreview cronSchedule={cronSchedule} />
 
           <div className="flex items-center gap-2">
             <input

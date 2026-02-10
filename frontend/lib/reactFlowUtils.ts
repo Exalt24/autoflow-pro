@@ -40,7 +40,7 @@ export const workflowToReactFlow = (
       id: `${definition.steps[i].id}-${definition.steps[i + 1].id}`,
       source: definition.steps[i].id,
       target: definition.steps[i + 1].id,
-      type: "smoothstep",
+      type: "default",
     });
   }
 

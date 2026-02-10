@@ -1,7 +1,13 @@
 "use client";
 
 import { X } from "lucide-react";
-import { type EdgeProps, getBezierPath, BaseEdge, useReactFlow } from "@xyflow/react";
+import {
+  type EdgeProps,
+  getBezierPath,
+  BaseEdge,
+  EdgeLabelRenderer,
+  useReactFlow,
+} from "@xyflow/react";
 
 export function EdgeDeleteButton({
   id,
@@ -22,34 +28,34 @@ export function EdgeDeleteButton({
     targetPosition,
   });
 
-  const { deleteElements } = useReactFlow();
+  const { setEdges } = useReactFlow();
 
-  const onEdgeClick = () => {
-    deleteElements({ edges: [{ id }] });
+  const onEdgeClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setEdges((edges) => edges.filter((e) => e.id !== id));
   };
 
   return (
     <>
       <BaseEdge path={edgePath} markerEnd={markerEnd} />
-      <g transform={`translate(${labelX}, ${labelY})`}>
-        <rect
-          x={-12}
-          y={-12}
-          width={24}
-          height={24}
-          rx={12}
-          fill="white"
-          stroke="#ef4444"
-          strokeWidth={2}
-          className="cursor-pointer hover:fill-red-50"
-          onClick={onEdgeClick}
-        />
-        <foreignObject x={-10} y={-10} width={20} height={20}>
-          <div className="flex items-center justify-center w-full h-full pointer-events-none">
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: "absolute",
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            pointerEvents: "all",
+          }}
+          className="nodrag nopan"
+        >
+          <button
+            className="flex items-center justify-center w-6 h-6 rounded-full bg-white border-2 border-red-500 cursor-pointer hover:bg-red-50"
+            onClick={onEdgeClick}
+            type="button"
+          >
             <X className="w-3 h-3 text-red-600" />
-          </div>
-        </foreignObject>
-      </g>
+          </button>
+        </div>
+      </EdgeLabelRenderer>
     </>
   );
 }

@@ -192,6 +192,8 @@ export interface Execution {
   logs?: LogEntry[];
   extracted_data?: Record<string, unknown>;
   error_message?: string;
+  archived?: boolean;
+  r2_key?: string | null;
 }
 
 export interface LogEntry {

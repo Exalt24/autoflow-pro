@@ -70,7 +70,7 @@ export interface Workflow {
   id: string;
   user_id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   definition: WorkflowDefinition;
   status: "draft" | "active" | "archived";
   created_at: string;
@@ -197,10 +197,12 @@ export interface Execution {
 }
 
 export interface LogEntry {
+  id?: string;
   timestamp: string;
   level: "info" | "warn" | "error";
   message: string;
   step_id?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PaginatedExecutions {
@@ -258,20 +260,23 @@ export interface UserStats {
   totalWorkflows: number;
   totalExecutions: number;
   successRate: number;
-  avgExecutionTime: number;
+  averageDuration: number;
+  executionsThisMonth: number;
 }
 
 export interface ExecutionTrend {
   date: string;
-  count: number;
-  successCount: number;
-  failureCount: number;
+  total: number;
+  successful: number;
+  failed: number;
 }
 
 export interface TopWorkflow {
   workflowId: string;
   workflowName: string;
   executionCount: number;
+  successRate: number;
+  averageDuration: number;
 }
 
 export interface UsageQuota {
@@ -279,6 +284,8 @@ export interface UsageQuota {
   executionsCount: number;
   executionsLimit: number;
   storageUsed: number;
+  workflowsLimit: number;
+  storageLimit: number;
 }
 
 export interface ErrorAnalysis {
@@ -294,6 +301,7 @@ export interface SlowestWorkflow {
   workflowName: string;
   averageDuration: number;
   executionCount: number;
+  successRate: number;
 }
 
 export const analyticsApi = {
@@ -361,6 +369,7 @@ export interface UserProfile {
   id: string;
   email: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export const userApi = {
@@ -462,6 +471,7 @@ export interface ArchivalStats {
   archivedExecutions: number;
   activeExecutions: number;
   eligibleForArchival: number;
+  retentionDays?: number;
 }
 
 export interface ArchivalResult {

@@ -100,8 +100,9 @@ class WorkflowService {
     }
 
     if (options.search) {
+      const sanitized = options.search.replace(/[%_\\]/g, '\\$&');
       query = query.or(
-        `name.ilike.%${options.search}%,description.ilike.%${options.search}%`
+        `name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`
       );
     }
 

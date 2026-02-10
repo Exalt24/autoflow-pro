@@ -165,9 +165,9 @@ export default function AnalyticsPage() {
       ["Date", "Total Executions", "Successful", "Failed"],
       ...trends.map((t) => [
         t.date,
-        t.count.toString(),
-        t.successCount.toString(),
-        t.failureCount.toString(),
+        t.total.toString(),
+        t.successful.toString(),
+        t.failed.toString(),
       ]),
     ];
 
@@ -265,7 +265,7 @@ export default function AnalyticsPage() {
           <div className="p-6">
             <p className="text-sm text-gray-600 mb-1">Avg Duration</p>
             <p className="text-3xl font-bold">
-              {stats ? `${(stats.avgExecutionTime / 1000).toFixed(1)}s` : "0s"}
+              {stats ? `${(stats.averageDuration / 1000).toFixed(1)}s` : "0s"}
             </p>
           </div>
         </Card>
@@ -335,7 +335,7 @@ export default function AnalyticsPage() {
               </div>
             )}
 
-            {stats && stats.avgExecutionTime > 60000 && (
+            {stats && stats.averageDuration > 60000 && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm font-medium text-blue-900">
                   Long Execution Times
@@ -363,7 +363,7 @@ export default function AnalyticsPage() {
 
             {stats &&
               stats.successRate >= 90 &&
-              stats.avgExecutionTime < 30000 && (
+              stats.averageDuration < 30000 && (
                 <div className="p-3 bg-green-50 border border-green-200 rounded-md">
                   <p className="text-sm font-medium text-green-900">
                     Excellent Performance

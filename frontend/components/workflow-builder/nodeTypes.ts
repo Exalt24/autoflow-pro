@@ -131,7 +131,8 @@ export const validateNodeConfig = (
       return (
         !!config.variableName &&
         typeof config.variableName === "string" &&
-        config.variableName.trim().length > 0
+        config.variableName.trim().length > 0 &&
+        config.variableValue !== undefined
       );
     case "extract_to_variable":
       return (

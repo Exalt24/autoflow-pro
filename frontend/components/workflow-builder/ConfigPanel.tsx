@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Trash2, AlertCircle } from "lucide-react";
 import type { WorkflowNode } from "./nodeTypes";
 import type { StepConfig } from "@/types";
@@ -21,6 +21,14 @@ export function ConfigPanel({
   onDelete,
 }: ConfigPanelProps) {
   const [config, setConfig] = useState<StepConfig>(node?.data.config || {});
+
+  const prevNodeId = useRef(node?.id);
+  useEffect(() => {
+    if (node?.id !== prevNodeId.current) {
+      setConfig(node?.data.config || {});
+      prevNodeId.current = node?.id;
+    }
+  }, [node?.id, node?.data.config]);
 
   if (!node) return null;
 
@@ -710,88 +718,6 @@ export function ConfigPanel({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-        )}
-
-        {node.data.type === "set_variable" && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Variable Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={(config.variableName as string) || ""}
-                onChange={(e) => handleChange("variableName", e.target.value)}
-                placeholder="myVariable"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Alphanumeric characters and underscores only
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Value <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={(config.variableValue as string) || ""}
-                onChange={(e) => handleChange("variableValue", e.target.value)}
-                placeholder="Hello or ${'{otherVariable}'}"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Can use ${"{variableName}"} to reference other variables
-              </p>
-            </div>
-          </>
-        )}
-
-        {node.data.type === "extract_to_variable" && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Selector <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={(config.selector as string) || ""}
-                onChange={(e) => handleChange("selector", e.target.value)}
-                placeholder=".product-name, h1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Variable Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={(config.variableName as string) || ""}
-                onChange={(e) => handleChange("variableName", e.target.value)}
-                placeholder="productName"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Variable will store the extracted value
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Attribute (optional)
-              </label>
-              <input
-                type="text"
-                value={(config.attribute as string) || ""}
-                onChange={(e) => handleChange("attribute", e.target.value)}
-                placeholder="href, src, data-id"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Leave empty to extract text content
-              </p>
-            </div>
-          </>
         )}
 
         {node.data.type === "conditional" && (

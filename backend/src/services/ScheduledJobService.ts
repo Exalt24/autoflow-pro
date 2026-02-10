@@ -170,6 +170,10 @@ export class ScheduledJobService {
     if (fetchError)
       throw new Error(`Failed to fetch scheduled job: ${fetchError.message}`);
 
+    if (!job) {
+      throw new Error("Scheduled job not found");
+    }
+
     const nextRunAt = getNextRunTime(job.cron_schedule);
 
     const { error: updateError } = await supabase
@@ -201,20 +205,21 @@ export class ScheduledJobService {
     userId: string,
     limit: number = 20
   ) {
+    const jobResult = await supabase
+      .from("scheduled_jobs")
+      .select("workflow_id")
+      .eq("id", scheduledJobId)
+      .single();
+
+    if (!jobResult.data) {
+      throw new Error("Scheduled job not found");
+    }
+
     const { data, error } = await supabase
       .from("executions")
       .select("*")
       .eq("user_id", userId)
-      .eq(
-        "workflow_id",
-        (
-          await supabase
-            .from("scheduled_jobs")
-            .select("workflow_id")
-            .eq("id", scheduledJobId)
-            .single()
-        ).data!.workflow_id
-      )
+      .eq("workflow_id", jobResult.data.workflow_id)
       .order("started_at", { ascending: false })
       .limit(limit);
 

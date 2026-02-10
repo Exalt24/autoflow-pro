@@ -14,6 +14,14 @@ import type {
 } from "../types/automation.js";
 import type { WorkflowStep } from "../types/database.js";
 import { substituteObjectVariables } from "../utils/variableSubstitution.js";
+import {
+  humanDelay,
+  humanType,
+  randomMouseMove,
+  randomizedViewport,
+  STEALTH_LAUNCH_ARGS,
+  STEALTH_CONTEXT_OPTIONS,
+} from "../utils/humanBehavior.js";
 
 export class AutomationEngine {
   private config: EngineConfig;
@@ -58,11 +66,10 @@ export class AutomationEngine {
       resources.browser = await this.launchBrowser();
       this.activeBrowsers.add(resources.browser);
 
-      const contextOptions: {
-        viewport: { width: number; height: number };
-        userAgent?: string;
-      } = {
-        viewport: { width: 1920, height: 1080 },
+      const viewport = randomizedViewport();
+      const contextOptions: Record<string, unknown> = {
+        viewport,
+        ...STEALTH_CONTEXT_OPTIONS,
       };
 
       // Only set a custom userAgent for local browsers.
@@ -145,6 +152,11 @@ export class AutomationEngine {
           step.id
         );
         await callbacks?.onStepComplete?.(step.id, result);
+
+        // Human-like pause between steps to reduce bot detection
+        if (i < totalSteps - 1 && resources.page) {
+          await humanDelay(resources.page, 300, 1200);
+        }
       }
 
       const duration = Date.now() - startTime;
@@ -338,6 +350,8 @@ export class AutomationEngine {
       await page
         .waitForLoadState("networkidle", { timeout: 5000 })
         .catch(() => { console.log("Network idle timeout - continuing"); });
+      // Simulate initial human behavior after page load
+      await randomMouseMove(page);
       return { success: true, data: { url: page.url() } };
     } catch (error: any) {
       return { success: false, error: `Navigation failed: ${error.message}` };
@@ -355,6 +369,9 @@ export class AutomationEngine {
         state: "visible",
         timeout: this.config.timeout,
       });
+      // Hover first to simulate mouse movement, then click after a small delay
+      await page.hover(selector);
+      await humanDelay(page, 80, 250);
       await page.click(selector);
       await page.waitForLoadState("domcontentloaded").catch(() => {});
       return { success: true, data: { clicked: selector } };
@@ -379,7 +396,8 @@ export class AutomationEngine {
         state: "visible",
         timeout: this.config.timeout,
       });
-      await page.fill(selector, String(value));
+      // Type character-by-character with random delays to appear human
+      await humanType(page, selector, String(value));
       return { success: true, data: { filled: selector, value } };
     } catch (error: any) {
       return { success: false, error: `Fill failed: ${error.message}` };
@@ -1236,6 +1254,8 @@ export class AutomationEngine {
         timeout: this.config.timeout,
       });
 
+      await page.hover(selector);
+      await humanDelay(page, 80, 250);
       await page.click(selector, { button: "right" });
 
       return {
@@ -1266,6 +1286,8 @@ export class AutomationEngine {
         timeout: this.config.timeout,
       });
 
+      await page.hover(selector);
+      await humanDelay(page, 80, 250);
       await page.dblclick(selector);
 
       return {
@@ -1291,13 +1313,7 @@ export class AutomationEngine {
 
     const browser = await chromium.launch({
       headless: this.config.headless,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--disable-gpu",
-      ],
+      args: STEALTH_LAUNCH_ARGS,
     });
     return browser;
   }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { archivalApi } from "@/lib/api";
 import { Archive, CheckCircle, XCircle, Loader2 } from "lucide-react";
 
@@ -20,16 +21,14 @@ export default function ArchivalControls({
     failed: number;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleArchive = async () => {
-    if (
-      !confirm(
-        "Archive old executions (30+ days)? This will move data to R2 storage."
-      )
-    ) {
-      return;
-    }
+  const handleArchive = () => {
+    setShowConfirm(true);
+  };
 
+  const confirmArchive = async () => {
+    setShowConfirm(false);
     setArchiving(true);
     setError(null);
     setResult(null);
@@ -56,6 +55,15 @@ export default function ArchivalControls({
 
   return (
     <Card>
+      <ConfirmDialog
+        open={showConfirm}
+        onConfirm={confirmArchive}
+        onCancel={() => setShowConfirm(false)}
+        title="Archive Executions"
+        message="Archive executions older than 30 days? This will move data to R2 storage. Archived data remains accessible."
+        confirmLabel="Archive"
+        variant="warning"
+      />
       <div className="p-6">
         <h3 className="text-lg font-semibold mb-4">Manual Archival</h3>
         <p className="text-sm text-gray-600 mb-4">

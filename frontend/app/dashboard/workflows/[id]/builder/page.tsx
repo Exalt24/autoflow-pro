@@ -17,6 +17,7 @@ import { KeyboardShortcuts } from "@/components/workflow-builder/KeyboardShortcu
 import { validateWorkflow } from "@/components/workflow-builder/utils";
 import { workflowToReactFlow, reactFlowToWorkflow } from "@/lib/reactFlowUtils";
 import { workflowsApi } from "@/lib/api";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { Workflow, StepType } from "@/types";
 import type { WorkflowNode } from "@/components/workflow-builder/nodeTypes";
 import type { Edge } from "@xyflow/react";
@@ -35,6 +36,7 @@ function WorkflowBuilderContent() {
   const [saving, setSaving] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     const fetchWorkflow = async () => {
@@ -100,9 +102,12 @@ function WorkflowBuilderContent() {
   };
 
   const handleClearAll = () => {
-    if (confirm("Clear all nodes? This cannot be undone.")) {
-      flowCanvasRef.current?.clearAll();
-    }
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearAll = () => {
+    setShowClearConfirm(false);
+    flowCanvasRef.current?.clearAll();
   };
 
   const handleKeyboardSave = () => {
@@ -134,6 +139,15 @@ function WorkflowBuilderContent() {
   return (
     <div className="flex flex-col h-screen">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <ConfirmDialog
+        open={showClearConfirm}
+        onConfirm={confirmClearAll}
+        onCancel={() => setShowClearConfirm(false)}
+        title="Clear All Nodes"
+        message="This will remove all steps from the canvas. This cannot be undone."
+        confirmLabel="Clear All"
+        variant="danger"
+      />
       <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button

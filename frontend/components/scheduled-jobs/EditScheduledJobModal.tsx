@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { scheduledJobsApi, type ScheduledJob } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { CronPresetSelector } from "./CronPresetSelector";
+import { CronPresetSelector, CRON_PRESETS } from "./CronPresetSelector";
 import { NextRunsPreview } from "./NextRunsPreview";
 
 interface EditScheduledJobModalProps {
@@ -31,7 +31,10 @@ export function EditScheduledJobModal({
     if (open) {
       setCronSchedule(job.cron_schedule);
       setIsActive(job.is_active);
-      setShowCustomCron(false);
+      const matchesPreset = CRON_PRESETS.some(
+        (preset) => preset.value === job.cron_schedule
+      );
+      setShowCustomCron(!matchesPreset);
     }
   }, [open, job]);
 

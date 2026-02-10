@@ -120,15 +120,6 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
           isActive: isActive ?? true,
         });
 
-        if (scheduledJob.is_active) {
-          await schedulerService.addRepeatableJob(
-            scheduledJob.id,
-            scheduledJob.workflow_id,
-            scheduledJob.user_id,
-            scheduledJob.cron_schedule
-          );
-        }
-
         return reply.status(201).send(scheduledJob);
       } catch (error: any) {
         return reply.status(500).send({
@@ -168,30 +159,6 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
           { cronSchedule, isActive }
         );
 
-        if (cronSchedule && cronSchedule !== existingJob.cron_schedule) {
-          await schedulerService.updateRepeatableJob(
-            id,
-            existingJob.cron_schedule,
-            cronSchedule,
-            existingJob.workflow_id,
-            existingJob.user_id
-          );
-        } else if (isActive !== undefined) {
-          if (isActive && !existingJob.is_active) {
-            await schedulerService.addRepeatableJob(
-              id,
-              existingJob.workflow_id,
-              existingJob.user_id,
-              existingJob.cron_schedule
-            );
-          } else if (!isActive && existingJob.is_active) {
-            await schedulerService.removeRepeatableJob(
-              id,
-              existingJob.cron_schedule
-            );
-          }
-        }
-
         return reply.send(scheduledJob);
       } catch (error: any) {
         return reply.status(500).send({
@@ -219,13 +186,6 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
 
         if (!existingJob) {
           return reply.status(404).send({ error: "Scheduled job not found" });
-        }
-
-        if (existingJob.is_active) {
-          await schedulerService.removeRepeatableJob(
-            id,
-            existingJob.cron_schedule
-          );
         }
 
         await scheduledJobService.deleteScheduledJob(id, request.user!.id);

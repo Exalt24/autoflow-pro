@@ -6,7 +6,7 @@ interface CronPreset {
   description: string;
 }
 
-const CRON_PRESETS: CronPreset[] = [
+export const CRON_PRESETS: CronPreset[] = [
   {
     label: "Every minute",
     value: "* * * * *",
@@ -54,6 +54,14 @@ const CRON_PRESETS: CronPreset[] = [
   },
 ];
 
+function validateCron(expression: string): string | null {
+  const parts = expression.trim().split(/\s+/);
+  if (parts.length !== 5) {
+    return `Cron expression must have exactly 5 parts (found ${parts.length}). Format: minute hour day month weekday`;
+  }
+  return null;
+}
+
 interface CronPresetSelectorProps {
   value: string;
   onChange: (value: string) => void;
@@ -68,6 +76,7 @@ export function CronPresetSelector({
   showCustom,
 }: CronPresetSelectorProps) {
   const isCustom = !CRON_PRESETS.find((p) => p.value === value);
+  const cronError = showCustom && isCustom ? validateCron(value) : null;
 
   return (
     <div className="space-y-3">
@@ -109,6 +118,9 @@ export function CronPresetSelector({
           <p className="text-xs text-gray-500 mt-1">
             Format: minute hour day month weekday
           </p>
+          {cronError && (
+            <p className="text-xs text-red-600 mt-1">{cronError}</p>
+          )}
         </div>
       )}
 

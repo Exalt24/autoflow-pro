@@ -211,7 +211,7 @@ export const WorkflowList = memo(function WorkflowList({
                         </p>
                       )}
                       <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span>{workflow.definition.steps.length} steps</span>
+                        <span>{workflow.definition?.steps?.length ?? 0} steps</span>
                         <span>•</span>
                         <span>Created {formatDate(workflow.created_at)}</span>
                         <span>•</span>

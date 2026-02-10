@@ -179,7 +179,7 @@ export default function DashboardPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{workflow.name}</p>
                         <p className="text-sm text-gray-500">
-                          {workflow.definition.steps.length} steps • Updated{" "}
+                          {workflow.definition?.steps?.length ?? 0} steps • Updated{" "}
                           {formatDate(workflow.updated_at)}
                         </p>
                       </div>

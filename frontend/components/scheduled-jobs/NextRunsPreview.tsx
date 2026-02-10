@@ -7,26 +7,67 @@ interface NextRunsPreviewProps {
   cronSchedule: string;
 }
 
-function parseExpression(expression: string) {
-  try {
-    const parts = expression.split(" ");
-    if (parts.length !== 5) return null;
-    return parts;
-  } catch {
-    return null;
+function parseCronField(field: string, currentValue: number): boolean {
+  // Handle wildcard
+  if (field === "*") return true;
+
+  // Split by comma for lists (e.g., "1,15,30")
+  const parts = field.split(",");
+
+  for (const part of parts) {
+    // Handle step values (e.g., "*/5" or "1-10/2")
+    if (part.includes("/")) {
+      const [rangeStr, stepStr] = part.split("/");
+      const step = parseInt(stepStr, 10);
+      if (isNaN(step) || step <= 0) continue;
+
+      if (rangeStr === "*") {
+        if (currentValue % step === 0) return true;
+      } else if (rangeStr.includes("-")) {
+        const [startStr, endStr] = rangeStr.split("-");
+        const start = parseInt(startStr, 10);
+        const end = parseInt(endStr, 10);
+        if (
+          currentValue >= start &&
+          currentValue <= end &&
+          (currentValue - start) % step === 0
+        ) {
+          return true;
+        }
+      }
+      continue;
+    }
+
+    // Handle ranges (e.g., "1-5")
+    if (part.includes("-")) {
+      const [startStr, endStr] = part.split("-");
+      const start = parseInt(startStr, 10);
+      const end = parseInt(endStr, 10);
+      if (currentValue >= start && currentValue <= end) return true;
+      continue;
+    }
+
+    // Handle exact values
+    if (parseInt(part, 10) === currentValue) return true;
   }
+
+  return false;
 }
 
 function getNextRuns(cronSchedule: string, count: number = 5): Date[] {
-  const parts = parseExpression(cronSchedule);
-  if (!parts) return [];
+  const parts = cronSchedule.trim().split(/\s+/);
+  if (parts.length !== 5) return [];
 
   const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
   const runs: Date[] = [];
   const now = new Date();
   let current = new Date(now);
+  // Zero out seconds and milliseconds
+  current.setSeconds(0, 0);
 
-  for (let i = 0; i < count && runs.length < count; i++) {
+  const maxIterations = 525600; // 1 year of minutes
+
+  for (let i = 0; i < maxIterations && runs.length < count; i++) {
     current = new Date(current.getTime() + 60000);
 
     const m = current.getMinutes();
@@ -35,35 +76,18 @@ function getNextRuns(cronSchedule: string, count: number = 5): Date[] {
     const mo = current.getMonth() + 1;
     const dw = current.getDay();
 
-    const minuteMatch =
-      minute === "*" ||
-      minute === m.toString() ||
-      (minute.startsWith("*/") && m % parseInt(minute.slice(2)) === 0);
-
-    const hourMatch =
-      hour === "*" ||
-      hour === h.toString() ||
-      (hour.startsWith("*/") && h % parseInt(hour.slice(2)) === 0);
-
-    const dayOfMonthMatch = dayOfMonth === "*" || dayOfMonth === d.toString();
-    const monthMatch = month === "*" || month === mo.toString();
-    const dayOfWeekMatch = dayOfWeek === "*" || dayOfWeek === dw.toString();
-
     if (
-      minuteMatch &&
-      hourMatch &&
-      dayOfMonthMatch &&
-      monthMatch &&
-      dayOfWeekMatch
+      parseCronField(minute, m) &&
+      parseCronField(hour, h) &&
+      parseCronField(dayOfMonth, d) &&
+      parseCronField(month, mo) &&
+      parseCronField(dayOfWeek, dw)
     ) {
       runs.push(new Date(current));
-      current = new Date(current.getTime() + 60000);
     }
-
-    if (i > 10000) break;
   }
 
-  return runs.slice(0, count);
+  return runs;
 }
 
 export function NextRunsPreview({ cronSchedule }: NextRunsPreviewProps) {

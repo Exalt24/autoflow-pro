@@ -1,6 +1,5 @@
 import { queueService } from "./QueueService.js";
 import { scheduledJobService } from "./ScheduledJobService.js";
-import { workflowService } from "./WorkflowService.js";
 import { executionService } from "./ExecutionService.js";
 import { supabase } from "../config/supabase.js";
 
@@ -15,13 +14,12 @@ export class SchedulerService {
   private isInitialized = false;
   private checkInterval: NodeJS.Timeout | null = null;
   private failureTracker: FailureTracker = {};
+  private isChecking = false;
 
   async initialize() {
     if (this.isInitialized) return;
 
     console.log("🕒 Initializing Scheduler Service...");
-
-    await this.syncScheduledJobs();
 
     this.checkInterval = setInterval(() => {
       this.checkScheduledJobs().catch((error) => {
@@ -33,136 +31,78 @@ export class SchedulerService {
     console.log("✅ Scheduler Service initialized");
   }
 
-  async syncScheduledJobs() {
-    console.log("🔄 Syncing scheduled jobs with BullMQ...");
-
-    const { data: jobs, error } = await supabase
-      .from("scheduled_jobs")
-      .select("*")
-      .eq("is_active", true);
-
-    if (error) {
-      console.error("Failed to fetch scheduled jobs:", error);
-      return;
-    }
-
-    for (const job of jobs || []) {
-      try {
-        await this.addRepeatableJob(
-          job.id,
-          job.workflow_id,
-          job.user_id,
-          job.cron_schedule
-        );
-      } catch (error: any) {
-        console.error(`Failed to sync job ${job.id}:`, error.message);
-      }
-    }
-
-    console.log(`✅ Synced ${jobs?.length || 0} scheduled jobs`);
-  }
-
-  async addRepeatableJob(
-    jobId: string,
-    workflowId: string,
-    userId: string,
-    cronSchedule: string
-  ) {
-    const workflow = await workflowService.getWorkflowById(workflowId, userId);
-    if (!workflow) {
-      throw new Error(`Workflow ${workflowId} not found`);
-    }
-
-    await queueService.addRepeatableJob(
-      {
-        workflowId,
-        userId,
-        definition: workflow.definition,
-      },
-      cronSchedule,
-      jobId
-    );
-  }
-
-  async removeRepeatableJob(jobId: string, cronSchedule: string) {
-    await queueService.removeRepeatableJob(jobId, cronSchedule);
-  }
-
-  async updateRepeatableJob(
-    jobId: string,
-    oldCronSchedule: string,
-    newCronSchedule: string,
-    workflowId: string,
-    userId: string
-  ) {
-    await this.removeRepeatableJob(jobId, oldCronSchedule);
-    await this.addRepeatableJob(jobId, workflowId, userId, newCronSchedule);
-  }
-
   private async checkScheduledJobs() {
-    const now = new Date().toISOString();
+    if (this.isChecking) return;
+    this.isChecking = true;
+    try {
+      const now = new Date().toISOString();
 
-    const { data: dueJobs, error } = await supabase
-      .from("scheduled_jobs")
-      .select("*")
-      .eq("is_active", true)
-      .lte("next_run_at", now);
+      const { data: dueJobs, error } = await supabase
+        .from("scheduled_jobs")
+        .select("*")
+        .eq("is_active", true)
+        .lte("next_run_at", now);
 
-    if (error || !dueJobs || dueJobs.length === 0) return;
+      if (error || !dueJobs || dueJobs.length === 0) return;
 
-    // Batch fetch all workflows to avoid N+1 queries
-    const uniqueWorkflowIds = [
-      ...new Set(dueJobs.map((job) => job.workflow_id)),
-    ];
-    const { data: workflows, error: wfError } = await supabase
-      .from("workflows")
-      .select("*")
-      .in("id", uniqueWorkflowIds);
+      // Batch fetch all workflows to avoid N+1 queries
+      const uniqueWorkflowIds = [
+        ...new Set(dueJobs.map((job) => job.workflow_id)),
+      ];
+      const { data: workflows, error: wfError } = await supabase
+        .from("workflows")
+        .select("*")
+        .in("id", uniqueWorkflowIds);
 
-    if (wfError) {
-      console.error("Failed to batch fetch workflows:", wfError.message);
-      return;
-    }
-
-    const workflowMap = new Map(
-      (workflows || []).map((w) => [w.id, w])
-    );
-
-    for (const job of dueJobs) {
-      try {
-        const workflow = workflowMap.get(job.workflow_id);
-        if (!workflow || workflow.user_id !== job.user_id) continue;
-
-        const execution = await executionService.createExecution({
-          workflowId: job.workflow_id,
-          userId: job.user_id,
-          status: "queued",
-        });
-
-        await queueService.addJob({
-          workflowId: job.workflow_id,
-          userId: job.user_id,
-          executionId: execution.id,
-          definition: workflow.definition,
-        });
-
-        await scheduledJobService.updateNextRunTime(job.id);
-
-        console.log(
-          `✅ Triggered scheduled job ${job.id} -> execution ${execution.id}`
-        );
-
-        setTimeout(
-          () => this.checkExecutionResult(job.id, execution.id),
-          120000
-        );
-      } catch (error: any) {
-        console.error(
-          `Failed to execute scheduled job ${job.id}:`,
-          error.message
-        );
-        await this.recordFailure(job.id);
+      if (wfError) {
+        console.error("Failed to batch fetch workflows:", wfError.message);
+        return;
       }
+
+      const workflowMap = new Map(
+        (workflows || []).map((w) => [w.id, w])
+      );
+
+      for (const job of dueJobs) {
+        try {
+          const workflow = workflowMap.get(job.workflow_id);
+          if (!workflow || workflow.user_id !== job.user_id) continue;
+
+          const execution = await executionService.createExecution({
+            workflowId: job.workflow_id,
+            userId: job.user_id,
+            status: "queued",
+          });
+
+          // Update next_run_at BEFORE queuing to prevent duplicate execution
+          // if the polling interval overlaps with job processing
+          await scheduledJobService.updateNextRunTime(job.id);
+
+          await queueService.addJob({
+            workflowId: job.workflow_id,
+            userId: job.user_id,
+            executionId: execution.id,
+            definition: workflow.definition,
+          });
+
+          console.log(
+            `✅ Triggered scheduled job ${job.id} -> execution ${execution.id}`
+          );
+
+          setTimeout(
+            () => this.checkExecutionResult(job.id, execution.id),
+            120000
+          );
+        } catch (error: any) {
+          console.error(
+            `Failed to execute scheduled job ${job.id}:`,
+            error.message
+          );
+          await this.recordFailure(job.id);
+        }
+      }
+    } finally {
+      this.isChecking = false;
     }
   }
 
@@ -230,8 +170,6 @@ export class SchedulerService {
       await scheduledJobService.updateScheduledJob(jobId, job.user_id, {
         isActive: false,
       });
-
-      await this.removeRepeatableJob(jobId, job.cron_schedule);
 
       console.log(`✅ Successfully paused job ${jobId}`);
     } catch (error) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { Toast } from "@/components/ui/Toast";
 import { useParams, useRouter } from "next/navigation";
 import { ReactFlowProvider } from "@xyflow/react";
 import { ArrowLeft, Save } from "lucide-react";
@@ -33,6 +34,7 @@ function WorkflowBuilderContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
+  const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
 
   useEffect(() => {
     const fetchWorkflow = async () => {
@@ -62,10 +64,10 @@ function WorkflowBuilderContent() {
       const state = flowCanvasRef.current.getState();
       const definition = reactFlowToWorkflow(state.nodes, state.edges);
       await workflowsApi.update(workflowId, { definition });
-      alert("Workflow saved successfully!");
+      setToast({message: "Workflow saved successfully!", type: "success"});
     } catch (err) {
       console.error("Failed to save workflow:", err);
-      alert(err instanceof Error ? err.message : "Failed to save workflow");
+      setToast({message: err instanceof Error ? err.message : "Failed to save workflow", type: "error"});
     } finally {
       setSaving(false);
     }
@@ -131,6 +133,7 @@ function WorkflowBuilderContent() {
 
   return (
     <div className="flex flex-col h-screen">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button

@@ -86,7 +86,7 @@ class AnalyticsService {
       averageDuration: executionsStats.averageDuration,
     };
 
-    await cacheService.set(cacheKey, result, { ttl: 300 });
+    await cacheService.set(cacheKey, result, { ttl: 900 });
     return result;
   }
 
@@ -151,7 +151,7 @@ class AnalyticsService {
       });
     }
 
-    await cacheService.set(cacheKey, trends, { ttl: 900 });
+    await cacheService.set(cacheKey, trends, { ttl: 1800 });
     return trends;
   }
 
@@ -167,7 +167,8 @@ class AnalyticsService {
       .select("started_at, status")
       .eq("user_id", userId)
       .gte("started_at", startDate.toISOString())
-      .order("started_at", { ascending: true });
+      .order("started_at", { ascending: true })
+      .limit(5000);
 
     if (error) {
       throw new Error(`Failed to get execution trends: ${error.message}`);
@@ -248,7 +249,7 @@ class AnalyticsService {
       averageDuration: parseFloat(row.average_duration) || 0,
     }));
 
-    await cacheService.set(cacheKey, result, { ttl: 600 });
+    await cacheService.set(cacheKey, result, { ttl: 1200 });
     return result;
   }
 
@@ -260,7 +261,8 @@ class AnalyticsService {
       .from("executions")
       .select("workflow_id, status, duration")
       .eq("user_id", userId)
-      .eq("archived", false);
+      .eq("archived", false)
+      .limit(5000);
 
     if (execError) {
       throw new Error(`Failed to get workflow usage: ${execError.message}`);
@@ -269,7 +271,8 @@ class AnalyticsService {
     const { data: workflows, error: wfError } = await supabase
       .from("workflows")
       .select("id, name")
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .limit(100);
 
     if (wfError) {
       throw new Error(`Failed to get workflows: ${wfError.message}`);
@@ -335,6 +338,7 @@ class AnalyticsService {
         executions_count: 0,
         executions_limit: 50,
         storage_used: 0,
+        retention_days: 30,
       });
 
       result = {
@@ -356,7 +360,7 @@ class AnalyticsService {
       };
     }
 
-    await cacheService.set(cacheKey, result, { ttl: 180 });
+    await cacheService.set(cacheKey, result, { ttl: 600 });
     return result;
   }
 
@@ -400,7 +404,8 @@ class AnalyticsService {
       .eq("user_id", userId)
       .eq("status", "failed")
       .not("error_message", "is", null)
-      .order("completed_at", { ascending: false });
+      .order("completed_at", { ascending: false })
+      .limit(500);
 
     if (error) {
       throw new Error(`Failed to get error analysis: ${error.message}`);
@@ -449,7 +454,7 @@ class AnalyticsService {
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
 
-    await cacheService.set(cacheKey, errors, { ttl: 600 });
+    await cacheService.set(cacheKey, errors, { ttl: 1200 });
     return errors;
   }
 
@@ -490,7 +495,7 @@ class AnalyticsService {
       },
     };
 
-    await cacheService.set(cacheKey, result, { ttl: 300 });
+    await cacheService.set(cacheKey, result, { ttl: 900 });
     return result;
   }
 
@@ -582,7 +587,14 @@ class AnalyticsService {
   }
 
   async clearCache(userId: string): Promise<void> {
-    await cacheService.del(`*:${userId}*`);
+    await Promise.all([
+      cacheService.del(`stats:${userId}`),
+      cacheService.del(`trends:${userId}`),
+      cacheService.del(`top-workflows:${userId}`),
+      cacheService.del(`errors:${userId}`),
+      cacheService.del(`quota:${userId}`),
+      cacheService.del(`resources:${userId}`),
+    ]);
   }
 
   private async getWorkflowCount(userId: string): Promise<number> {

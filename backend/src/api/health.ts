@@ -11,12 +11,7 @@ export async function healthRoutes(fastify: FastifyInstance) {
   fastify.get("/health", async (request, reply) => {
     const health = await getHealthStatus();
 
-    const statusCode =
-      health.status === "healthy"
-        ? 200
-        : health.status === "degraded"
-        ? 200
-        : 503;
+    const statusCode = health.status === "unhealthy" ? 503 : 200;
 
     return reply.status(statusCode).send({
       status: health.status,
@@ -29,12 +24,7 @@ export async function healthRoutes(fastify: FastifyInstance) {
   fastify.get("/health/detailed", async (request, reply) => {
     const health = await getHealthStatus();
 
-    const statusCode =
-      health.status === "healthy"
-        ? 200
-        : health.status === "degraded"
-        ? 200
-        : 503;
+    const statusCode = health.status === "unhealthy" ? 503 : 200;
 
     return reply.status(statusCode).send(health);
   });

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { Execution, executionsApi } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { Toast } from "@/components/ui/Toast";
 import { Trash2, Eye, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { formatDate, formatDuration, getStatusColor } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -17,7 +18,7 @@ interface ExecutionListProps {
   initialLimit: number;
 }
 
-export function ExecutionList({
+export const ExecutionList = memo(function ExecutionList({
   initialExecutions,
   initialTotal,
   initialPage,
@@ -37,6 +38,7 @@ export function ExecutionList({
     null
   );
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -65,20 +67,20 @@ export function ExecutionList({
     fetchExecutions();
   }, [fetchExecutions]);
 
-  const handleStatusFilter = (value: string) => {
+  const handleStatusFilter = useCallback((value: string) => {
     setStatusFilter(value as typeof statusFilter);
-  };
+  }, []);
 
-  const handleView = (execution: Execution) => {
+  const handleView = useCallback((execution: Execution) => {
     router.push(`/dashboard/executions/${execution.id}`);
-  };
+  }, [router]);
 
-  const confirmDelete = (execution: Execution) => {
+  const confirmDelete = useCallback((execution: Execution) => {
     setExecutionToDelete(execution);
     setDeleteModalOpen(true);
-  };
+  }, []);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!executionToDelete) return;
 
     setActionLoading(executionToDelete.id);
@@ -89,14 +91,15 @@ export function ExecutionList({
       fetchExecutions();
     } catch (error) {
       console.error("Failed to delete execution:", error);
-      alert("Failed to delete execution");
+      setToast({message: "Failed to delete execution", type: "error"});
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [executionToDelete, fetchExecutions]);
 
   return (
     <>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Filter className="h-5 w-5 text-gray-400" />
@@ -269,4 +272,4 @@ export function ExecutionList({
       </Modal>
     </>
   );
-}
+});

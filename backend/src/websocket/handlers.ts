@@ -1,12 +1,25 @@
 import type { AuthenticatedSocket, WebSocketServer } from "./index.js";
+import { supabase } from "../config/supabase.js";
 
 export function setupHandlers(
   socket: AuthenticatedSocket,
   wsServer: WebSocketServer
 ) {
-  socket.on("subscribe:execution", (data: { executionId: string }) => {
+  socket.on("subscribe:execution", async (data: { executionId: string }) => {
     if (!data.executionId) {
       socket.emit("error", { message: "executionId is required" });
+      return;
+    }
+
+    // Verify the execution belongs to the authenticated user
+    const { data: execution, error } = await supabase
+      .from("executions")
+      .select("user_id")
+      .eq("id", data.executionId)
+      .single();
+
+    if (error || !execution || execution.user_id !== socket.userId) {
+      socket.emit("error", { message: "Execution not found or access denied" });
       return;
     }
 

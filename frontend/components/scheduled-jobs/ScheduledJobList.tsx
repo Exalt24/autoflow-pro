@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,6 +13,7 @@ import {
 import { scheduledJobsApi, workflowsApi, type ScheduledJob } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { EditScheduledJobModal } from "./EditScheduledJobModal";
+import { Toast } from "@/components/ui/Toast";
 
 interface ScheduledJobListProps {
   initialJobs: ScheduledJob[];
@@ -42,6 +43,7 @@ export function ScheduledJobList({
   const [workflowNames, setWorkflowNames] = useState<Record<string, string>>(
     {}
   );
+  const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
 
   useEffect(() => {
     fetchJobs();
@@ -102,11 +104,12 @@ export function ScheduledJobList({
       await fetchJobs();
       router.refresh();
     } catch (err) {
-      alert(
-        `Failed to update job: ${
+      setToast({
+        message: `Failed to update job: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
-      );
+        }`,
+        type: "error",
+      });
     } finally {
       setActionLoading(null);
     }
@@ -123,11 +126,12 @@ export function ScheduledJobList({
       await fetchJobs();
       router.refresh();
     } catch (err) {
-      alert(
-        `Failed to delete job: ${
+      setToast({
+        message: `Failed to delete job: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
-      );
+        }`,
+        type: "error",
+      });
     } finally {
       setActionLoading(null);
     }
@@ -151,6 +155,7 @@ export function ScheduledJobList({
 
   return (
     <div className="space-y-4">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="flex gap-4">
         <select
           value={statusFilter}

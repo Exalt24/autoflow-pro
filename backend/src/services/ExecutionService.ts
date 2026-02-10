@@ -51,8 +51,7 @@ class ExecutionService {
     }
 
     await this.incrementUserExecutionCount(input.userId);
-    await this.invalidateAnalyticsCache(input.userId); // ADD THIS LINE
-
+    await this.invalidateAnalyticsCache(input.userId);
     console.log(
       `✓ Created execution ${data.id} for workflow ${input.workflowId}`
     );
@@ -94,7 +93,7 @@ class ExecutionService {
 
     let query = supabase
       .from("executions")
-      .select("*", { count: "exact" })
+      .select("id, workflow_id, user_id, status, started_at, completed_at, duration, error_message, archived", { count: "exact" })
       .eq("user_id", options.userId)
       .eq("archived", false);
 
@@ -128,7 +127,7 @@ class ExecutionService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      executions: data || [],
+      executions: (data || []) as any,
       total,
       page,
       limit,
@@ -188,8 +187,7 @@ class ExecutionService {
         input.completedAt = completedAt;
         input.duration = duration;
 
-        await this.invalidateAnalyticsCache(userId); // ADD THIS LINE
-      }
+        await this.invalidateAnalyticsCache(userId);      }
     }
 
     if (errorMessage) {
@@ -289,8 +287,7 @@ class ExecutionService {
       throw new Error(`Failed to delete execution: ${error.message}`);
     }
 
-    await this.invalidateAnalyticsCache(userId); // ADD THIS LINE
-    console.log(`✓ Deleted execution ${executionId}`);
+    await this.invalidateAnalyticsCache(userId);    console.log(`✓ Deleted execution ${executionId}`);
   }
 
   async markAsArchived(
@@ -343,6 +340,7 @@ class ExecutionService {
       .upsert({
         user_id: userId,
         executions_count: newCount,
+        retention_days: 30,
       })
       .select()
       .single();
@@ -353,7 +351,14 @@ class ExecutionService {
   }
 
   private async invalidateAnalyticsCache(userId: string): Promise<void> {
-    await cacheService.del(`*:${userId}*`);
+    await Promise.all([
+      cacheService.del(`stats:${userId}`),
+      cacheService.del(`trends:${userId}`),
+      cacheService.del(`top-workflows:${userId}`),
+      cacheService.del(`errors:${userId}`),
+      cacheService.del(`quota:${userId}`),
+      cacheService.del(`resources:${userId}`),
+    ]);
   }
 }
 

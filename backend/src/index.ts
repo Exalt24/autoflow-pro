@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import { env } from "./config/environment.js";
 import { testSupabaseConnection } from "./config/supabase.js";
+import { testRedisConnection } from "./config/redis.js";
 import { queueService } from "./services/QueueService.js";
 import { schedulerService } from "./services/SchedulerService.js";
 import { processWorkflowJob } from "./services/WorkerProcessor.js";
@@ -20,6 +21,7 @@ import { sanitizeRequest } from "./middleware/sanitize.js";
 import { logger, logError, logInfo, logArchival } from "./utils/logger.js";
 
 const fastify = Fastify({
+  bodyLimit: 1048576, // 1MB limit
   logger: false,
   disableRequestLogging: true,
 });
@@ -69,9 +71,10 @@ fastify.setErrorHandler((error, request, reply) => {
   });
 
   const statusCode = (error as any).statusCode || 500;
+  const isDev = process.env.NODE_ENV !== "production";
   reply.status(statusCode).send({
     error: err.name || "Internal Server Error",
-    message: err.message,
+    message: isDev ? err.message : "An unexpected error occurred",
     statusCode,
   });
 });
@@ -128,6 +131,13 @@ const start = async () => {
     await testSupabaseConnection();
     logInfo("Supabase connection verified");
 
+    try {
+      await testRedisConnection();
+      logInfo("Redis connection verified");
+    } catch (err) {
+      logger.warn(`Redis connection test failed - continuing without Redis: ${err instanceof Error ? err.message : String(err)}`);
+    }
+
     queueService.setWorker(processWorkflowJob);
     logInfo("Queue worker initialized");
 
@@ -164,7 +174,7 @@ const shutdown = async () => {
     const shutdownTimeout = setTimeout(() => {
       logger.warn("Shutdown timeout - forcing exit");
       process.exit(1);
-    }, 10000);
+    }, 30000);
 
     await schedulerService.shutdown();
     await queueService.close();

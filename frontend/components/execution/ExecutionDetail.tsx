@@ -5,12 +5,14 @@ import { Execution, LogEntry, workflowsApi } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Toast } from "@/components/ui/Toast";
 import { LogViewer } from "./LogViewer";
 import { ScreenshotGallery } from "./ScreenshotGallery";
 import { DataViewer } from "./DataViewer";
 import { formatDate, formatDuration, getStatusColor } from "@/lib/utils";
 import { Clock, Calendar, Play, AlertCircle } from "lucide-react";
 import { subscribeToExecution } from "@/lib/websocket";
+import { useRouter } from "next/navigation";
 
 interface ExecutionDetailProps {
   execution: Execution;
@@ -19,10 +21,12 @@ interface ExecutionDetailProps {
 export function ExecutionDetail({
   execution: initialExecution,
 }: ExecutionDetailProps) {
+  const router = useRouter();
   const [execution, setExecution] = useState(initialExecution);
   const [logs, setLogs] = useState<LogEntry[]>(initialExecution.logs || []);
   const [workflowName, setWorkflowName] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
 
   useEffect(() => {
     // Fetch workflow name
@@ -71,31 +75,23 @@ export function ExecutionDetail({
     setLoading(true);
     try {
       const result = await workflowsApi.execute(execution.workflow_id);
-      alert(
-        `Workflow execution restarted! New execution ID: ${result.executionId}`
-      );
-      window.location.href = `/dashboard/executions/${result.executionId}`;
+      setToast({message: `Workflow execution restarted! New execution ID: ${result.executionId}`, type: "success"});
+      router.push(`/dashboard/executions/${result.executionId}`);
     } catch (error) {
       console.error("Failed to retry execution:", error);
-      alert("Failed to restart execution");
+      setToast({message: "Failed to restart execution", type: "error"});
     } finally {
       setLoading(false);
     }
   };
 
-  const mockScreenshots =
-    execution.status === "completed" && execution.extracted_data
-      ? [
-          {
-            url: "https://via.placeholder.com/800x600?text=Screenshot+1",
-            stepId: "step-1",
-            timestamp: new Date().toISOString(),
-          },
-        ]
-      : [];
+  // Use actual screenshots from execution data; show empty state if none
+  const screenshots = (execution as any).screenshots || [];
 
   return (
     <div className="space-y-6">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       {/* Header */}
       <Card>
         <div className="p-6">
@@ -198,9 +194,7 @@ export function ExecutionDetail({
         )}
 
       {/* Screenshots */}
-      {mockScreenshots.length > 0 && (
-        <ScreenshotGallery screenshots={mockScreenshots} />
-      )}
+      <ScreenshotGallery screenshots={screenshots} />
     </div>
   );
 }

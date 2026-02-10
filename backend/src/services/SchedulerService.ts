@@ -110,13 +110,28 @@ export class SchedulerService {
 
     if (error || !dueJobs || dueJobs.length === 0) return;
 
+    // Batch fetch all workflows to avoid N+1 queries
+    const uniqueWorkflowIds = [
+      ...new Set(dueJobs.map((job) => job.workflow_id)),
+    ];
+    const { data: workflows, error: wfError } = await supabase
+      .from("workflows")
+      .select("*")
+      .in("id", uniqueWorkflowIds);
+
+    if (wfError) {
+      console.error("Failed to batch fetch workflows:", wfError.message);
+      return;
+    }
+
+    const workflowMap = new Map(
+      (workflows || []).map((w) => [w.id, w])
+    );
+
     for (const job of dueJobs) {
       try {
-        const workflow = await workflowService.getWorkflowById(
-          job.workflow_id,
-          job.user_id
-        );
-        if (!workflow) continue;
+        const workflow = workflowMap.get(job.workflow_id);
+        if (!workflow || workflow.user_id !== job.user_id) continue;
 
         const execution = await executionService.createExecution({
           workflowId: job.workflow_id,

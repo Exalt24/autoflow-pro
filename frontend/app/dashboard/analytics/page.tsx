@@ -16,6 +16,7 @@ import {
   ArchivalStats as ArchivalStatsType,
 } from "@/lib/api";
 import { Download, Calendar } from "lucide-react";
+import { Toast } from "@/components/ui/Toast";
 
 const ExecutionVolumeChart = lazy(
   () => import("@/components/dashboard/ExecutionVolumeChart")
@@ -68,6 +69,7 @@ export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState(7);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{message: string; type: "success" | "error" | "info"} | null>(null);
 
   const fetchData = async (days: number) => {
     setLoading(true);
@@ -155,7 +157,7 @@ export default function AnalyticsPage() {
 
   const handleExportCSV = () => {
     if (!trends || trends.length === 0) {
-      alert("No data to export");
+      setToast({message: "No data to export", type: "info"});
       return;
     }
 
@@ -203,6 +205,7 @@ export default function AnalyticsPage() {
 
   return (
     <div>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">Analytics</h1>

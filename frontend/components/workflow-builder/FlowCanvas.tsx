@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useImperativeHandle,
@@ -33,6 +34,7 @@ interface FlowCanvasProps {
   initialNodes: WorkflowNode[];
   initialEdges: Edge[];
   onNodeClick?: (node: WorkflowNode) => void;
+  onStateChange?: (nodes: WorkflowNode[], edges: Edge[]) => void;
 }
 
 export interface FlowCanvasRef {
@@ -46,7 +48,7 @@ export interface FlowCanvasRef {
 }
 
 export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
-  ({ initialNodes, initialEdges, onNodeClick }, ref) => {
+  ({ initialNodes, initialEdges, onNodeClick, onStateChange }, ref) => {
     const [nodes, setNodes, handleNodesChange] =
       useNodesState<Node>(initialNodes);
     const [edges, setEdges, handleEdgesChange] = useEdgesState(initialEdges);
@@ -227,6 +229,11 @@ export const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
         handleDeleteEdge,
       ]
     );
+
+    // Notify parent when nodes or edges change for reactive validation
+    useEffect(() => {
+      onStateChange?.(nodes as WorkflowNode[], edges);
+    }, [nodes, edges, onStateChange]);
 
     const proOptions = { hideAttribution: true };
 

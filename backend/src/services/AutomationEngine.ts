@@ -123,7 +123,7 @@ export class AutomationEngine {
           throw new Error(`Step ${step.id} failed: ${result.error}`);
         }
 
-        if (result.data !== undefined) {
+        if (result.data !== undefined && (step.type === "extract" || step.type === "extract_to_variable")) {
           context.extractedData[step.id] = result.data;
         }
 
@@ -390,6 +390,11 @@ export class AutomationEngine {
 
     try {
       if (multiple) {
+        // Wait for at least one element to be visible before extracting all
+        await page.waitForSelector(selector, {
+          state: "visible",
+          timeout: this.config.timeout,
+        });
         const elements = await page.locator(selector).all();
         const results = [];
 
@@ -483,7 +488,7 @@ export class AutomationEngine {
         screenshot = await page.screenshot({ fullPage: fullPage ?? true });
       }
 
-      return { success: true, data: screenshot, screenshot };
+      return { success: true, screenshot };
     } catch (error: any) {
       return { success: false, error: `Screenshot failed: ${error.message}` };
     }

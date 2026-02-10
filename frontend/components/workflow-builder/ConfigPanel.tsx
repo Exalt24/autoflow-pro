@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, Trash2, AlertCircle } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { WorkflowNode } from "./nodeTypes";
 import type { StepConfig } from "@/types";
 import { STEP_TYPES } from "./constants";
@@ -21,6 +22,7 @@ export function ConfigPanel({
   onDelete,
 }: ConfigPanelProps) {
   const [config, setConfig] = useState<StepConfig>(node?.data.config || {});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const prevNodeId = useRef(node?.id);
   useEffect(() => {
@@ -42,14 +44,26 @@ export function ConfigPanel({
   };
 
   const handleDelete = () => {
-    if (confirm("Delete this step?")) {
-      onDelete(node.id);
-      onClose();
-    }
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    setShowDeleteConfirm(false);
+    onDelete(node.id);
+    onClose();
   };
 
   return (
     <div className="w-96 bg-white border-l border-gray-200 flex flex-col h-full">
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        title="Delete Step"
+        message="Are you sure you want to delete this step? This cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+      />
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-900">

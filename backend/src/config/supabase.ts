@@ -19,13 +19,9 @@ export const supabaseAnon = createClient(
 
 export async function testSupabaseConnection(): Promise<boolean> {
   try {
-    const { error } = await supabase.from("_test").select("*").limit(1);
+    const { error } = await supabase.auth.getSession();
 
     if (error) {
-      if (error.message.includes("Could not find the table")) {
-        console.log("✓ Supabase connection successful (test table missing)");
-        return true;
-      }
       console.error("Supabase connection test failed:", error.message);
       return false;
     }

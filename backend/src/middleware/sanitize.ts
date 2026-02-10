@@ -29,4 +29,8 @@ export async function sanitizeRequest(
   if (request.query && typeof request.query === "object") {
     request.query = sanitizeValue(request.query);
   }
+
+  if (request.params && typeof request.params === "object") {
+    request.params = sanitizeValue(request.params);
+  }
 }

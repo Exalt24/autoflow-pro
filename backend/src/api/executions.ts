@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import validator from "validator";
 import { authenticate } from "../middleware/authenticate.js";
 import { executionService } from "../services/ExecutionService.js";
 
@@ -20,8 +21,8 @@ export async function executionRoutes(fastify: FastifyInstance) {
 
         const executions = await executionService.listExecutions({
           userId: request.user!.id,
-          page: page ? parseInt(page) : 1,
-          limit: limit ? parseInt(limit) : 10,
+          page: page ? (parseInt(page) || 1) : 1,
+          limit: limit ? (parseInt(limit) || 10) : 10,
           workflowId,
           status: status as
             | "queued"
@@ -49,6 +50,9 @@ export async function executionRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         const execution = await executionService.getExecutionById(
           id,
           request.user!.id
@@ -74,6 +78,9 @@ export async function executionRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         const { page, limit } = request.query as {
           page?: string;
           limit?: string;
@@ -89,8 +96,8 @@ export async function executionRoutes(fastify: FastifyInstance) {
         }
 
         const logs = await executionService.getLogs(id, request.user!.id, {
-          page: page ? parseInt(page) : 1,
-          limit: limit ? parseInt(limit) : 100,
+          page: page ? (parseInt(page) || 1) : 1,
+          limit: limit ? (parseInt(limit) || 100) : 100,
         });
 
         return reply.send(logs);
@@ -109,6 +116,9 @@ export async function executionRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         await executionService.deleteExecution(id, request.user!.id);
 
         return reply.send({ success: true });

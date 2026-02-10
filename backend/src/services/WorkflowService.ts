@@ -90,7 +90,7 @@ class WorkflowService {
 
     let query = supabase
       .from("workflows")
-      .select("*", { count: "exact" })
+      .select("id, user_id, name, description, status, created_at, updated_at", { count: "exact" })
       .eq("user_id", options.userId);
 
     if (options.status) {
@@ -117,7 +117,7 @@ class WorkflowService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      workflows: data || [],
+      workflows: (data || []) as any,
       total,
       page,
       limit,
@@ -254,6 +254,7 @@ class WorkflowService {
       .upsert({
         user_id: userId,
         workflows_count: count,
+        retention_days: 30,
       })
       .select()
       .single();

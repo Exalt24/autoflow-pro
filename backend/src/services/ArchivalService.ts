@@ -1,5 +1,5 @@
 import { supabase } from "../config/supabase.js";
-import { uploadToR2, deleteFromR2 } from "../config/r2.js";
+import { uploadToR2, deleteFromR2, r2Enabled } from "../config/r2.js";
 
 interface ArchivalResult {
   executionId: string;
@@ -106,6 +106,15 @@ export class ArchivalService {
   }
 
   async archiveExecution(executionId: string): Promise<ArchivalResult> {
+    if (!r2Enabled) {
+      return {
+        executionId,
+        archived: false,
+        r2Key: null,
+        error: "R2 storage is not configured. Set CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, and CLOUDFLARE_R2_ACCOUNT_ID to enable archival.",
+      };
+    }
+
     try {
       const { data: execution, error: fetchError } = await supabase
         .from("executions")
@@ -223,6 +232,11 @@ export class ArchivalService {
   }
 
   async restoreExecution(executionId: string): Promise<boolean> {
+    if (!r2Enabled) {
+      console.error("R2 storage is not configured. Cannot restore archived executions.");
+      return false;
+    }
+
     try {
       const { data: execution, error: fetchError } = await supabase
         .from("executions")

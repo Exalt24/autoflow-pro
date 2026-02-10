@@ -8,9 +8,17 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "./environment.js";
 
+const hasR2Credentials = !!(
+  env.CLOUDFLARE_R2_ACCESS_KEY_ID &&
+  env.CLOUDFLARE_R2_SECRET_ACCESS_KEY &&
+  env.CLOUDFLARE_R2_ACCOUNT_ID
+);
+
+export const r2Enabled = hasR2Credentials;
+
 const r2Client = new S3Client({
   region: "auto",
-  endpoint: `https://${env.CLOUDFLARE_R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: `https://${env.CLOUDFLARE_R2_ACCOUNT_ID || "missing"}.r2.cloudflarestorage.com`,
   credentials: {
     accessKeyId: env.CLOUDFLARE_R2_ACCESS_KEY_ID || "",
     secretAccessKey: env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || "",

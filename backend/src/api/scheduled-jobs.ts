@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import validator from "validator";
 import { authenticate } from "../middleware/authenticate.js";
 import { scheduledJobService } from "../services/ScheduledJobService.js";
 import { schedulerService } from "../services/SchedulerService.js";
@@ -11,6 +12,9 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
 
         const scheduledJob = await scheduledJobService.getScheduledJobById(
           id,
@@ -47,8 +51,8 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
 
         const result = await scheduledJobService.listScheduledJobs({
           userId: request.user!.id,
-          page: page ? parseInt(page) : 1,
-          limit: limit ? parseInt(limit) : 20,
+          page: page ? (parseInt(page) || 1) : 1,
+          limit: limit ? (parseInt(limit) || 20) : 20,
           workflowId,
           isActive: isActive !== undefined ? isActive === "true" : undefined,
         });
@@ -69,6 +73,9 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         const scheduledJob = await scheduledJobService.getScheduledJobById(
           id,
           request.user!.id
@@ -138,6 +145,9 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         const { cronSchedule, isActive } = request.body as {
           cronSchedule?: string;
           isActive?: boolean;
@@ -198,6 +208,9 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
 
         const existingJob = await scheduledJobService.getScheduledJobById(
           id,
@@ -233,6 +246,9 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         const { count } = request.query as { count?: string };
 
         const scheduledJob = await scheduledJobService.getScheduledJobById(
@@ -246,7 +262,7 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
 
         const nextRuns = getNextNRunTimes(
           scheduledJob.cron_schedule,
-          count ? parseInt(count) : 5
+          count ? (parseInt(count) || 5) : 5
         );
 
         return reply.send({
@@ -268,12 +284,15 @@ export async function scheduledJobRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
         const { limit } = request.query as { limit?: string };
 
         const executions = await scheduledJobService.getJobExecutionHistory(
           id,
           request.user!.id,
-          limit ? parseInt(limit) : 20
+          limit ? (parseInt(limit) || 20) : 20
         );
 
         return reply.send({

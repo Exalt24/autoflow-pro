@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import validator from "validator";
 import { authenticate } from "../middleware/authenticate.js";
 import { archivalService } from "../services/ArchivalService.js";
 
@@ -62,6 +63,9 @@ export async function archivalRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
+        if (!validator.isUUID(id)) {
+          return reply.status(400).send({ error: "Invalid ID format" });
+        }
 
         const { data: execution } = await (
           await import("../config/supabase.js")

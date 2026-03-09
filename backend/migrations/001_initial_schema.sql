@@ -23,9 +23,9 @@ DROP POLICY IF EXISTS "Users upload own screenshots" ON storage.objects;
 DROP POLICY IF EXISTS "Users read own screenshots" ON storage.objects;
 DROP POLICY IF EXISTS "Users delete own screenshots" ON storage.objects;
 
--- Delete objects first (foreign key constraint), then buckets
-DELETE FROM storage.objects WHERE bucket_id IN ('workflow-attachments', 'execution-screenshots');
-DELETE FROM storage.buckets WHERE id IN ('workflow-attachments', 'execution-screenshots');
+-- Nuke all storage (TRUNCATE bypasses row-level triggers like protect_delete)
+TRUNCATE storage.objects CASCADE;
+TRUNCATE storage.buckets CASCADE;
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

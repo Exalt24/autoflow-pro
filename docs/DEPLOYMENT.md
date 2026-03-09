@@ -69,7 +69,7 @@ Go to **Settings** → **API**:
 
 1. Click on database
 2. Go to **Details** tab
-3. Copy **REST URL** (save as `UPSTASH_REDIS_URL`)
+3. Copy **REST URL** (save as `REDIS_URL`)
 4. Format: `rediss://default:password@host:6379`
 
 ---
@@ -153,7 +153,7 @@ Click **"Advanced"** → **"Add Environment Variable"**:
 | `SUPABASE_URL`                    | Your Supabase URL                              |
 | `SUPABASE_ANON_KEY`               | Your anon key                                  |
 | `SUPABASE_SERVICE_KEY`            | Your service key                               |
-| `UPSTASH_REDIS_URL`               | Your Redis URL                                 |
+| `REDIS_URL`                       | Your Redis URL                                 |
 | `CLOUDFLARE_R2_ACCOUNT_ID`        | Your account ID                                |
 | `CLOUDFLARE_R2_ACCESS_KEY_ID`     | Your access key                                |
 | `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | Your secret key                                |

@@ -19,7 +19,7 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
-      - key: UPSTASH_REDIS_URL
+      - key: REDIS_URL
         sync: false
       - key: CLOUDFLARE_R2_ACCOUNT_ID
         sync: false

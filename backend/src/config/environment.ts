@@ -7,7 +7,7 @@ interface Environment {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   SUPABASE_SERVICE_KEY: string;
-  UPSTASH_REDIS_URL?: string;
+  REDIS_URL?: string;
   BROWSER_WS_URL?: string;
   CLOUDFLARE_R2_ACCOUNT_ID?: string;
   CLOUDFLARE_R2_ACCESS_KEY_ID?: string;
@@ -21,7 +21,7 @@ function validateEnvironment(): Environment {
     "SUPABASE_URL",
     "SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_KEY",
-    "UPSTASH_REDIS_URL",
+    "REDIS_URL",
   ];
 
   for (const key of required) {
@@ -54,7 +54,7 @@ function validateEnvironment(): Environment {
     SUPABASE_URL: process.env.SUPABASE_URL!,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY!,
     SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY!,
-    UPSTASH_REDIS_URL: process.env.UPSTASH_REDIS_URL,
+    REDIS_URL: process.env.REDIS_URL,
     BROWSER_WS_URL: process.env.BROWSER_WS_URL,
     CLOUDFLARE_R2_ACCOUNT_ID: process.env.CLOUDFLARE_R2_ACCOUNT_ID,
     CLOUDFLARE_R2_ACCESS_KEY_ID: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,

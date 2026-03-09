@@ -1,12 +1,12 @@
 import Redis from "ioredis";
 
-const REDIS_URL = process.env.UPSTASH_REDIS_URL;
+const REDIS_URL = process.env.REDIS_URL;
 
 let redisClient: Redis | null = null;
 
 export function createRedisClient(): Redis {
   if (!REDIS_URL) {
-    throw new Error("Redis credentials missing. UPSTASH_REDIS_URL required.");
+    throw new Error("Redis credentials missing. REDIS_URL required.");
   }
 
   if (redisClient) {

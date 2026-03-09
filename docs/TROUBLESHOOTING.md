@@ -85,7 +85,7 @@ webpack: (config, { isServer }) => {
 
 **Error**: `Redis connection failed`
 
-- Verify `UPSTASH_REDIS_URL` format: `rediss://default:password@host:6379`
+- Verify `REDIS_URL` format: `rediss://default:password@host:6379`
 - Check Upstash dashboard shows database active
 - Test: `npm run test:queue`
 

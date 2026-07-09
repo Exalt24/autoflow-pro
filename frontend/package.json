@@ -6,12 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test:part1": "tsx test-part1.ts",
-    "test:part2": "tsx test-part2.tsx",
-    "test:part3": "tsx test-part3.tsx",
-    "test:performance": "tsx test-performance.tsx",
-    "test:websocket": "tsx test-websocket-client.tsx"
+    "lint": "eslint"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",

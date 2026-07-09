@@ -8,6 +8,8 @@ Complete full-stack browser automation platform with visual workflow builder, di
 - 🔧 **Backend API**: https://autoflow-pro-api.onrender.com
 - 📊 **Health Check**: https://autoflow-pro-api.onrender.com/health
 
+> The backend runs on Render's free tier, so it may be cold-started (or suspended after inactivity). The first request can take up to a minute to wake it, and it may be down entirely if the free instance has been spun down. Run the backend locally (see Quick Start) for a reliable environment.
+
 ## Features
 
 - **Visual Workflow Builder**: Drag-and-drop interface with React Flow
@@ -141,8 +143,7 @@ autoflow-pro/
 │   │   ├── utils/     # Utilities
 │   │   └── websocket/ # WebSocket handlers
 │   └── migrations/    # Database migrations
-├── docs/              # Documentation
-└── monitoring/        # Monitoring setup guides
+└── docs/              # Documentation
 ```
 
 ## Key Features

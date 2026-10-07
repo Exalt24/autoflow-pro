@@ -240,13 +240,13 @@ Click **"Environment Variables"**:
 
 ### 8.1 Enable GitHub Actions
 
-The repository includes a keep-alive workflow (`.github/workflows/keep-alive.yml`) that:
+This repository no longer includes the keep-alive workflow described in this step (it was removed in February 2026, see the git history for `.github/workflows/keep-alive.yml`). To use one, add a workflow like it, which:
 - Pings backend every 5 minutes
 - Retries 4 times with 20-second delays
 - Handles cold starts (90-second timeout)
 - Prevents Render spin-down
 
-**The workflow is automatically enabled when you push to GitHub.** No additional setup needed!
+A workflow file in `.github/workflows/` is picked up by GitHub when you push it.
 
 ### 8.2 Verify Workflow
 

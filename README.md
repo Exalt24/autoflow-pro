@@ -2,13 +2,9 @@
 
 A browser automation platform with a drag-and-drop workflow builder, a Redis-backed job queue, live execution monitoring and cron scheduling. You build a workflow out of steps (navigate, click, fill, extract and so on), and a Playwright worker runs it while the dashboard streams the logs over WebSocket. Every row is scoped to its owner with Supabase Row Level Security. The backend, queue and storage all run on free tiers.
 
-## Live demo
+## Demo
 
-- Frontend: https://autoflow-pro.vercel.app
-- Backend API: https://autoflow-pro-api.onrender.com
-- Health check: https://autoflow-pro-api.onrender.com/health
-
-The demo opens on a sign-in wall. There is a sign-up page, and no demo account is documented in this repo, so sign-in is required to see anything past the landing page.
+The hosted copy is offline: the free-tier host suspended its services in October 2026, so the links that used to be here led to empty pages and were removed. Everything runs locally from the steps below. The app has a sign-up page and no demo account, so locally you create your own.
 
 The backend runs on Render's free tier and sleeps after a period of inactivity. The first request can take up to a minute to wake it, and it may be down if the free instance is spun down. Run the backend locally (see Quick start) for a reliable environment.
 
@@ -99,7 +95,7 @@ See the `.env.example` files in `backend/` and `frontend/`. You need the Supabas
 
 ## Deployment
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the deployment steps. The live demo uses:
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the deployment steps. The hosted copy used:
 
 - Frontend: Vercel (free tier)
 - Backend: Render (free tier, Singapore region)

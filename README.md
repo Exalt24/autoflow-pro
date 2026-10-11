@@ -1,12 +1,14 @@
 # AutoFlow Pro
 
-A browser automation platform with a drag-and-drop workflow builder, a Redis-backed job queue, live execution monitoring and cron scheduling. You build a workflow out of steps (navigate, click, fill, extract and so on), and a Playwright worker runs it while the dashboard streams the logs over WebSocket. Every row is scoped to its owner with Supabase Row Level Security. The backend, queue and storage all run on free tiers.
+![AutoFlow Pro running on a local stack: sign in, build a workflow by dragging steps onto the canvas, run it, watch the logs stream, read the extracted data](docs/demo.gif)
+
+*Recorded against a local stack (Supabase CLI, Redis in Docker, a test page served from the same machine). It plays at 2x except for the live run.*
+
+A browser automation platform with a drag-and-drop workflow builder, a Redis-backed job queue, live execution monitoring and cron scheduling. You build a workflow out of steps (navigate, click, fill, extract and so on), and a Playwright worker runs it while the dashboard streams the logs over WebSocket. Every row is scoped to its owner with Supabase Row Level Security. When it was hosted it ran on free tiers (Vercel, Render, Supabase, Upstash, Cloudflare R2); locally it needs only Docker and Node.
 
 ## Demo
 
-The hosted copy is offline: the free-tier host suspended its services in October 2026, so the links that used to be here led to empty pages and were removed. Everything runs locally from the steps below. The app has a sign-up page and no demo account, so locally you create your own.
-
-The backend runs on Render's free tier and sleeps after a period of inactivity. The first request can take up to a minute to wake it, and it may be down if the free instance is spun down. Run the backend locally (see Quick start) for a reliable environment.
+The hosted copy is offline: the free-tier host suspended its services in October 2026, so the links that used to be here led to empty pages and were removed. The recording above is the real app on a local stack, and the steps below rebuild that stack. The app has a sign-up page and no shared demo account, so locally you create your own; a local Supabase has email confirmation off, so you land on the dashboard straight after signing up.
 
 ## Features
 
@@ -15,7 +17,7 @@ The backend runs on Render's free tier and sleeps after a period of inactivity. 
 - Scheduled jobs: cron-based runs with failure monitoring
 - Real-time monitoring: WebSocket updates while a workflow runs
 - Analytics dashboard: execution trends, success rates and error analysis
-- Data archival: executions past the retention period are archived to Cloudflare R2
+- Data archival: executions past the retention period are archived to Cloudflare R2 (off unless the R2 credentials are set)
 - Usage view: the dashboard shows usage against per-user quota rows (10 workflows and 50 executions a month are the defaults it reports; the backend does not enforce them)
 
 ## Tech stack
@@ -42,56 +44,105 @@ The backend runs on Render's free tier and sleeps after a period of inactivity. 
 **Database and storage**
 
 - Supabase (PostgreSQL, Auth, Storage)
-- Upstash Redis for the queue and cache
-- Cloudflare R2 for archival
+- Redis for the queue and cache (Upstash when hosted, a Docker container locally)
+- Cloudflare R2 for archival (optional)
 
 ## Quick start
 
+Everything below runs on your machine with no cloud account. It was run on Windows 11 with Node 24 and Docker Desktop.
+
 ### Prerequisites
 
-- Node.js 22
-- A Supabase account
-- An Upstash Redis account
-- A Cloudflare R2 account
+- Node.js 22 or newer
+- Docker Desktop (running)
 
 ### Local development
 
-1. Clone the repository:
+1. Clone the repository and start Redis:
 
 ```bash
 git clone https://github.com/Exalt24/autoflow-pro.git
 cd autoflow-pro
+docker compose up -d redis
 ```
 
-2. Set up the backend:
+2. Start a local Supabase stack from a folder next to the repo (the Supabase CLI keeps its own project files):
 
 ```bash
-cd backend
+cd ..
+mkdir autoflow-supabase
+cd autoflow-supabase
+npx supabase init
+```
+
+   In `supabase/config.toml`, set `enabled = false` under `[studio]`, `[analytics]` and `[edge_runtime]` (the app uses none of them and the recording was made without them). Then:
+
+```bash
+npx supabase start
+npx supabase status -o env
+```
+
+   `status -o env` prints `API_URL`, `ANON_KEY` and `SERVICE_ROLE_KEY`, which the two env files below need.
+
+3. Create the tables, policies and storage buckets with the repo's migration. The database container is named `supabase_db_` plus the CLI project id, which is the folder name from step 2. This file deletes every user and all storage objects first, so only run it against a local stack. From the `autoflow-supabase` folder, in bash:
+
+```bash
+docker exec -i supabase_db_autoflow-supabase psql -U postgres -v ON_ERROR_STOP=1 < ../autoflow-pro/backend/migrations/001_initial_schema.sql
+```
+
+   or in PowerShell:
+
+```powershell
+Get-Content ..\autoflow-pro\backend\migrations\001_initial_schema.sql -Raw | docker exec -i supabase_db_autoflow-supabase psql -U postgres -v ON_ERROR_STOP=1
+```
+
+   (The hosted version applied the same file through the Supabase SQL editor.)
+
+4. Set up the backend:
+
+```bash
+cd ../autoflow-pro/backend
 npm install
+npx playwright-core install chromium
 cp .env.example .env
-# Fill in environment variables
+```
+
+   In `.env` set `SUPABASE_URL` (the `API_URL`), `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` (the `SERVICE_ROLE_KEY`), `REDIS_URL=redis://127.0.0.1:6379` and `CORS_ORIGIN=http://localhost:3000`. Delete the four `CLOUDFLARE_R2_*` lines (the example file holds placeholders, and archival is skipped when the R2 credentials are missing). Then:
+
+```bash
 npm run dev
 ```
 
-3. Set up the frontend in a new terminal:
+5. Set up the frontend in a new terminal:
 
 ```bash
-cd frontend
+cd autoflow-pro/frontend   # from the folder that holds the repo
 npm install
 cp .env.example .env.local
-# Fill in environment variables
+```
+
+   In `.env.local` set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to the same values as above, and leave the API and WebSocket URLs pointing at the backend. Then:
+
+```bash
 npm run dev
 ```
 
-4. Open the app:
+6. Open the app:
 
-- Frontend: http://localhost:3000
+- Frontend: http://localhost:3000, then **Sign up** to create an account
 - Backend: http://localhost:4000
 - Health check: http://localhost:4000/health
 
+To try a workflow without touching a third-party site, serve any small HTML page on your machine and point a Navigate step at it. The recording uses a one-file catalog page with a search box: Navigate, Fill the box, Click Search, Wait, Extract the titles and the prices, Screenshot.
+
 ### Environment variables
 
-See the `.env.example` files in `backend/` and `frontend/`. You need the Supabase URL and keys, the Upstash Redis URL, the Cloudflare R2 credentials and a CORS origin.
+See the `.env.example` files in `backend/` and `frontend/`. A local run needs the Supabase URL and keys, a Redis URL and a CORS origin. The Cloudflare R2 credentials are only needed if you want archival.
+
+### Good to know
+
+- The API allows 100 requests per 15 minutes per client, counted in the backend process. Clicking around the dashboard for a while can hit it ("Rate limit exceeded"); restarting the backend clears the counter.
+- Stop the local Supabase stack with `npx supabase stop` from the folder you started it in, and Redis with `docker compose down`.
 
 ## Deployment
 
@@ -205,8 +256,6 @@ The data model is per-user rows with RLS, not a multi-tenant system with organiz
 - Health check endpoint
 - Resource tracking in the dashboard
 - Error logging with Pino
-
-This repo has no keep-alive workflow. A scheduled GitHub Actions job that calls `/health` every few minutes would keep the free Render instance awake. I had one earlier and removed it.
 
 ## License
 

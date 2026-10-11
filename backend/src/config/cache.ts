@@ -40,7 +40,23 @@ export class CacheService {
 
   async del(key: string): Promise<void> {
     try {
-      await redisClient.del(this.prefixedKey(key));
+      const fullKey = this.prefixedKey(key);
+      // Cached entries such as trends:<user>:7 carry extra parts after the key
+      // the callers invalidate, so remove those variants together with the key.
+      const variants: string[] = [];
+      let cursor = "0";
+      do {
+        const [nextCursor, keys] = await redisClient.scan(
+          cursor,
+          "MATCH",
+          `${fullKey}:*`,
+          "COUNT",
+          100
+        );
+        cursor = nextCursor;
+        variants.push(...keys);
+      } while (cursor !== "0");
+      await redisClient.del(fullKey, ...variants);
     } catch (error) {
       console.error(`Cache delete error for key ${key}:`, error);
     }

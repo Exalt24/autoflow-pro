@@ -69,13 +69,14 @@ export function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
                   src={screenshot.url}
                   alt={`Screenshot ${index + 1}`}
                   fill
+                  unoptimized
                   className="object-cover group-hover:scale-105 transition-transform"
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-opacity flex items-center justify-center">
                   <ImageIcon className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <div className="absolute bottom-2 left-2 right-2">
-                  <div className="text-xs px-2 py-1 bg-black bg-opacity-70 text-white rounded truncate">
+                  <div className="text-xs px-2 py-1 bg-black/70 text-white rounded truncate">
                     {screenshot.stepId}
                   </div>
                 </div>
@@ -98,6 +99,7 @@ export function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
                 src={selectedImage.url}
                 alt="Full screenshot"
                 fill
+                unoptimized
                 className="object-contain rounded-lg"
               />
             </div>

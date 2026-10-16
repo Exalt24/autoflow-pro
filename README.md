@@ -25,7 +25,7 @@ You build a workflow out of steps (navigate, click, fill, extract, loops, condit
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
     UI["Next.js dashboard<br/>React Flow builder"] -- "REST" --> API["Fastify API"]
     API --> DB[("Supabase<br/>Postgres, Auth, RLS")]
     API -- "enqueue" --> Q[("Redis<br/>BullMQ")]

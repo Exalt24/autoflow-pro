@@ -1,6 +1,6 @@
 # AutoFlow Pro
 
-Browser automation platform: drag steps onto a canvas, a Playwright worker runs them, and the dashboard streams the logs live.
+Browser automation platform: drag steps onto a canvas, a Playwright worker runs them, and logs stream live.
 
 ![AutoFlow Pro running on a local stack: sign in, build a workflow by dragging steps onto the canvas, run it, watch the logs stream, read the extracted data](docs/demo.gif)
 

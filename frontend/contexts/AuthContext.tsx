@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Initialize WebSocket without blocking auth flow
         try {
           initializeWebSocket(session.access_token);
-        } catch (error) {
+        } catch {
           // WebSocket initialization is optional
           console.warn("WebSocket initialization skipped");
         }
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("token", session.access_token);
         try {
           initializeWebSocket(session.access_token);
-        } catch (error) {
+        } catch {
           console.warn("WebSocket initialization skipped");
         }
       } else {
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("token", data.session.access_token);
       try {
         initializeWebSocket(data.session.access_token);
-      } catch (error) {
+      } catch {
         console.warn("WebSocket initialization skipped");
       }
     }
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("token", data.session.access_token);
       try {
         initializeWebSocket(data.session.access_token);
-      } catch (error) {
+      } catch {
         console.warn("WebSocket initialization skipped");
       }
     }

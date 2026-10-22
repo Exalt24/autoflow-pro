@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, AlertCircle, CheckCircle } from "lucide-react";
 import { scheduledJobsApi } from "@/lib/api";
 
@@ -20,22 +20,27 @@ export function FailureStats({ jobId }: FailureStatsProps) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchStats = useCallback(async () => {
-    try {
-      const data = await scheduledJobsApi.getStats(jobId);
-      setStats(data);
-    } catch (err) {
-      console.error("Failed to fetch stats:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [jobId]);
-
   useEffect(() => {
-    fetchStats();
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
-  }, [fetchStats]);
+    let cancelled = false;
+    const load = () =>
+      scheduledJobsApi
+        .getStats(jobId)
+        .then((data) => {
+          if (!cancelled) setStats(data);
+        })
+        .catch((err) => {
+          if (!cancelled) console.error("Failed to fetch stats:", err);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    load();
+    const interval = setInterval(load, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [jobId]);
 
   if (loading) {
     return (

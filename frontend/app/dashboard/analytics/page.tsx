@@ -71,51 +71,63 @@ export default function AnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{message: string; type: "success" | "error" | "info"} | null>(null);
 
-  const fetchData = async (days: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [
-        statsData,
-        trendsData,
-        topWorkflowsData,
-        usageData,
-        errorsData,
-        slowestData,
-        archivalStatsData,
-        resourcesData,
-      ] = await Promise.all([
-        analyticsApi.getStats(),
-        analyticsApi.getTrends(days),
-        analyticsApi.getTopWorkflows(10),
-        analyticsApi.getUsage(),
-        analyticsApi.getErrors(10),
-        analyticsApi.getSlowestWorkflows(10),
-        archivalApi.getStats(),
-        analyticsApi.getResources(),
-      ]);
-
-      setStats(statsData);
-      setTrends(trendsData);
-      setTopWorkflows(topWorkflowsData);
-      setUsage(usageData);
-      setErrors(errorsData);
-      setSlowest(slowestData);
-      setArchivalStats(archivalStatsData);
-      setResources(resourcesData);
-    } catch (error) {
-      console.error("Failed to fetch analytics data:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to load analytics data"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    fetchData(timeRange);
-  }, [timeRange]);
+    let cancelled = false;
+    Promise.all([
+      analyticsApi.getStats(),
+      analyticsApi.getTrends(timeRange),
+      analyticsApi.getTopWorkflows(10),
+      analyticsApi.getUsage(),
+      analyticsApi.getErrors(10),
+      analyticsApi.getSlowestWorkflows(10),
+      archivalApi.getStats(),
+      analyticsApi.getResources(),
+    ])
+      .then(
+        ([
+          statsData,
+          trendsData,
+          topWorkflowsData,
+          usageData,
+          errorsData,
+          slowestData,
+          archivalStatsData,
+          resourcesData,
+        ]) => {
+          if (cancelled) return;
+          setStats(statsData);
+          setTrends(trendsData);
+          setTopWorkflows(topWorkflowsData);
+          setUsage(usageData);
+          setErrors(errorsData);
+          setSlowest(slowestData);
+          setArchivalStats(archivalStatsData);
+          setResources(resourcesData);
+        }
+      )
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("Failed to fetch analytics data:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to load analytics data"
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [timeRange, reloadToken]);
+
+  // Retry and the refresh after archiving show the loading state again; a range change does the same from its handler.
+  const reloadData = () => {
+    setLoading(true);
+    setError(null);
+    setReloadToken((token) => token + 1);
+  };
 
   const exportData = useMemo(
     () => ({
@@ -184,7 +196,7 @@ export default function AnalyticsPage() {
   };
 
   const handleArchiveComplete = () => {
-    fetchData(timeRange);
+    reloadData();
   };
 
   if (error) {
@@ -196,7 +208,7 @@ export default function AnalyticsPage() {
               Failed to load analytics
             </p>
             <p className="text-gray-600 text-sm mb-4">{error}</p>
-            <Button onClick={() => fetchData(timeRange)}>Retry</Button>
+            <Button onClick={() => reloadData()}>Retry</Button>
           </div>
         </Card>
       </div>
@@ -219,7 +231,11 @@ export default function AnalyticsPage() {
             <select
               title="Select Time Range"
               value={timeRange}
-              onChange={(e) => setTimeRange(Number(e.target.value))}
+              onChange={(e) => {
+                setTimeRange(Number(e.target.value));
+                setLoading(true);
+                setError(null);
+              }}
               className="text-sm focus:outline-none bg-transparent"
             >
               <option value={7}>Last 7 days</option>

@@ -19,24 +19,35 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchRetentionPolicy();
-  }, []);
+  const [reloadToken, setReloadToken] = useState(0);
 
-  const fetchRetentionPolicy = async () => {
+  useEffect(() => {
+    let cancelled = false;
+    analyticsApi
+      .getRetentionPolicy()
+      .then((data) => {
+        if (!cancelled) setRetentionDays(data.retentionDays);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Failed to fetch retention policy:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load retention policy"
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadToken]);
+
+  // The Reset button loads the saved value again and shows the loading state while it does.
+  const resetRetentionPolicy = () => {
     setLoading(true);
     setError(null);
-    try {
-      const data = await analyticsApi.getRetentionPolicy();
-      setRetentionDays(data.retentionDays);
-    } catch (err) {
-      console.error("Failed to fetch retention policy:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to load retention policy"
-      );
-    } finally {
-      setLoading(false);
-    }
+    setReloadToken((token) => token + 1);
   };
 
   const handleSave = async () => {
@@ -248,7 +259,7 @@ export default function SettingsPage() {
                 </Button>
                 <Button
                   variant="secondary"
-                  onClick={fetchRetentionPolicy}
+                  onClick={resetRetentionPolicy}
                   disabled={loading || saving}
                 >
                   Reset

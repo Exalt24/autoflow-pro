@@ -42,7 +42,8 @@ export const WorkflowList = memo(function WorkflowList({
   const [statusFilter, setStatusFilter] = useState<
     "all" | "draft" | "active" | "archived"
   >("all");
-  const [loading, setLoading] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [workflowToDelete, setWorkflowToDelete] = useState<Workflow | null>(
     null
@@ -54,56 +55,43 @@ export const WorkflowList = memo(function WorkflowList({
 
   const totalPages = Math.ceil(total / limit);
 
-  const fetchWorkflows = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await workflowsApi.list({
+  // A change of search or filter starts again from page 1. This runs while rendering (React's "adjust state when something
+  // changes" pattern), not in an effect.
+  const filterKey = `${debouncedSearch}|${statusFilter}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setPage(1);
+  }
+
+  // One request per page, filter or reload. `loading` is true until the request for the current key has finished.
+  const requestKey = `${page}|${limit}|${filterKey}|${reloadToken}`;
+  const loading = loadedKey !== requestKey;
+
+  useEffect(() => {
+    let cancelled = false;
+    workflowsApi
+      .list({
         page,
         limit,
         search: debouncedSearch || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
+      })
+      .then((result) => {
+        if (cancelled) return;
+        setWorkflows(result.workflows);
+        setTotal(result.total);
+      })
+      .catch((error) => {
+        if (!cancelled) console.error("Failed to fetch workflows:", error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(requestKey);
       });
-      setWorkflows(result.workflows);
-      setTotal(result.total);
-    } catch (error) {
-      console.error("Failed to fetch workflows:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, limit, debouncedSearch, statusFilter]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, statusFilter]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const doFetch = async () => {
-      setLoading(true);
-      try {
-        const result = await workflowsApi.list({
-          page,
-          limit,
-          search: debouncedSearch || undefined,
-          status: statusFilter !== "all" ? statusFilter : undefined,
-        });
-        if (!cancelled) {
-          setWorkflows(result.workflows);
-          setTotal(result.total);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error("Failed to fetch workflows:", error);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+    return () => {
+      cancelled = true;
     };
-    doFetch();
-    return () => { cancelled = true; };
-  }, [fetchWorkflows]);
+  }, [page, limit, debouncedSearch, statusFilter, requestKey]);
 
   const handleStatusFilter = useCallback((value: string) => {
     setStatusFilter(value as typeof statusFilter);
@@ -127,14 +115,14 @@ export const WorkflowList = memo(function WorkflowList({
     setActionLoading(workflow.id);
     try {
       await workflowsApi.duplicate(workflow.id);
-      fetchWorkflows();
+      setReloadToken((token) => token + 1);
     } catch (error) {
       console.error("Failed to duplicate workflow:", error);
       setToast({message: "Failed to duplicate workflow", type: "error"});
     } finally {
       setActionLoading(null);
     }
-  }, [fetchWorkflows]);
+  }, []);
 
   const confirmDelete = useCallback((workflow: Workflow) => {
     setWorkflowToDelete(workflow);
@@ -149,14 +137,14 @@ export const WorkflowList = memo(function WorkflowList({
       await workflowsApi.delete(workflowToDelete.id);
       setDeleteModalOpen(false);
       setWorkflowToDelete(null);
-      fetchWorkflows();
+      setReloadToken((token) => token + 1);
     } catch (error) {
       console.error("Failed to delete workflow:", error);
       setToast({message: "Failed to delete workflow", type: "error"});
     } finally {
       setActionLoading(null);
     }
-  }, [workflowToDelete, fetchWorkflows]);
+  }, [workflowToDelete]);
 
   return (
     <>

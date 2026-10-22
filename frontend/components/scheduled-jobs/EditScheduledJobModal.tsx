@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X } from "lucide-react";
 import { scheduledJobsApi, type ScheduledJob } from "@/lib/api";
 import { useRouter } from "next/navigation";
@@ -27,16 +27,21 @@ export function EditScheduledJobModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (open) {
-      setCronSchedule(job.cron_schedule);
-      setIsActive(job.is_active);
+  // The form is filled from the job each time the modal opens or the job changes. This runs while rendering (React's
+  // "adjust state when something changes" pattern), not in an effect.
+  const formSource = open ? job : null;
+  const [seenFormSource, setSeenFormSource] = useState<ScheduledJob | null>(null);
+  if (formSource !== seenFormSource) {
+    setSeenFormSource(formSource);
+    if (formSource) {
+      setCronSchedule(formSource.cron_schedule);
+      setIsActive(formSource.is_active);
       const matchesPreset = CRON_PRESETS.some(
-        (preset) => preset.value === job.cron_schedule
+        (preset) => preset.value === formSource.cron_schedule
       );
       setShowCustomCron(!matchesPreset);
     }
-  }, [open, job]);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

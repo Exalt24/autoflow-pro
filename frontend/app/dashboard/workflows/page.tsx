@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { WorkflowList } from "@/components/workflow/WorkflowList";
 import { CreateWorkflowModal } from "@/components/workflow/CreateWorkflowModal";
@@ -14,22 +14,33 @@ export default function WorkflowsPage() {
   const [loading, setLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  const fetchWorkflows = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await workflowsApi.list({ page, limit: 10 });
-      setWorkflows(result.workflows);
-      setTotal(result.total);
-    } catch (error) {
-      console.error("Failed to fetch workflows:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [page]);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    fetchWorkflows();
-  }, [fetchWorkflows]);
+    let cancelled = false;
+    workflowsApi
+      .list({ page, limit: 10 })
+      .then((result) => {
+        if (cancelled) return;
+        setWorkflows(result.workflows);
+        setTotal(result.total);
+      })
+      .catch((error) => {
+        if (!cancelled) console.error("Failed to fetch workflows:", error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, reloadToken]);
+
+  // A reload after a change shows the loading state again (the first load starts with it already on).
+  const reloadWorkflows = () => {
+    setLoading(true);
+    setReloadToken((token) => token + 1);
+  };
 
   if (loading) {
     return (
@@ -77,7 +88,7 @@ export default function WorkflowsPage() {
       <CreateWorkflowModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onSuccess={fetchWorkflows}
+        onSuccess={reloadWorkflows}
       />
     </>
   );

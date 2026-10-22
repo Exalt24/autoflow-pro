@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { WorkflowForm } from "./WorkflowForm";
 import { workflowsApi, WorkflowDefinition } from "@/lib/api";
@@ -21,12 +21,16 @@ export function CreateWorkflowModal({
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
+  // Closing the modal resets it. This runs while rendering (React's "adjust state when something changes" pattern),
+  // not in an effect.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) {
       setError(null);
       setIsLoading(false);
     }
-  }, [open]);
+  }
 
   const handleSubmit = async (data: {
     name: string;

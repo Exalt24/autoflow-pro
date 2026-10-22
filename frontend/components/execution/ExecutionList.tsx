@@ -32,7 +32,8 @@ export const ExecutionList = memo(function ExecutionList({
   const [statusFilter, setStatusFilter] = useState<
     "all" | "queued" | "running" | "completed" | "failed"
   >("all");
-  const [loading, setLoading] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [executionToDelete, setExecutionToDelete] = useState<Execution | null>(
     null
@@ -42,54 +43,41 @@ export const ExecutionList = memo(function ExecutionList({
 
   const totalPages = Math.ceil(total / limit);
 
-  const fetchExecutions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await executionsApi.list({
-        page,
-        limit,
-        status: statusFilter !== "all" ? statusFilter : undefined,
-      });
-      setExecutions(result.executions);
-      setTotal(result.total);
-    } catch (error) {
-      console.error("Failed to fetch executions:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, limit, statusFilter]);
-
-  useEffect(() => {
+  // A change of filter starts again from page 1. This runs while rendering (React's "adjust state when something changes"
+  // pattern), not in an effect.
+  const [prevStatusFilter, setPrevStatusFilter] = useState(statusFilter);
+  if (statusFilter !== prevStatusFilter) {
+    setPrevStatusFilter(statusFilter);
     setPage(1);
-  }, [statusFilter]);
+  }
+
+  // One request per page, filter or reload. `loading` is true until the request for the current key has finished.
+  const requestKey = `${page}|${limit}|${statusFilter}|${reloadToken}`;
+  const loading = loadedKey !== requestKey;
 
   useEffect(() => {
     let cancelled = false;
-    const doFetch = async () => {
-      setLoading(true);
-      try {
-        const result = await executionsApi.list({
-          page,
-          limit,
-          status: statusFilter !== "all" ? statusFilter : undefined,
-        });
-        if (!cancelled) {
-          setExecutions(result.executions);
-          setTotal(result.total);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error("Failed to fetch executions:", error);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+    executionsApi
+      .list({
+        page,
+        limit,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      })
+      .then((result) => {
+        if (cancelled) return;
+        setExecutions(result.executions);
+        setTotal(result.total);
+      })
+      .catch((error) => {
+        if (!cancelled) console.error("Failed to fetch executions:", error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(requestKey);
+      });
+    return () => {
+      cancelled = true;
     };
-    doFetch();
-    return () => { cancelled = true; };
-  }, [fetchExecutions]);
+  }, [page, limit, statusFilter, requestKey]);
 
   const handleStatusFilter = useCallback((value: string) => {
     setStatusFilter(value as typeof statusFilter);
@@ -112,14 +100,14 @@ export const ExecutionList = memo(function ExecutionList({
       await executionsApi.delete(executionToDelete.id);
       setDeleteModalOpen(false);
       setExecutionToDelete(null);
-      fetchExecutions();
+      setReloadToken((token) => token + 1);
     } catch (error) {
       console.error("Failed to delete execution:", error);
       setToast({message: "Failed to delete execution", type: "error"});
     } finally {
       setActionLoading(null);
     }
-  }, [executionToDelete, fetchExecutions]);
+  }, [executionToDelete]);
 
   return (
     <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Clock, Play, Pause, Edit, Calendar } from "lucide-react";
 import {
@@ -27,29 +27,38 @@ export default function ScheduledJobDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
 
-  const fetchJobDetails = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [jobData, historyData] = await Promise.all([
-        scheduledJobsApi.getById(jobId),
-        scheduledJobsApi.getHistory(jobId, 20),
-      ]);
-
-      setJob(jobData);
-      setExecutions(historyData.executions);
-
-      const workflow = await workflowsApi.getById(jobData.workflow_id);
-      setWorkflowName(workflow.name);
-    } catch (err) {
-      console.error("Failed to fetch job details:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [jobId]);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    fetchJobDetails();
-  }, [fetchJobDetails]);
+    let cancelled = false;
+    Promise.all([
+      scheduledJobsApi.getById(jobId),
+      scheduledJobsApi.getHistory(jobId, 20),
+    ])
+      .then(async ([jobData, historyData]) => {
+        if (cancelled) return;
+        setJob(jobData);
+        setExecutions(historyData.executions);
+
+        const workflow = await workflowsApi.getById(jobData.workflow_id);
+        if (!cancelled) setWorkflowName(workflow.name);
+      })
+      .catch((err) => {
+        if (!cancelled) console.error("Failed to fetch job details:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [jobId, reloadToken]);
+
+  // A reload after a change shows the loading state again (the first load starts with it already on).
+  const reloadJobDetails = () => {
+    setLoading(true);
+    setReloadToken((token) => token + 1);
+  };
 
   const handleToggleActive = async () => {
     if (!job) return;
@@ -57,7 +66,7 @@ export default function ScheduledJobDetailPage() {
     setActionLoading(true);
     try {
       await scheduledJobsApi.update(job.id, { isActive: !job.is_active });
-      await fetchJobDetails();
+      reloadJobDetails();
       router.refresh();
     } catch (err) {
       setToast({
@@ -247,7 +256,7 @@ export default function ScheduledJobDetailPage() {
         <EditScheduledJobModal
           open={editModalOpen}
           onClose={() => setEditModalOpen(false)}
-          onSuccess={fetchJobDetails}
+          onSuccess={reloadJobDetails}
           job={job}
         />
       )}

@@ -27,10 +27,12 @@ export function CreateScheduledJobModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (open) {
-      fetchWorkflows();
-    } else {
+  // Closing the modal resets the form. This runs while rendering (React's "adjust state when something changes" pattern),
+  // not in an effect.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (!open) {
       setError("");
       setWorkflowId("");
       setCronSchedule("0 9 * * *");
@@ -38,18 +40,24 @@ export function CreateScheduledJobModal({
       setShowCustomCron(false);
       setLoading(false);
     }
-  }, [open]);
+  }
 
-  const fetchWorkflows = async () => {
-    try {
-      const data = await workflowsApi.list({ limit: 100, status: "active" });
-      setWorkflows(data.workflows);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch workflows"
-      );
-    }
-  };
+  // The workflow choices are loaded each time the modal opens.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    workflowsApi
+      .list({ limit: 100, status: "active" })
+      .then((data) => {
+        if (!cancelled) setWorkflows(data.workflows);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to fetch workflows");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

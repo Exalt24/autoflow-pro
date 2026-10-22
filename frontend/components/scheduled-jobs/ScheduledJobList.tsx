@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -34,7 +34,8 @@ export function ScheduledJobList({
   const [page, setPage] = useState(initialPage);
   const [limit] = useState(initialLimit);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [loading, setLoading] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -45,63 +46,57 @@ export function ScheduledJobList({
   );
   const [toast, setToast] = useState<{message: string; type: "success" | "error"} | null>(null);
 
-  useEffect(() => {
-    fetchJobs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, statusFilter]);
+  // One request per page, filter or reload. `loading` is true until the request for the current key has finished.
+  const requestKey = `${page}|${limit}|${statusFilter}|${reloadToken}`;
+  const loading = loadedKey !== requestKey;
+  const reload = () => setReloadToken((token) => token + 1);
 
   useEffect(() => {
-    fetchWorkflowNames();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobs]);
-
-  const fetchJobs = async () => {
-    setLoading(true);
-    try {
-      const isActive =
-        statusFilter === "active"
-          ? true
-          : statusFilter === "inactive"
-          ? false
-          : undefined;
-
-      const data = await scheduledJobsApi.list({
-        page,
-        limit,
-        isActive,
-      });
-      setJobs(data.scheduledJobs);
-      setTotal(data.total);
-    } catch (err) {
-      console.error("Failed to fetch scheduled jobs:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchWorkflowNames = async () => {
-    const uniqueWorkflowIds = [...new Set(jobs.map((j) => j.workflow_id))];
-    const names: Record<string, string> = {};
-
-    await Promise.all(
-      uniqueWorkflowIds.map(async (id) => {
-        try {
-          const workflow = await workflowsApi.getById(id);
-          names[id] = workflow.name;
-        } catch {
-          names[id] = "Unknown Workflow";
-        }
+    let cancelled = false;
+    const isActive =
+      statusFilter === "active" ? true : statusFilter === "inactive" ? false : undefined;
+    scheduledJobsApi
+      .list({ page, limit, isActive })
+      .then((data) => {
+        if (cancelled) return;
+        setJobs(data.scheduledJobs);
+        setTotal(data.total);
       })
-    );
+      .catch((err) => {
+        if (!cancelled) console.error("Failed to fetch scheduled jobs:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(requestKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, limit, statusFilter, requestKey]);
 
-    setWorkflowNames(names);
-  };
+  // The workflow names shown on each row are looked up whenever the list changes.
+  useEffect(() => {
+    let cancelled = false;
+    const uniqueWorkflowIds = [...new Set(jobs.map((j) => j.workflow_id))];
+    Promise.all(
+      uniqueWorkflowIds.map((id) =>
+        workflowsApi
+          .getById(id)
+          .then((workflow) => [id, workflow.name] as const)
+          .catch(() => [id, "Unknown Workflow"] as const)
+      )
+    ).then((entries) => {
+      if (!cancelled) setWorkflowNames(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [jobs]);
 
   const handleToggleActive = async (job: ScheduledJob) => {
     setActionLoading(job.id);
     try {
       await scheduledJobsApi.update(job.id, { isActive: !job.is_active });
-      await fetchJobs();
+      reload();
       router.refresh();
     } catch (err) {
       setToast({
@@ -123,7 +118,7 @@ export function ScheduledJobList({
       await scheduledJobsApi.delete(jobToDelete);
       setDeleteModalOpen(false);
       setJobToDelete(null);
-      await fetchJobs();
+      reload();
       router.refresh();
     } catch (err) {
       setToast({
@@ -309,7 +304,7 @@ export function ScheduledJobList({
             setEditModalOpen(false);
             setJobToEdit(null);
           }}
-          onSuccess={fetchJobs}
+          onSuccess={reload}
           job={jobToEdit}
         />
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { ExecutionList } from "@/components/execution/ExecutionList";
 import { executionsApi, Execution } from "@/lib/api";
 
@@ -10,22 +10,25 @@ export default function ExecutionsPage() {
   const [page] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  const fetchExecutions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await executionsApi.list({ page, limit: 10 });
-      setExecutions(result.executions);
-      setTotal(result.total);
-    } catch (error) {
-      console.error("Failed to fetch executions:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [page]);
-
   useEffect(() => {
-    fetchExecutions();
-  }, [fetchExecutions]);
+    let cancelled = false;
+    executionsApi
+      .list({ page, limit: 10 })
+      .then((result) => {
+        if (cancelled) return;
+        setExecutions(result.executions);
+        setTotal(result.total);
+      })
+      .catch((error) => {
+        if (!cancelled) console.error("Failed to fetch executions:", error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
 
   if (loading) {
     return (

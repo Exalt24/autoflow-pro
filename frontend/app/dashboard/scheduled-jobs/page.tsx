@@ -12,21 +12,32 @@ export default function ScheduledJobsPage() {
   const [loading, setLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
+  const [reloadToken, setReloadToken] = useState(0);
 
-  const fetchJobs = async () => {
+  useEffect(() => {
+    let cancelled = false;
+    scheduledJobsApi
+      .list({ page: 1, limit: 20 })
+      .then((data) => {
+        if (cancelled) return;
+        setJobs(data.scheduledJobs);
+        setTotal(data.total);
+      })
+      .catch((err) => {
+        if (!cancelled) console.error("Failed to fetch scheduled jobs:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadToken]);
+
+  // A reload after a change shows the loading state again (the first load starts with it already on).
+  const reloadJobs = () => {
     setLoading(true);
-    try {
-      const data = await scheduledJobsApi.list({ page: 1, limit: 20 });
-      setJobs(data.scheduledJobs);
-      setTotal(data.total);
-    } catch (err) {
-      console.error("Failed to fetch scheduled jobs:", err);
-    } finally {
-      setLoading(false);
-    }
+    setReloadToken((token) => token + 1);
   };
 
   return (
@@ -68,7 +79,7 @@ export default function ScheduledJobsPage() {
       <CreateScheduledJobModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onSuccess={fetchJobs}
+        onSuccess={reloadJobs}
       />
     </div>
   );

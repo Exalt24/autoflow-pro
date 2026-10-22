@@ -63,7 +63,7 @@ export async function listFiles(
   bucket: string,
   path: string = ""
 ): Promise<{
-  data: Array<{ name: string; id: string }> | null;
+  data: Array<{ name: string; id: string | null }> | null;
   error: Error | null;
 }> {
   const { data, error } = await supabase.storage.from(bucket).list(path);

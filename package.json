@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/Exalt24/autoflow-pro#readme",
   "devDependencies": {
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.6.5",
     "baseline-browser-mapping": "^2.11.28",
     "tsx": "^4.23.15"
   }

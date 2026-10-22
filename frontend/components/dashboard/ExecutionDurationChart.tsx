@@ -76,7 +76,7 @@ const ExecutionDurationChart = memo(function ExecutionDurationChart({
             />
             <YAxis dataKey="name" type="category" width={150} />
             <Tooltip
-              formatter={(value: number) => [`${value}s`, "Avg Duration"]}
+              formatter={(value) => [`${value ?? 0}s`, "Avg Duration"]}
               labelFormatter={(label) => `Workflow: ${label}`}
             />
             <Bar dataKey="duration" fill="#f59e0b" />

@@ -151,37 +151,30 @@ class QueueService {
     };
   }
 
+  // BullMQ 6 replaced repeatable jobs with job schedulers: the scheduler id is the job id, the template is what each run executes.
   async addRepeatableJob(
     data: Omit<WorkflowJobData, "executionId">,
     cronSchedule: string,
     jobId: string
   ): Promise<void> {
     this.trackCommand();
-    await this.queue.add("execute-workflow-scheduled", data as any, {
-      repeat: {
-        pattern: cronSchedule,
-        key: jobId,
-      },
-      jobId: `scheduled-${jobId}`,
-    });
+    await this.queue.upsertJobScheduler(
+      jobId,
+      { pattern: cronSchedule },
+      { name: "execute-workflow-scheduled", data: data as any }
+    );
     console.log(`✓ Repeatable job ${jobId} added with cron: ${cronSchedule}`);
   }
 
-  async removeRepeatableJob(
-    jobId: string,
-    cronSchedule: string
-  ): Promise<void> {
+  async removeRepeatableJob(jobId: string): Promise<void> {
     this.trackCommand();
-    await this.queue.removeRepeatable("execute-workflow-scheduled", {
-      pattern: cronSchedule,
-      key: jobId,
-    });
+    await this.queue.removeJobScheduler(jobId);
     console.log(`✓ Repeatable job ${jobId} removed`);
   }
 
   async getRepeatableJobs() {
     this.trackCommand();
-    return await this.queue.getRepeatableJobs();
+    return await this.queue.getJobSchedulers();
   }
 
   getRedisStats(): {

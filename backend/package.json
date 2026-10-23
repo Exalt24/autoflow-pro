@@ -51,7 +51,7 @@
     "@fastify/autoload": "^6.5.1",
     "@fastify/cors": "^11.3.1",
     "@fastify/helmet": "^13.2.0",
-    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/rate-limit": "^11.2.1",
     "@fastify/sensible": "^6.0.7",
     "@supabase/supabase-js": "^2.118.0",
     "@types/node": "^26.6.5",

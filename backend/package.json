@@ -28,6 +28,7 @@
     "test:e2e": "tsx tests/test-end-to-end.ts",
     "test:scheduled": "tsx tests/test-scheduled-jobs.ts",
     "test:scheduler": "tsx tests/test-scheduler.ts",
+    "test:scheduler-order": "tsx tests/test-scheduler-order.ts",
     "test:scheduled-api": "tsx tests/test-scheduled-api.ts",
     "test:failures": "tsx tests/test-failure-monitoring.ts",
     "test:variables": "tsx tests/test-variables.ts",

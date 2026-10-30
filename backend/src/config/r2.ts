@@ -4,28 +4,23 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
   HeadBucketCommand,
+  ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { env } from "./environment.js";
+import "dotenv/config";
+import { ARCHIVE_PREFIX, resolveArchiveTarget } from "./archiveTarget.js";
 
-const hasR2Credentials = !!(
-  env.CLOUDFLARE_R2_ACCESS_KEY_ID &&
-  env.CLOUDFLARE_R2_SECRET_ACCESS_KEY &&
-  env.CLOUDFLARE_R2_ACCOUNT_ID
-);
+// ARCHIVE_PROVIDER picks the target: r2 (default, Cloudflare R2) or s3 (AWS S3).
+// Both go through the same S3 client; only its configuration differs.
+const target = resolveArchiveTarget(process.env);
 
-export const r2Enabled = hasR2Credentials;
+export const r2Enabled = target.enabled;
+export const archiveProvider = target.provider;
+export const archiveNotConfiguredMessage = target.notConfiguredMessage;
 
-const r2Client = new S3Client({
-  region: "auto",
-  endpoint: `https://${env.CLOUDFLARE_R2_ACCOUNT_ID || "missing"}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: env.CLOUDFLARE_R2_ACCESS_KEY_ID || "",
-    secretAccessKey: env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || "",
-  },
-});
+const r2Client = new S3Client(target.client);
 
-const BUCKET_NAME = env.CLOUDFLARE_R2_BUCKET_NAME || "autoflow-archives";
+const BUCKET_NAME = target.bucket;
 
 export interface R2UploadResult {
   key: string;
@@ -65,7 +60,7 @@ export async function downloadFromR2(key: string): Promise<Buffer> {
   const response = await r2Client.send(command);
 
   if (!response.Body) {
-    throw new Error("No data returned from R2");
+    throw new Error(`No data returned from ${target.provider}`);
   }
 
   const chunks: Uint8Array[] = [];
@@ -99,11 +94,20 @@ export async function getSignedDownloadUrl(
 
 export async function testR2Connection(): Promise<boolean> {
   try {
-    const command = new HeadBucketCommand({ Bucket: BUCKET_NAME });
+    // The AWS policy in deploy/aws lists only the archive prefix, and HeadBucket
+    // needs an unrestricted list, so the S3 check lists that prefix instead.
+    const command =
+      target.provider === "s3"
+        ? new ListObjectsV2Command({
+            Bucket: BUCKET_NAME,
+            Prefix: ARCHIVE_PREFIX,
+            MaxKeys: 1,
+          })
+        : new HeadBucketCommand({ Bucket: BUCKET_NAME });
     await r2Client.send(command);
     return true;
   } catch (error) {
-    console.error("R2 connection test failed:", error);
+    console.error(`${target.provider} connection test failed:`, error);
     return false;
   }
 }

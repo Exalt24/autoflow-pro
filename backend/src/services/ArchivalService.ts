@@ -1,5 +1,11 @@
 import { supabase } from "../config/supabase.js";
-import { uploadToR2, deleteFromR2, r2Enabled } from "../config/r2.js";
+import {
+  uploadToR2,
+  deleteFromR2,
+  r2Enabled,
+  archiveNotConfiguredMessage,
+} from "../config/r2.js";
+import { ARCHIVE_PREFIX } from "../config/archiveTarget.js";
 import { cacheService } from "../config/cache.js";
 
 interface ArchivalResult {
@@ -112,7 +118,7 @@ export class ArchivalService {
         executionId,
         archived: false,
         r2Key: null,
-        error: "R2 storage is not configured. Set CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, and CLOUDFLARE_R2_ACCOUNT_ID to enable archival.",
+        error: archiveNotConfiguredMessage,
       };
     }
 
@@ -141,7 +147,7 @@ export class ArchivalService {
         };
       }
 
-      const archiveKey = `executions/${execution.user_id}/${executionId}.json`;
+      const archiveKey = `${ARCHIVE_PREFIX}${execution.user_id}/${executionId}.json`;
 
       const archiveData = {
         id: execution.id,
@@ -236,7 +242,7 @@ export class ArchivalService {
 
   async restoreExecution(executionId: string): Promise<boolean> {
     if (!r2Enabled) {
-      console.error("R2 storage is not configured. Cannot restore archived executions.");
+      console.error(`${archiveNotConfiguredMessage} Cannot restore archived executions.`);
       return false;
     }
 

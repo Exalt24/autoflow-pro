@@ -1,0 +1,71 @@
+# 2026-10-31 AWS S3 archive target, run against a real AWS account (ap-southeast-2)
+# repo commit 369d2b3 (deploy/aws copied to a scratch folder so no state file lands in the repo)
+# Terraform v1.16.6, hashicorp/aws provider 6.71.0
+# Account id and access key ids are replaced with placeholders in this copy.
+# Commands (from deploy/aws): terraform init; terraform fmt -check; terraform validate;
+#   terraform plan -var region=ap-southeast-2 -var create_access_key=true -var force_destroy=true -out=plan.bin; terraform apply plan.bin
+#   (create_access_key and force_destroy are on only so the run can sign in as the created user and destroy cleanly)
+# Sign-in: an IAM user limited to autoflow-named buckets, users and policies; no endpoint override and no skip flags were set.
+# The signed reads below use curl --aws-sigv4 against the S3 and IAM endpoints.
+
+== terraform (trimmed to the lines that show the result)
+Terraform v1.16.6
+on windows_amd64
+== init
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+Terraform has been successfully initialized!
+== fmt -check
+fmt-ok
+== validate
+Success! The configuration is valid.
+
+== plan
+  # aws_iam_access_key.archive_writer[0] will be created
+  # aws_iam_policy.archive_access will be created
+  # aws_iam_user.archive_writer will be created
+  # aws_iam_user_policy_attachment.archive_writer will be created
+  # aws_s3_bucket.archive will be created
+  # aws_s3_bucket_lifecycle_configuration.archive will be created
+  # aws_s3_bucket_public_access_block.archive will be created
+  # aws_s3_bucket_server_side_encryption_configuration.archive will be created
+  # aws_s3_bucket_versioning.archive will be created
+Plan: 9 to add, 0 to change, 0 to destroy.
+== apply
+aws_iam_user.archive_writer: Creation complete after 1s [id=autoflow-archive-user]
+aws_iam_policy.archive_access: Creation complete after 2s [id=arn:aws:iam::<account-id>:policy/autoflow-archive-policy]
+aws_iam_access_key.archive_writer[0]: Creation complete after 1s [id=<access-key-id>]
+aws_iam_user_policy_attachment.archive_writer: Creation complete after 0s [id=autoflow-archive-user/arn:aws:iam::<account-id>:policy/autoflow-archive-policy]
+aws_s3_bucket.archive: Creation complete after 6s [id=autoflow-archive-<account-id>]
+aws_s3_bucket_public_access_block.archive: Creation complete after 1s [id=autoflow-archive-<account-id>]
+aws_s3_bucket_server_side_encryption_configuration.archive: Creation complete after 2s [id=autoflow-archive-<account-id>]
+aws_s3_bucket_versioning.archive: Creation complete after 3s [id=autoflow-archive-<account-id>]
+aws_s3_bucket_lifecycle_configuration.archive: Creation complete after 59s [id=autoflow-archive-<account-id>]
+Apply complete! Resources: 9 added, 0 changed, 0 destroyed.
+== outputs (non-sensitive)
+bucket_arn = "arn:aws:s3:::autoflow-archive-<account-id>"
+bucket_name = "autoflow-archive-<account-id>"
+iam_user_name = "autoflow-archive-user"
+policy_arn = "arn:aws:iam::<account-id>:policy/autoflow-archive-policy"
+
+== bucket settings read from AWS with signed requests (curl --aws-sigv4, not Terraform)
+versioning:   <Status>Enabled</Status>
+encryption:   <SSEAlgorithm>AES256</SSEAlgorithm>
+public block: BlockPublicAcls true, IgnorePublicAcls true, BlockPublicPolicy true, RestrictPublicBuckets true
+lifecycle:    Prefix executions/, Status Enabled, Days 90
+== the IAM user Terraform created, signed in with its own access key
+PUT  executions/proof/run-1.json (inside the prefix): http 200
+GET  executions/proof/run-1.json (inside the prefix): http 200, body read back {"proof":"autoflow-pro real aws run","n":1}
+PUT  other/x.json (outside the prefix): http 403
+GET  bucket versioning setting (bucket configuration): http 403
+LIST with no prefix: http 403
+LIST prefix=executions/: http 200
+
+== terraform destroy (same variables), then read back from AWS
+Destroy complete! Resources: 9 destroyed.
+HEAD bucket: http 404
+IAM GetUser autoflow-archive-user: NoSuchEntity
+IAM GetPolicy autoflow-archive-policy: NoSuchEntity
+S3 buckets in the account named autoflow-archive-*: 0
+terraform state resources left: 0

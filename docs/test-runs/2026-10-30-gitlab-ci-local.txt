@@ -1,0 +1,190 @@
+# 2026-10-30 gitlab-ci-local 4.77.0, Docker executor, image node:22
+# Command: npx gitlab-ci-local (runs the backend, frontend and pipelines jobs of .gitlab-ci.yml)
+
+parsing and downloads finished in 89 ms.
+json schema validated in 100 ms
+backend   starting node:22 (check)
+pipelines starting node:22 (check)
+frontend  starting node:22 (check)
+pipelines copied to docker volumes in 1.62 s
+frontend  copied to docker volumes in 1.79 s
+backend   copied to docker volumes in 1.84 s
+pipelines $ npm ci
+frontend  $ cd frontend
+frontend  $ npm ci
+frontend  > npm warn ERESOLVE overriding peer dependency
+frontend  > npm warn While resolving: eslint-plugin-import@2.32.0
+frontend  > npm warn Found: eslint@10.13.0
+frontend  > npm warn node_modules/eslint
+frontend  > npm warn   dev eslint@"^10" from the root project
+frontend  > npm warn   9 more (@eslint-community/eslint-utils, ...)
+frontend  > npm warn
+frontend  > npm warn Could not resolve dependency:
+frontend  > npm warn peer eslint@"^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9" from eslint-plugin-import@2.32.0
+frontend  > npm warn node_modules/eslint-config-next/node_modules/eslint-plugin-import
+frontend  > npm warn   eslint-plugin-import@"^2.32.0" from eslint-config-next@16.4.2
+frontend  > npm warn   node_modules/eslint-config-next
+frontend  > npm warn   1 more (eslint-import-resolver-typescript)
+frontend  > npm warn
+frontend  > npm warn Conflicting peer dependency: eslint@9.39.5
+frontend  > npm warn node_modules/eslint
+frontend  > npm warn   peer eslint@"^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9" from eslint-plugin-import@2.32.0
+frontend  > npm warn   node_modules/eslint-config-next/node_modules/eslint-plugin-import
+frontend  > npm warn     eslint-plugin-import@"^2.32.0" from eslint-config-next@16.4.2
+frontend  > npm warn     node_modules/eslint-config-next
+frontend  > npm warn     1 more (eslint-import-resolver-typescript)
+frontend  > npm warn ERESOLVE overriding peer dependency
+frontend  > npm warn While resolving: eslint-plugin-jsx-a11y@6.10.2
+frontend  > npm warn Found: eslint@10.13.0
+frontend  > npm warn node_modules/eslint
+frontend  > npm warn   dev eslint@"^10" from the root project
+frontend  > npm warn   9 more (@eslint-community/eslint-utils, ...)
+frontend  > npm warn
+frontend  > npm warn Could not resolve dependency:
+frontend  > npm warn peer eslint@"^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9" from eslint-plugin-jsx-a11y@6.10.2
+frontend  > npm warn node_modules/eslint-config-next/node_modules/eslint-plugin-jsx-a11y
+frontend  > npm warn   eslint-plugin-jsx-a11y@"^6.10.0" from eslint-config-next@16.4.2
+frontend  > npm warn   node_modules/eslint-config-next
+frontend  > npm warn
+frontend  > npm warn Conflicting peer dependency: eslint@9.39.5
+frontend  > npm warn node_modules/eslint
+frontend  > npm warn   peer eslint@"^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9" from eslint-plugin-jsx-a11y@6.10.2
+frontend  > npm warn   node_modules/eslint-config-next/node_modules/eslint-plugin-jsx-a11y
+frontend  > npm warn     eslint-plugin-jsx-a11y@"^6.10.0" from eslint-config-next@16.4.2
+frontend  > npm warn     node_modules/eslint-config-next
+frontend  > npm warn ERESOLVE overriding peer dependency
+frontend  > npm warn While resolving: eslint-plugin-react@7.37.5
+frontend  > npm warn Found: eslint@10.13.0
+frontend  > npm warn node_modules/eslint
+frontend  > npm warn   dev eslint@"^10" from the root project
+frontend  > npm warn   9 more (@eslint-community/eslint-utils, ...)
+frontend  > npm warn
+frontend  > npm warn Could not resolve dependency:
+frontend  > npm warn peer eslint@"^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7" from eslint-plugin-react@7.37.5
+frontend  > npm warn node_modules/eslint-config-next/node_modules/eslint-plugin-react
+frontend  > npm warn   eslint-plugin-react@"^7.37.0" from eslint-config-next@16.4.2
+frontend  > npm warn   node_modules/eslint-config-next
+frontend  > npm warn
+frontend  > npm warn Conflicting peer dependency: eslint@9.39.5
+frontend  > npm warn node_modules/eslint
+frontend  > npm warn   peer eslint@"^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7" from eslint-plugin-react@7.37.5
+frontend  > npm warn   node_modules/eslint-config-next/node_modules/eslint-plugin-react
+frontend  > npm warn     eslint-plugin-react@"^7.37.0" from eslint-config-next@16.4.2
+frontend  > npm warn     node_modules/eslint-config-next
+pipelines > 
+pipelines > added 12 packages, and audited 13 packages in 1s
+pipelines > 
+pipelines > 3 packages are looking for funding
+pipelines >   run `npm fund` for details
+pipelines > 
+pipelines > found 0 vulnerabilities
+pipelines $ npm run test:pipelines
+pipelines > 
+pipelines > > autoflow-pro@1.0.0 test:pipelines
+pipelines > > tsx scripts/test-pipeline-parity.ts
+pipelines > 
+backend   imported cache '0_backend/package-lock-35667fd552fe4196b42094395c6ec91f45778736f6e3028a2d75a5188a2d4fb4' in 1.67 s
+pipelines > PASS  GitHub defines the backend, frontend and pipelines jobs
+pipelines > PASS  GitLab CI runs the same commands as GitHub Actions
+pipelines > PASS  Azure Pipelines runs the same commands as GitHub Actions
+pipelines > PASS  a changed command in one pipeline is reported
+pipelines > PASS  a changed Node version in one pipeline is reported
+backend   $ cd backend
+backend   $ npm ci
+pipelines > PASS  azure-pipelines.yml passes the Azure Pipelines JSON schema
+pipelines > PASS  the schema check rejects a misspelled step key
+pipelines > 
+pipelines > All pipeline checks passed
+backend   > npm warn deprecated pkg-up@5.0.0: Renamed to package-up
+pipelines finished in 6.05 s
+frontend  > npm warn deprecated @types/dompurify@3.2.0: This is a stub types definition. dompurify provides its own type definitions, so you do not need this installed.
+backend   > 
+backend   > added 193 packages, and audited 194 packages in 4s
+backend   > 
+backend   > 45 packages are looking for funding
+backend   >   run `npm fund` for details
+backend   > 
+backend   > found 0 vulnerabilities
+backend   $ npm run build
+backend   > 
+backend   > > backend@1.0.0 build
+backend   > > tsc
+backend   > 
+backend   finished in 11 s
+.npm/: found 1057 artifact files and directories
+backend   cache created in '.gitlab-ci-local/cache/0_backend/package-lock-35667fd552fe4196b42094395c6ec91f45778736f6e3028a2d75a5188a2d4fb4' in 2.17 s
+frontend  > still running...
+frontend  > 
+frontend  > added 425 packages, and audited 426 packages in 18s
+frontend  > 
+frontend  > 139 packages are looking for funding
+frontend  >   run `npm fund` for details
+frontend  > 
+frontend  > found 0 vulnerabilities
+frontend  $ npm run lint
+frontend  > 
+frontend  > > frontend@0.1.0 lint
+frontend  > > eslint --max-warnings=0
+frontend  > 
+frontend  $ npm run build
+frontend  > 
+frontend  > > frontend@0.1.0 build
+frontend  > > next build
+frontend  > 
+frontend  > ▲ Next.js 16.4.2 (Turbopack)
+frontend  > ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+frontend  >  We detected multiple lockfiles and selected the directory of /builds/Exalt24/autoflow-pro/package-lock.json as the root directory.
+frontend  >  To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+frontend  >    See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+frontend  >  Detected additional lockfiles: 
+frontend  >    * /builds/Exalt24/autoflow-pro/frontend/package-lock.json
+frontend  > 
+frontend  > ✓ Running next.config.ts took 17ms
+frontend  > ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+frontend  > Attention: Next.js now collects completely anonymous telemetry regarding usage.
+frontend  > This information is used to shape Next.js' roadmap and prioritize features.
+frontend  > You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+frontend  > https://nextjs.org/telemetry
+frontend  > 
+frontend  > - Experiments (use with caution):
+frontend  >   · optimizePackageImports
+frontend  > 
+frontend  >   Creating an optimized production build ...
+frontend  > ✓ Compiled successfully in 2.7s
+frontend  >   Running TypeScript ...
+frontend  >   Finished TypeScript in 2.9s ...
+frontend  >   Collecting page data using 5 workers ...
+frontend  >   Generating static pages using 5 workers (0/12) ...
+frontend  >   Generating static pages using 5 workers (3/12) 
+frontend  >   Generating static pages using 5 workers (6/12) 
+frontend  >   Generating static pages using 5 workers (9/12) 
+frontend  > ✓ Generating static pages using 5 workers (12/12) in 290ms
+frontend  >   Finalizing page optimization ...
+frontend  > 
+frontend  > Route (app)
+frontend  > ┌ ○ /
+frontend  > ├ ○ /_not-found
+frontend  > ├ ○ /dashboard
+frontend  > ├ ○ /dashboard/analytics
+frontend  > ├ ○ /dashboard/executions
+frontend  > ├ ƒ /dashboard/executions/[id]
+frontend  > ├ ○ /dashboard/scheduled-jobs
+frontend  > ├ ƒ /dashboard/scheduled-jobs/[id]
+frontend  > ├ ○ /dashboard/settings
+frontend  > ├ ○ /dashboard/workflows
+frontend  > ├ ƒ /dashboard/workflows/[id]/builder
+frontend  > ├ ○ /login
+frontend  > └ ○ /signup
+frontend  > 
+frontend  > 
+frontend  > ○  (Static)   prerendered as static content
+frontend  > ƒ  (Dynamic)  server-rendered on demand
+frontend  > 
+frontend  finished in 32 s
+.npm/: found 2137 artifact files and directories
+frontend  cache created in '.gitlab-ci-local/cache/0_frontend/package-lock-53fdf358cfb55cb89510c2aca36a70978c73bca4d4692db6c77be81612621743' in 4.32 s
+
+ PASS  backend  
+ PASS  frontend 
+ PASS  pipelines
+pipeline finished in 37 s

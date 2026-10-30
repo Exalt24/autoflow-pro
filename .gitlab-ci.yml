@@ -1,0 +1,47 @@
+# Mirrors .github/workflows/ci.yml job for job. scripts/test-pipeline-parity.ts
+# fails when the commands in the GitHub, GitLab and Azure pipelines differ.
+default:
+  image: node:22
+  timeout: 30m
+
+stages:
+  - check
+
+variables:
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+
+backend:
+  stage: check
+  cache:
+    key:
+      files:
+        - backend/package-lock.json
+    paths:
+      - .npm/
+  script:
+    - cd backend
+    - npm ci
+    - npm run build
+
+frontend:
+  stage: check
+  variables:
+    NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
+  cache:
+    key:
+      files:
+        - frontend/package-lock.json
+    paths:
+      - .npm/
+  script:
+    - cd frontend
+    - npm ci
+    - npm run lint
+    - npm run build
+
+pipelines:
+  stage: check
+  script:
+    - npm ci
+    - npm run test:pipelines

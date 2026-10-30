@@ -1,0 +1,62 @@
+# Cloud Run service for the AutoFlow Pro API.
+# Replace PROJECT_ID and REGION, then: gcloud run services replace deploy/cloudrun/service.yaml
+# Build and push the image first: gcloud builds submit backend --tag REGION-docker.pkg.dev/PROJECT_ID/autoflow/autoflow-api:latest
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: autoflow-pro-api
+  labels:
+    cloud.googleapis.com/location: REGION
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "3"
+        run.googleapis.com/cpu-throttling: "false"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+        - image: REGION-docker.pkg.dev/PROJECT_ID/autoflow/autoflow-api:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: CORS_ORIGIN
+              value: https://YOUR-SITE.netlify.app
+            - name: SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: autoflow-supabase-url
+                  key: latest
+            - name: SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: autoflow-supabase-anon-key
+                  key: latest
+            - name: SUPABASE_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: autoflow-supabase-service-key
+                  key: latest
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: autoflow-redis-url
+                  key: latest
+          startupProbe:
+            httpGet:
+              path: /
+            initialDelaySeconds: 2
+            periodSeconds: 3
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /
+            periodSeconds: 30

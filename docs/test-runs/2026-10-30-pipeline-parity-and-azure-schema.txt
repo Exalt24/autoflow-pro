@@ -1,0 +1,15 @@
+# 2026-10-30 npm run test:pipelines (GitHub, GitLab and Azure command parity; azure-pipelines.yml against the Azure Pipelines JSON schema v1.261.1 with ajv)
+
+
+> autoflow-pro@1.0.0 test:pipelines
+> tsx scripts/test-pipeline-parity.ts
+
+PASS  GitHub defines the backend, frontend and pipelines jobs
+PASS  GitLab CI runs the same commands as GitHub Actions
+PASS  Azure Pipelines runs the same commands as GitHub Actions
+PASS  a changed command in one pipeline is reported
+PASS  a changed Node version in one pipeline is reported
+PASS  azure-pipelines.yml passes the Azure Pipelines JSON schema
+PASS  the schema check rejects a misspelled step key
+
+All pipeline checks passed

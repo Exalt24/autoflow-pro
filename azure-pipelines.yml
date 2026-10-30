@@ -1,0 +1,61 @@
+# Mirrors .github/workflows/ci.yml job for job. scripts/test-pipeline-parity.ts
+# fails when the commands in the GitHub, GitLab and Azure pipelines differ.
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - '*'
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+  - job: backend
+    timeoutInMinutes: '30'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '22.x'
+        displayName: Use Node 22
+      - script: npm ci
+        workingDirectory: backend
+        displayName: npm ci
+      - script: npm run build
+        workingDirectory: backend
+        displayName: npm run build
+
+  - job: frontend
+    timeoutInMinutes: '30'
+    variables:
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '22.x'
+        displayName: Use Node 22
+      - script: npm ci
+        workingDirectory: frontend
+        displayName: npm ci
+      - script: npm run lint
+        workingDirectory: frontend
+        displayName: npm run lint
+      - script: npm run build
+        workingDirectory: frontend
+        displayName: npm run build
+
+  - job: pipelines
+    timeoutInMinutes: '30'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '22.x'
+        displayName: Use Node 22
+      - script: npm ci
+        displayName: npm ci
+      - script: npm run test:pipelines
+        displayName: npm run test:pipelines

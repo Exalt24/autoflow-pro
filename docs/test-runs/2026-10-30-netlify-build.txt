@@ -1,0 +1,94 @@
+# 2026-10-30 netlify-cli 27.16.1, offline, no login
+# Command: NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-placeholder-key npx netlify-cli build --offline
+
+npm warn deprecated @opentelemetry/sdk-trace-node@2.12.0: Use @opentelemetry/sdk-trace package
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+npm warn deprecated @opentelemetry/sdk-trace-base@2.12.0: Use @opentelemetry/sdk-trace package
+
+Netlify Build                                                 
+────────────────────────────────────────────────────────────────
+
+> Version
+  @netlify/build 37.7.2
+
+> Flags
+  dry: false
+  offline: true
+
+> Current directory
+  C:\Projects\Professional\Projects\Apps\autoflow-pro\frontend
+
+> Config file
+  C:\Projects\Professional\Projects\Apps\autoflow-pro\netlify.toml
+
+> Context
+  production
+
+> Using Next.js Runtime - v5.16.5
+
+build.command from netlify.toml                               
+────────────────────────────────────────────────────────────────
+
+$ npm run build
+
+> frontend@0.1.0 build
+> next build
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Projects\Professional\Projects\Apps\autoflow-pro\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Projects\Professional\Projects\Apps\autoflow-pro\frontend\package-lock.json
+
+▲ Next.js 16.2.10 (Turbopack)
+- Experiments (use with caution):
+  · optimizePackageImports
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.8s
+  Running TypeScript ...
+  Finished TypeScript in 3.0s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/12) ...
+  Generating static pages using 15 workers (3/12) 
+  Generating static pages using 15 workers (6/12) 
+  Generating static pages using 15 workers (9/12) 
+✓ Generating static pages using 15 workers (12/12) in 237ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /dashboard
+├ ○ /dashboard/analytics
+├ ○ /dashboard/executions
+├ ƒ /dashboard/executions/[id]
+├ ○ /dashboard/scheduled-jobs
+├ ƒ /dashboard/scheduled-jobs/[id]
+├ ○ /dashboard/settings
+├ ○ /dashboard/workflows
+├ ƒ /dashboard/workflows/[id]/builder
+├ ○ /login
+└ ○ /signup
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+(build.command completed in 9.8s)
+
+Functions bundling                                            
+────────────────────────────────────────────────────────────────
+
+Packaging Functions from .netlify\functions-internal directory:
+ - ___netlify-server-handler\___netlify-server-handler.mjs
+
+
+(Functions bundling completed in 1.6s)
+
+Netlify Build Complete                                        
+────────────────────────────────────────────────────────────────
+
+(Netlify Build completed in 16.8s)

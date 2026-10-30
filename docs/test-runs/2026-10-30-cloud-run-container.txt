@@ -1,0 +1,33 @@
+# 2026-10-30 local container run of backend/Dockerfile (Docker Desktop 29.9.2), Redis 7 in a sibling container, placeholder Supabase values
+# Commands: docker build -t autoflow-api:local backend ; docker network create autoflow-net ; docker run redis ; docker run autoflow-api:local ; curl /health
+
+## build tail
+#16 unpacking to docker.io/library/autoflow-api:local 4.7s done
+#16 DONE 6.9s
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/j3doxm7eq8f7j5fwm5ujd4o0w
+
+## image
+size 483MB
+
+## container user
+uid=1000(node) gid=1000(node) groups=1000(node)
+
+## GET /
+{"name":"AutoFlow Pro API","version":"1.0.0","status":"operational"}
+HTTP 200
+
+## GET /health
+{"status":"healthy","timestamp":"2026-10-30T15:30:32.011Z","uptime":"< 1m","environment":"production"}
+HTTP 200
+
+## container log
+{"level":"INFO","time":"2026-10-30T15:30:24.133Z","pid":1,"hostname":"7f5daf10d4f5","msg":"Queue worker initialized"}
+{"level":"INFO","time":"2026-10-30T15:30:24.136Z","pid":1,"hostname":"7f5daf10d4f5","msg":"Server listening on port 8080"}
+{"level":"INFO","time":"2026-10-30T15:30:24.136Z","pid":1,"hostname":"7f5daf10d4f5","msg":"WebSocket server initialized"}
+{"level":"INFO","time":"2026-10-30T15:30:24.137Z","pid":1,"hostname":"7f5daf10d4f5","msg":"Scheduler service initialized"}
+{"level":"INFO","time":"2026-10-30T15:30:24.137Z","pid":1,"hostname":"7f5daf10d4f5","msg":"Daily archival scheduled"}
+{"level":"INFO","time":"2026-10-30T15:30:24.888Z","pid":1,"hostname":"7f5daf10d4f5","method":"GET","url":"/","statusCode":200,"duration":2,"msg":"GET /"}
+{"level":"INFO","time":"2026-10-30T15:30:24.914Z","pid":1,"hostname":"7f5daf10d4f5","method":"GET","url":"/","statusCode":200,"duration":0,"msg":"GET /"}
+{"level":"INFO","time":"2026-10-30T15:30:32.012Z","pid":1,"hostname":"7f5daf10d4f5","method":"GET","url":"/health","statusCode":200,"duration":7069,"msg":"GET /health"}
+service.yaml parses: kind=Service apiVersion=serving.knative.dev/v1 containerPort=8080 env=NODE_ENV,CORS_ORIGIN,SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_SERVICE_KEY,REDIS_URL

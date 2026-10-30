@@ -1,0 +1,114 @@
+# 2026-10-31 AWS S3 archive target, run against a local AWS emulator (moto)
+# repo commit 04fe6b6
+# Terraform v1.16.6, hashicorp/aws provider 6.71.0, moto 5.2.5, node v24.18.0, AWS SDK for JavaScript v3 (@aws-sdk/client-s3 3.1084.0)
+# Command: bash deploy/aws/emulator-proof.sh   (moto started with: python -m moto.server -p 5000; Redis 7 in a local container for the cache the archive code invalidates)
+# moto settings: server mode, path-style S3, region ap-southeast-2, IAM enforcement switched on only for the IAM-user phase through POST /moto-api/reset-auth (INITIAL_NO_AUTH_ACTION_COUNT 0), policy attached to the IAM user
+# Moto notes recorded while building this: (1) the lifecycle configuration resource takes about 55 s to create on moto 5.2.5 (earlier 5.1.x hung on it, moto issue 9708); (2) moto 5.2.5 returns 500 for a bulk DeleteObjects that includes a delete marker (AttributeError in moto/s3/utils.py), so the test deletes every version one at a time before terraform destroy; (3) moto does not evaluate the s3:prefix condition of the list statement, so the prefix condition is asserted in the plan JSON test and not by a denied list call; (4) the account-level public access block is not used, only the per-bucket one.
+
+# 2026-10-30T21:41:28Z  repo commit 04fe6b6
+# emulator: moto server at http://localhost:5000, region ap-southeast-2, path-style S3, static test sign-in for the admin calls
+# IAM enforcement: off while terraform runs, switched on through POST /moto-api/reset-auth (INITIAL_NO_AUTH_ACTION_COUNT 0) only while the app signs in as the terraform-created IAM user
+# policy attached to the user, not a bucket policy (moto enforces IAM user policies; bucket policy enforcement is partial)
+# Terraform v1.16.6, aws provider 6.71.0, moto 5.2.5, node v24.18.0
+
+## terraform init
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Using previously-installed hashicorp/aws v6.71.0
+
+Terraform has been successfully initialized!
+
+## terraform fmt -check
+formatted
+
+## terraform validate
+Success! The configuration is valid.
+
+
+## terraform plan
+  # aws_iam_access_key.archive_writer[0] will be created
+  # aws_iam_policy.archive_access will be created
+  # aws_iam_user.archive_writer will be created
+  # aws_iam_user_policy_attachment.archive_writer will be created
+  # aws_s3_bucket.archive will be created
+  # aws_s3_bucket_lifecycle_configuration.archive will be created
+  # aws_s3_bucket_public_access_block.archive will be created
+  # aws_s3_bucket_server_side_encryption_configuration.archive will be created
+  # aws_s3_bucket_versioning.archive will be created
+Plan: 9 to add, 0 to change, 0 to destroy.
+
+## terraform apply
+aws_iam_user.archive_writer: Creation complete after 0s [id=autoflow-archive-user]
+aws_iam_policy.archive_access: Creation complete after 0s [id=arn:aws:iam::123456789012:policy/autoflow-archive-policy]
+aws_iam_access_key.archive_writer[0]: Creation complete after 0s [id=AKIARZPUZDIKLWO7QSPX]
+aws_iam_user_policy_attachment.archive_writer: Creation complete after 0s [id=autoflow-archive-user/arn:aws:iam::123456789012:policy/autoflow-archive-policy]
+aws_s3_bucket.archive: Creation complete after 0s [id=autoflow-archive-123456789012]
+aws_s3_bucket_public_access_block.archive: Creation complete after 0s [id=autoflow-archive-123456789012]
+aws_s3_bucket_server_side_encryption_configuration.archive: Creation complete after 0s [id=autoflow-archive-123456789012]
+aws_s3_bucket_versioning.archive: Creation complete after 2s [id=autoflow-archive-123456789012]
+aws_s3_bucket_lifecycle_configuration.archive: Creation complete after 55s [id=autoflow-archive-123456789012]
+Apply complete! Resources: 9 added, 0 changed, 0 destroyed.
+access_key_id = <hidden>
+access_key_secret = <sensitive>
+bucket_arn = "arn:aws:s3:::autoflow-archive-123456789012"
+bucket_name = "autoflow-archive-123456789012"
+iam_user_name = "autoflow-archive-user"
+policy_arn = "arn:aws:iam::123456789012:policy/autoflow-archive-policy"
+
+## terraform plan after apply (exit code 0 means no drift)
+No changes. Your infrastructure matches the configuration.
+
+## archive tests against the created bucket (npm run test:s3-emulator, IAM enforcement on)
+PASS  the archive code selected the AWS S3 path
+PASS  archive storage reports enabled
+PASS  the code targets the bucket terraform created
+✓ Redis connected
+PASS  versioning is Enabled
+PASS  server-side encryption is AES256
+PASS  all four public access blocks are on
+PASS  there is one lifecycle rule and it is enabled
+PASS  the lifecycle rule prefix equals the prefix the code writes under
+PASS  the lifecycle rule expires archives after 90 days
+PASS  a seed object exists under other/
+PASS  connection check passes for the IAM user
+PASS  upload under the archive prefix works and reports the bucket and key
+PASS  list under the archive prefix finds the object
+PASS  read back matches what was archived
+PASS  a signed URL targets the emulator bucket and key
+PASS  deleting a version under the archive prefix is allowed
+PASS  put under another prefix is denied (403)
+PASS  get under another prefix is denied (403)
+PASS  deleting a version under another prefix is denied (403)
+PASS  reading the bucket settings is denied (403)
+PASS  deleting the bucket is denied (403)
+PASS  archiveBatch picked up all three runs
+PASS  two runs archived and one failed
+PASS  archived run 1 is stored under executions/<user>/<run>.json
+PASS  archived run 1 reads back under its real key with its logs and data
+PASS  run 1 row now points at the archive and holds no logs
+PASS  archived run 2 is stored under executions/<user>/<run>.json
+PASS  archived run 2 reads back under its real key with its logs and data
+PASS  run 2 row now points at the archive and holds no logs
+PASS  the run whose row update failed was rolled back out of the bucket
+PASS  the bucket holds exactly the two archived runs under the user's prefix
+PASS  other/ holds only the seed object, so the denied writes wrote nothing
+PASS  the seed object is unchanged
+PASS  every version and delete marker was removed
+
+All 34 emulator checks passed
+
+## terraform destroy
+aws_iam_access_key.archive_writer[0]: Destruction complete after 0s
+aws_s3_bucket_server_side_encryption_configuration.archive: Destruction complete after 0s
+aws_iam_user_policy_attachment.archive_writer: Destruction complete after 0s
+aws_s3_bucket_public_access_block.archive: Destruction complete after 0s
+aws_s3_bucket_lifecycle_configuration.archive: Destruction complete after 0s
+aws_iam_user.archive_writer: Destruction complete after 0s
+aws_s3_bucket_versioning.archive: Destruction complete after 0s
+aws_iam_policy.archive_access: Destruction complete after 0s
+aws_s3_bucket.archive: Destruction complete after 0s
+Destroy complete! Resources: 9 destroyed.
+
+## the bucket is gone (HEAD bucket must answer 404)
+HEAD http://localhost:5000/autoflow-archive-123456789012 -> 404
+
+emulator proof passed

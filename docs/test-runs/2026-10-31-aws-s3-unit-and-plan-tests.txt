@@ -1,0 +1,76 @@
+# 2026-10-31 AWS S3 archive target: provider switch unit tests, Terraform plan checks, pipeline parity
+# repo commit 04fe6b6, Terraform v1.16.6, hashicorp/aws provider 6.71.0, node v24.18.0
+# Commands: cd backend && npm run test:archive-provider ; npm run test:aws-terraform (terraform validate, then terraform plan with -var-file=emulator.tfvars -var bucket_suffix=123456789012, JSON asserted) ; cd .. && npm run test:pipelines
+
+## npm run test:archive-provider
+PASS  no ARCHIVE_PROVIDER selects r2
+PASS  r2 default keeps the Cloudflare endpoint
+PASS  r2 default keeps region auto
+PASS  r2 default keeps the R2 bucket setting
+PASS  r2 default is enabled with all three R2 values
+PASS  r2 default is disabled without R2 values
+PASS  an empty ARCHIVE_PROVIDER selects r2
+PASS  ARCHIVE_PROVIDER=r2 selects r2
+PASS  R2 values are ignored when s3 is selected
+PASS  ARCHIVE_PROVIDER=s3 selects s3
+PASS  s3 uses the configured region
+PASS  s3 sets no endpoint so the SDK resolves AWS
+PASS  s3 uses virtual-hosted style without an endpoint
+PASS  s3 uses the AWS bucket setting
+PASS  s3 is enabled when the bucket is set
+PASS  s3 is disabled without a bucket
+PASS  s3 region defaults to us-east-1
+PASS  AWS_DEFAULT_REGION is used when AWS_REGION is unset
+PASS  s3 with an endpoint override uses it
+PASS  s3 with an endpoint override uses path-style URLs
+PASS  s3 notices name AWS, not R2
+PASS  r2 notice still names R2
+PASS  ARCHIVE_PROVIDER=S3 with spaces is accepted
+PASS  a bad ARCHIVE_PROVIDER is rejected
+PASS  a near miss like s33 is rejected
+PASS  the rejection names the setting and the allowed values
+PASS  the s3 client targets the regional AWS endpoint
+PASS  the emulator override targets the override host
+PASS  the r2 client still targets Cloudflare
+PASS  the archive prefix matches the key ArchivalService writes
+
+All 30 archive provider checks passed
+
+## npm run test:aws-terraform
+PASS  terraform validate passes
+PASS  plan creates the bucket
+PASS  the bucket name starts with autoflow-archive-
+PASS  the IAM user and policy names start with autoflow-
+PASS  real-account defaults: no emulator endpoint, no access key, no force destroy, region ap-southeast-2
+PASS  plan creates the IAM user and policy attachment
+PASS  all four public access blocks are true
+PASS  versioning is Enabled
+PASS  server-side encryption is AES256
+PASS  the lifecycle rule is Enabled
+PASS  the lifecycle rule expires archives after 90 days
+PASS  the lifecycle rule is limited to the executions/ prefix
+PASS  old object versions expire after 30 days
+PASS  the policy has exactly two statements, both Allow
+PASS  object access is limited to the archive prefix of the bucket
+PASS  object actions are only put, get and delete, with their version forms
+PASS  listing is limited to the archive prefix by a condition
+PASS  no wildcard action and no wildcard resource
+PASS  the policy is fully known at plan time
+
+All 19 terraform checks passed
+
+## npm run test:pipelines
+PASS  GitHub defines the backend, frontend and pipelines jobs
+PASS  GitHub defines the GitHub-only aws-emulator job
+PASS  GitLab CI runs the same commands as GitHub Actions
+PASS  Azure Pipelines runs the same commands as GitHub Actions
+PASS  a changed command in one pipeline is reported
+PASS  a changed Node version in one pipeline is reported
+PASS  azure-pipelines.yml passes the Azure Pipelines JSON schema
+PASS  the schema check rejects a misspelled step key
+
+All pipeline checks passed
+
+## real-account shape check: terraform plan -var region=ap-southeast-2 -var emulator_endpoint="" -var bucket_suffix=123456789012 -refresh=false with a placeholder sign-in
+# With the emulator endpoint empty the provider sets no endpoint and no skip flag, so it goes to real AWS and validates the sign-in; the placeholder is refused by STS, which is the expected answer here.
+Error: Retrieving AWS account details: validating provider credentials: retrieving caller identity from STS: operation error STS: GetCallerIdentity, https response error StatusCode: 403, RequestID: eb

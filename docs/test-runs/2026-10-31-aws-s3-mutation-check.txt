@@ -1,0 +1,54 @@
+# 2026-10-31 AWS S3 archive target: mutation check, one broken rule at a time in a scratch copy
+# repo commit 04fe6b6 for the emulator group; the unit and terraform groups ran on d55cbce, which has the same provider and Terraform code, moto 5.2.5, Terraform v1.16.6
+# Command: node scripts/mutation-check-aws.mjs unit ; node scripts/mutation-check-aws.mjs terraform ; REDIS_URL=redis://127.0.0.1:6390 node scripts/mutation-check-aws.mjs emulator
+
+BASELINE PASS  unit tests on the unmutated copy
+CAUGHT  [unit] default provider flips from r2 to s3
+          first red: FAIL  no ARCHIVE_PROVIDER selects r2 | FAIL  r2 default keeps the Cloudflare endpoint
+CAUGHT  [unit] ARCHIVE_PROVIDER=s3 selects r2
+          first red: FAIL  R2 values are ignored when s3 is selected | FAIL  ARCHIVE_PROVIDER=s3 selects s3
+CAUGHT  [unit] a bad ARCHIVE_PROVIDER is accepted
+          first red: FAIL  a bad ARCHIVE_PROVIDER is rejected | FAIL  a near miss like s33 is rejected
+CAUGHT  [unit] the s3 endpoint override is dropped
+          first red: FAIL  s3 with an endpoint override uses it | FAIL  s3 with an endpoint override uses path-style URLs
+CAUGHT  [unit] the s3 region is ignored
+          first red: FAIL  s3 uses the configured region | FAIL  AWS_DEFAULT_REGION is used when AWS_REGION is unset
+CAUGHT  [unit] s3 reports enabled without a bucket
+          first red: FAIL  R2 values are ignored when s3 is selected | FAIL  s3 is disabled without a bucket
+CAUGHT  [unit] the archive prefix changes
+          first red: FAIL  the archive prefix matches the key ArchivalService writes
+
+mutants caught: 7 of 7
+BASELINE PASS  terraform tests on the unmutated copy
+CAUGHT  [terraform] encryption algorithm changed from AES256
+          first red: FAIL  server-side encryption is AES256
+CAUGHT  [terraform] versioning set to Suspended
+          first red: FAIL  versioning is Enabled
+CAUGHT  [terraform] block_public_policy turned off
+          first red: FAIL  all four public access blocks are true
+CAUGHT  [terraform] lifecycle rule disabled
+          first red: FAIL  the lifecycle rule is Enabled
+CAUGHT  [terraform] lifecycle expiry default changed to 365 days
+          first red: FAIL  the lifecycle rule expires archives after 90 days
+CAUGHT  [terraform] lifecycle filter widened to the whole bucket
+          first red: FAIL  the lifecycle rule is limited to the executions/ prefix
+CAUGHT  [terraform] IAM object access widened to the whole bucket
+          first red: FAIL  object access is limited to the archive prefix of the bucket
+CAUGHT  [terraform] list prefix condition removed
+          first red: FAIL  listing is limited to the archive prefix by a condition
+CAUGHT  [terraform] wildcard action added to the policy
+          first red: FAIL  object actions are only put, get and delete, with their version forms | FAIL  no wildcard action and no wildcard resource
+CAUGHT  [terraform] resource names stop using the autoflow- prefix
+          first red: FAIL  the bucket name starts with autoflow-archive- | FAIL  the IAM user and policy names start with autoflow-
+
+mutants caught: 10 of 10
+CAUGHT  [emulator] applied IAM policy widened to the whole bucket
+          first red: FAIL  put under another prefix is denied (403) | FAIL  get under another prefix is denied (403)
+CAUGHT  [emulator] applied IAM policy without DeleteObjectVersion
+          first red: FAIL  deleting a version under the archive prefix is allowed
+CAUGHT  [emulator] applied lifecycle filter widened to the whole bucket
+          first red: FAIL  the lifecycle rule prefix equals the prefix the code writes under
+
+mutants caught: 3 of 3
+
+# total: 20 of 20 mutants caught (unit 7, terraform plan 10, emulator apply 3)

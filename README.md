@@ -6,7 +6,7 @@ Browser automation platform: drag steps onto a canvas, a Playwright worker runs 
 
 *Recorded against a local stack (Supabase CLI, Redis in Docker, a test page served from the same machine). It plays at 2x except for the live run.*
 
-[![CI](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml) **Proof:** 23 step types, 29 backend test scripts, and CI that builds both the backend and the frontend on every push.
+[![CI](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml) **Proof:** 23 step types, 32 backend test scripts, and CI that builds both the backend and the frontend on every push and runs the AWS S3 archive target against a local AWS emulator.
 
 It runs locally with Docker and Node, and the recording above is one such run.
 
@@ -20,7 +20,7 @@ You build a workflow out of steps (navigate, click, fill, extract, loops, condit
 - Cron scheduling with presets and failure monitoring.
 - Live monitoring over Socket.IO with automatic reconnection.
 - Analytics: execution trends, success rates, error analysis.
-- Optional archival of old executions to Cloudflare R2 (off unless the R2 credentials are set).
+- Optional archival of old executions to Cloudflare R2 (the default) or AWS S3, chosen with `ARCHIVE_PROVIDER`; it stays off until the matching settings are present.
 
 ## Architecture
 
@@ -32,7 +32,7 @@ flowchart TD
     Q --> W["Playwright worker"]
     W -- "logs, progress" --> API
     API -- "Socket.IO" --> UI
-    API -. "archive" .-> R2[("Cloudflare R2")]
+    API -. "archive" .-> R2[("Cloudflare R2<br/>or AWS S3")]
 ```
 
 ## Run it
@@ -48,7 +48,7 @@ Open http://localhost:3000 and sign up (a local Supabase has email confirmation 
 
 ## Tests
 
-CI runs `npm ci` and `npm run build` for the backend and the frontend, plus `npm run test:pipelines`. The 29 scripts in `backend/tests/` run with `tsx` (for example `npm run test:queue`, `npm run test:api`), print their results, and most run against a local Supabase and Redis. The frontend is checked with `npm run lint` and `npx tsc --noEmit`.
+CI runs `npm ci` and `npm run build` for the backend and the frontend, plus `npm run test:pipelines`. A fourth job, `aws-emulator`, starts moto, applies the Terraform in `deploy/aws` to it, runs the archive tests and destroys it again. The 32 scripts in `backend/tests/` run with `tsx` (for example `npm run test:queue`, `npm run test:api`), print their results, and most run against a local Supabase and Redis. The frontend is checked with `npm run lint` and `npx tsc --noEmit`.
 
 ## CI and deploy targets
 
@@ -56,11 +56,22 @@ Each target below ships as a config file and was run against the thing named bes
 
 | Target | Files | Run against | Result |
 | --- | --- | --- | --- |
-| GitHub Actions | `.github/workflows/ci.yml` | GitHub Actions on every push | backend, frontend and pipelines jobs |
+| GitHub Actions | `.github/workflows/ci.yml` | GitHub Actions on every push | backend, frontend, pipelines and aws-emulator jobs |
 | GitLab CI | `.gitlab-ci.yml` | `gitlab-ci-local` 4.77.0 with the Docker executor and the `node:22` image | all three jobs passed in 37 s, [output](docs/test-runs/2026-10-30-gitlab-ci-local.txt) |
 | Azure Pipelines | `azure-pipelines.yml` | the official Azure Pipelines JSON schema (v1.261.1, kept in `scripts/schemas`) checked with ajv | schema check passed, [output](docs/test-runs/2026-10-30-pipeline-parity-and-azure-schema.txt) |
 | Netlify | `netlify.toml` | `npx netlify-cli build --offline` (netlify-cli 27.16.1) on this machine | the Next.js build and the server handler packaging completed, [output](docs/test-runs/2026-10-30-netlify-build.txt) |
 | Google Cloud Run | `backend/Dockerfile`, `deploy/cloudrun/service.yaml` | `docker build` and `docker run` of the image as a local container next to a Redis container | `GET /health` answered 200 on port 8080, image 483 MB, runs as the `node` user, [output](docs/test-runs/2026-10-30-cloud-run-container.txt) |
+| AWS S3 | `deploy/aws/` (Terraform), `backend/src/config/archiveTarget.ts` | `terraform apply` and `terraform destroy` against a local AWS emulator (moto 5.2.5, AWS provider 6.71.0), then the backend archive code and `ArchivalService` signed in as the IAM user Terraform created, with moto's IAM checks on | 34 emulator checks, 30 provider switch checks and 19 Terraform plan checks passed, 20 of 20 deliberately broken rules were caught, the bucket answered 404 after destroy, [output](docs/test-runs/2026-10-31-aws-s3-moto-terraform.txt) |
+
+The archive target is one setting. It defaults to R2, so nothing existing changes. For S3 the same client code uses the AWS region and the SDK's own endpoint resolution, and `AWS_S3_ENDPOINT` points it at an emulator:
+
+```bash
+ARCHIVE_PROVIDER=s3
+AWS_REGION=ap-southeast-2
+AWS_S3_BUCKET_NAME=autoflow-archive-123456789012
+```
+
+`deploy/aws/` creates the bucket (public access blocked, versioned, AES256 encrypted, archives expire after 90 days) and an IAM user whose policy covers the `executions/` prefix only; its README has the commands for a real account and for moto. In the moto run that user could write, read, list and delete under `executions/`, and put, get and delete-version elsewhere in the bucket were refused with 403. The Terraform checks read the plan JSON for each rule, and [the mutation log](docs/test-runs/2026-10-31-aws-s3-mutation-check.txt) shows each rule broken in a scratch copy and the matching test going red.
 
 `npm run test:pipelines` keeps the three pipelines in step. It reads the GitHub, GitLab and Azure files and checks that each job runs the same commands in the same folders with the same environment and Node 22, then validates the Azure file against the schema. It also runs as the `pipelines` job in all three CI files.
 
@@ -75,7 +86,7 @@ The Cloud Run image runs the API on the `PORT` Cloud Run provides. The Playwrigh
 
 ## Stack
 
-Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase, Redis, Cloudflare R2. When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase, Redis, Cloudflare R2, AWS S3, Terraform. When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
 
 ## License
 

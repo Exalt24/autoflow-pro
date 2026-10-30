@@ -26,7 +26,7 @@ curl -fsS -X POST -H 'Content-Type: text/plain' -d inf "${MOTO_URL}/moto-api/res
 destroyed=0
 cleanup() {
   curl -fsS -X POST -H 'Content-Type: text/plain' -d inf "${MOTO_URL}/moto-api/reset-auth" > /dev/null || true
-  if [ "$destroyed" = 0 ]; then terraform destroy -auto-approve -input=false -no-color "${VARS[@]}" > /dev/null 2>&1 || true; fi
+  if [ "$destroyed" = 0 ]; then timeout 120 terraform destroy -auto-approve -input=false -no-color "${VARS[@]}" > /dev/null 2>&1 || true; fi
 }
 trap cleanup EXIT
 

@@ -7,7 +7,7 @@
 //   emulator   policy and lifecycle changes applied to moto            -> deploy/aws/emulator-proof.sh (needs moto
 //              on MOTO_URL, default http://localhost:5000, and Redis on REDIS_URL; about 2 minutes each)
 // Run: node scripts/mutation-check-aws.mjs [unit|terraform|emulator|all]
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, rmdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -58,6 +58,17 @@ function scratch(mutant) {
   return dir;
 }
 
+function cleanup(dir) {
+  try {
+    rmdirSync(join(dir, "backend", "node_modules")); // drop the junction first so the real modules are never walked
+  } catch {}
+  try {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+  } catch (e) {
+    console.log(`note: could not remove ${dir} (${e.code})`);
+  }
+}
+
 function run(kind, dir) {
   const env = { ...process.env, TF_DATA_DIR: tfData, TF_DIR: join(dir, "deploy", "aws"), AWS_ACCESS_KEY_ID: "test", AWS_SECRET_ACCESS_KEY: "test" };
   if (kind === "unit") return spawnSync("npx tsx tests/test-archive-provider.ts", { cwd: join(dir, "backend"), env, shell: true, encoding: "utf8", maxBuffer: 1 << 26 });
@@ -75,7 +86,7 @@ for (const kind of kinds) {
   if (kind !== "emulator") {
     const dir = scratch(null);
     const base = run(kind, dir);
-    rmSync(dir, { recursive: true, force: true });
+    cleanup(dir);
     console.log(`${base.status === 0 ? "BASELINE PASS" : "BASELINE FAIL"}  ${kind} tests on the unmutated copy`);
     if (base.status !== 0) {
       harnessProblems++;
@@ -88,12 +99,12 @@ for (const kind of kinds) {
     const dir = scratch(m);
     const r = run(kind, dir);
     const out = `${r.stdout}\n${r.stderr}`;
-    const red = r.status !== 0 && /FAIL|failed|Error/.test(out);
+    // Only a failing check line counts, so a broken harness (a leftover bucket, a missing tool) cannot pass as a catch
+    const failing = out.split("\n").filter((l) => /^FAIL  /.test(l)).slice(0, 2).map((l) => l.trim());
+    const red = r.status !== 0 && failing.length > 0;
     if (red) caught++;
-    const failing = out.split("\n").filter((l) => /^FAIL/.test(l)).slice(0, 2).map((l) => l.trim());
-    console.log(`${red ? "CAUGHT" : "SURVIVED"}  [${kind}] ${m.name}${failing.length ? `\n          first red: ${failing.join(" | ")}` : ""}`);
-    if (!existsSync(dir)) continue;
-    rmSync(dir, { recursive: true, force: true });
+    console.log(`${red ? "CAUGHT" : "SURVIVED"}  [${kind}] ${m.name}${failing.length ? `\n          first red: ${failing.join(" | ")}` : `\n          no failing check line, last output: ${out.trim().split("\n").slice(-6).join(" / ")}`}`);
+    cleanup(dir);
   }
 }
 console.log(`\nmutants caught: ${caught} of ${total}${harnessProblems ? ` (${harnessProblems} baseline problem(s))` : ""}`);

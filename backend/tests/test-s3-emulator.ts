@@ -126,6 +126,19 @@ const stand = http.createServer((req, res) => {
 await new Promise<void>((r) => stand.listen(0, "127.0.0.1", r));
 const standPort = (stand.address() as { port: number }).port;
 
+const adminClient = new S3Client({ region, endpoint, forcePathStyle: true, credentials: admin });
+
+// Empty the bucket one version at a time (moto 5.2.5 fails a bulk delete that includes a delete marker,
+// so force_destroy alone cannot empty a bucket that holds one). Returns how many versions and markers remain.
+const emptyBucket = async () => {
+  const all = await adminClient.send(new ListObjectVersionsCommand({ Bucket: bucket }));
+  for (const o of [...(all.Versions ?? []), ...(all.DeleteMarkers ?? [])]) {
+    await adminClient.send(new DeleteObjectCommand({ Bucket: bucket, Key: o.Key, VersionId: o.VersionId }));
+  }
+  const left = await adminClient.send(new ListObjectVersionsCommand({ Bucket: bucket }));
+  return (left.Versions?.length ?? 0) + (left.DeleteMarkers?.length ?? 0);
+};
+
 // The archive modules read their settings when first imported, so set them first.
 process.env.ARCHIVE_PROVIDER = "s3";
 process.env.SUPABASE_URL = `http://127.0.0.1:${standPort}`;
@@ -139,7 +152,6 @@ try {
   const r2 = await import("../src/config/r2.js");
   const { ARCHIVE_PREFIX } = await import("../src/config/archiveTarget.js");
   const { archivalService } = await import("../src/services/ArchivalService.js");
-  const adminClient = new S3Client({ region, endpoint, forcePathStyle: true, credentials: admin });
   const appClient = r2.r2Client;
   const list = (c: S3Client, prefix?: string) => c.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix }));
   const body = async (c: S3Client, key: string) => (await c.send(new GetObjectCommand({ Bucket: bucket, Key: key }))).Body!.transformToString();
@@ -217,16 +229,10 @@ try {
   check("other/ holds only the seed object, so the denied writes wrote nothing", other.length === 1 && other[0].Key === "other/seed.json", JSON.stringify(other.map((o) => o.Key)));
   check("the seed object is unchanged", (await body(adminClient, "other/seed.json")) === "{\"seed\":true}");
 
-  // Empty the bucket one version at a time so terraform destroy finds nothing to remove
-  // (moto 5.2.5 fails a bulk delete that includes a delete marker, so force_destroy alone is not enough here).
-  const versions = await adminClient.send(new ListObjectVersionsCommand({ Bucket: bucket }));
-  for (const o of [...(versions.Versions ?? []), ...(versions.DeleteMarkers ?? [])]) {
-    await adminClient.send(new DeleteObjectCommand({ Bucket: bucket, Key: o.Key, VersionId: o.VersionId }));
-  }
-  const left = await adminClient.send(new ListObjectVersionsCommand({ Bucket: bucket }));
-  check("every version and delete marker was removed", (left.Versions?.length ?? 0) + (left.DeleteMarkers?.length ?? 0) === 0);
+  check("every version and delete marker was removed", (await emptyBucket()) === 0);
 } finally {
   await enforce(false).catch(() => {});
+  await emptyBucket().catch(() => {}); // also when a check threw, so terraform destroy finds nothing to remove
   stand.close();
 }
 

@@ -8,7 +8,7 @@ Browser automation platform: drag steps onto a canvas, a Playwright worker runs 
 
 [![CI](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml) **Proof:** 23 step types, 29 backend test scripts, and CI that builds both the backend and the frontend on every push.
 
-The hosted copy is offline: the free-tier host suspended its services in October 2026. It runs locally with Docker and Node, and the recording above is one such run.
+It runs locally with Docker and Node, and the recording above is one such run.
 
 ## What it is and why
 
@@ -48,14 +48,14 @@ Open http://localhost:3000 and sign up (a local Supabase has email confirmation 
 
 ## Tests
 
-CI runs `npm ci` and `npm run build` for the backend and the frontend. The 29 scripts in `backend/tests/` run with `tsx` (for example `npm run test:queue`, `npm run test:api`), print their results rather than use a test framework, and most need real Supabase and Redis. There are no frontend tests; lint with `npm run lint` and `npx tsc --noEmit`.
+CI runs `npm ci` and `npm run build` for the backend and the frontend. The 29 scripts in `backend/tests/` run with `tsx` (for example `npm run test:queue`, `npm run test:api`), print their results, and most run against a local Supabase and Redis. The frontend is checked with `npm run lint` and `npx tsc --noEmit`.
 
-## Limits and not done
+## Next steps
 
-- The API limits to 100 requests per 15 minutes per client, counted in the backend process, so heavy clicking in the dashboard can hit "Rate limit exceeded". Restarting the backend clears it.
-- The usage view shows per-user quota rows (10 workflows, 50 executions a month by default) but the backend does not enforce them.
-- The data model is per-user rows with RLS, not organizations or workspaces.
-- Tests are scripts, not a suite, and CI only builds.
+- The API rate limit is 100 requests per 15 minutes per client, counted in the backend process; a shared store for the counter is next, and restarting the backend clears it meanwhile.
+- The usage view shows per-user quota rows (10 workflows, 50 executions a month by default); enforcing them in the backend is next.
+- The data model is per-user rows with RLS; organizations and workspaces are next.
+- The tests are scripts today; moving them into a test framework that CI runs is next.
 
 ## Stack
 

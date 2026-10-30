@@ -13,7 +13,10 @@ export REDIS_URL="${REDIS_URL:-redis://127.0.0.1:6379}"
 export AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=ap-southeast-2 TF_IN_AUTOMATION=1
 VARS=(-var-file=emulator.tfvars -var "emulator_endpoint=${MOTO_URL}")
 
-echo "# $(date -u +%Y-%m-%dT%H:%M:%SZ)  repo commit $(git rev-parse --short HEAD)$(git diff --quiet HEAD -- . ../../backend || echo ' plus uncommitted changes')"
+echo "# $(date -u +%Y-%m-%dT%H:%M:%SZ)  repo commit $(git rev-parse --short HEAD 2>/dev/null)$(git diff --quiet HEAD -- . ../../backend 2>/dev/null || echo ' plus uncommitted changes')"
+echo "# emulator: moto server at ${MOTO_URL}, region ap-southeast-2, path-style S3, static test sign-in for the admin calls"
+echo "# IAM enforcement: off while terraform runs, switched on through POST /moto-api/reset-auth (INITIAL_NO_AUTH_ACTION_COUNT 0) only while the app signs in as the terraform-created IAM user"
+echo "# policy attached to the user, not a bucket policy (moto enforces IAM user policies; bucket policy enforcement is partial)"
 echo "# $(terraform version | head -1), aws provider $(sed -n 's/^  version     = "\(.*\)"/\1/p' .terraform.lock.hcl | head -1), moto $(python -c 'import moto;print(moto.__version__)'), node $(node --version)"
 
 curl -fsS "${MOTO_URL}/moto-api/" > /dev/null || { echo "moto is not running at ${MOTO_URL}"; exit 1; }

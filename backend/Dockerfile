@@ -1,6 +1,6 @@
 # Production image for the Fastify API (used by Cloud Run, runs anywhere Docker does).
 # Build from the backend folder: docker build -t autoflow-api backend
-FROM node:22-slim AS build
+FROM node:25-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -9,7 +9,7 @@ COPY src ./src
 COPY migrations ./migrations
 RUN npm run build
 
-FROM node:22-slim AS runtime
+FROM node:25-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 COPY package.json package-lock.json ./

@@ -1,0 +1,65 @@
+# 2026-11-07 Traefik in front of the Helm chart on a local kind cluster (kind 0.33.0, node image v1.37.0, Helm 4.3.1, kubectl client 1.36.1, Docker Desktop 29.9.2)
+# Traefik: helm install traefik traefik/traefik (chart 42.3.1, Traefik v3.7.17) with service.spec.type=ClusterIP, from `helm repo add traefik https://traefik.github.io/charts`.
+# AutoFlow Pro: the chart in deploy/helm/autoflow-pro with deploy/kind/values-kind.yaml plus --set ingress.enabled=true --set ingress.host=autoflow.test.
+# The backend image is `docker build -t autoflow-pro-backend:kind-test backend`, loaded with kind load docker-image. The Supabase values are placeholders, so /health is degraded.
+# The Ingress annotation traefik.ingress.kubernetes.io/router.entrypoints: web is the one on Traefik's Kubernetes Ingress reference page.
+# Not exercised: TLS (no certificate), a cloud load balancer in front of Traefik, the Traefik dashboard. The requests below start inside the cluster (the API pod), so no port on the host is opened.
+
+## versions
+kind v0.33.0 go1.26.7 windows/amd64
+v4.3.1+gc0d08d0
+Client Version: v1.36.1
+29.9.2
+NAME                     STATUS   ROLES           AGE    VERSION
+afp-test-control-plane   Ready    control-plane   2m8s   v1.37.0
+
+## helm list
+NAME        	NAMESPACE	REVISION	UPDATED                              	STATUS  	CHART             	APP VERSION
+autoflow-pro	autoflow 	1       	2026-11-07 00:52:36.4410579 +0800 +08	deployed	autoflow-pro-0.1.0	1.0.0      
+traefik     	traefik  	1       	2026-11-07 00:52:10.7153655 +0800 +08	deployed	traefik-42.3.1    	v3.7.17    
+
+## traefik namespace
+NAME                           READY   STATUS    RESTARTS   AGE
+pod/traefik-66d7cbcc4c-gjzl2   1/1     Running   0          56s
+
+NAME              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+service/traefik   ClusterIP   10.96.128.131   <none>        80/TCP,443/TCP   57s
+NAME                CONTROLLER                      PARAMETERS   AGE
+traefik (default)   traefik.io/ingress-controller   <none>       56s
+
+## autoflow namespace
+NAME                                       READY   STATUS    RESTARTS   AGE
+pod/autoflow-pro-api-65b79d78f-r8678       1/1     Running   0          31s
+pod/autoflow-pro-worker-7474856df5-nzv9q   1/1     Running   0          31s
+pod/rabbitmq-75c6b78d8c-8vhpx              1/1     Running   0          94s
+pod/redis-5d85cc97f8-t897l                 1/1     Running   0          94s
+
+NAME                                         CLASS     HOSTS           ADDRESS   PORTS   AGE
+ingress.networking.k8s.io/autoflow-pro-api   traefik   autoflow.test             80      31s
+
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: autoflow.test
+    http:
+      paths:
+      - backend:
+          service:
+            name: autoflow-pro-api
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+status:
+
+## Requests sent to the Traefik Service (traefik.traefik.svc.cluster.local:80) with a Host header, from node inside the API pod
+autoflow.test / -> 200 {"name":"AutoFlow Pro API","version":"1.0.0","status":"operational"}
+autoflow.test /health -> 200 {"status":"degraded","timestamp":"2026-11-06T16:53:00.133Z","uptime":"< 1m","environment":"production"}
+other.test / -> 404 404 page not found
+
+(The host the Ingress names reaches the API Service through Traefik; a host the Ingress does not name gets Traefik's own 404.)
+
+## Cleanup
+Deleting cluster "afp-test" ...
+Deleted nodes: ["afp-test-control-plane"]
+Deleted: sha256:27d0b8a8d2a0ffa9519c760b167831aef06942c2f666a822f9020ee67ba6937a

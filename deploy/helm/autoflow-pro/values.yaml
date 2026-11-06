@@ -75,6 +75,18 @@ worker:
   podDisruptionBudget:
     minAvailable: 1
 
+# Off by default. With a Traefik ingress controller installed, enabled: true publishes the API at the host below.
+ingress:
+  enabled: false
+  className: traefik
+  host: autoflow.example.com
+  path: /
+  # Traefik reads its entry point and TLS choices from annotations on the Ingress.
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+  # An existing TLS Secret in the release namespace. Empty serves plain HTTP.
+  tlsSecretName: ""
+
 podAnnotations: {}
 nodeSelector: {}
 tolerations: []

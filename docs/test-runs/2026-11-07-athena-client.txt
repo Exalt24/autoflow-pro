@@ -1,0 +1,98 @@
+# 2026-11-07 Athena client, event lake helpers and deploy/athena Terraform: stand-in API tests, logic and property tests, terraform fmt/validate/offline plan, mutation checks
+# Node v24.18.0, Terraform v1.16.6, AWS SDK client-athena from backend/package.json. No AWS account, no network beyond 127.0.0.1 and the Terraform provider download.
+# The Athena API stand-in (backend/tests/athena-standin.ts) is written from the Athena API reference pages for StartQueryExecution, GetQueryExecution, GetQueryResults, StopQueryExecution, QueryExecutionStatus, AthenaError and the common error list. It is not AWS.
+# Not exercised: a real Athena endpoint, a real AWS account (the Terraform is validated and planned offline, never applied), Iceberg tables, Spark sessions.
+
+## npm run test:athena-logic
+      outcome mix over 3000 worlds: {"ok":1087,"other":837,"timeout":491,"cancelled":346,"failed":239}
+
+All 45 Athena logic checks passed
+
+## npm run test:athena
+PASS  an output location, when given, goes in ResultConfiguration
+
+All 37 Athena stand-in checks passed
+
+## npm run test:athena-terraform
+
+All 33 Athena Terraform checks passed
+
+## offline plan
+  # aws_athena_workgroup.events will be created
+  # aws_glue_catalog_database.events will be created
+  # aws_glue_catalog_table.run_events will be created
+  # aws_iam_policy.query will be created
+  # aws_s3_bucket.lake will be created
+  # aws_s3_bucket.results will be created
+  # aws_s3_bucket_lifecycle_configuration.lake will be created
+  # aws_s3_bucket_lifecycle_configuration.results will be created
+  # aws_s3_bucket_public_access_block.lake will be created
+  # aws_s3_bucket_public_access_block.results will be created
+  # aws_s3_bucket_server_side_encryption_configuration.lake will be created
+  # aws_s3_bucket_server_side_encryption_configuration.results will be created
+Plan: 12 to add, 0 to change, 0 to destroy.
+
+## tsc --noEmit
+no errors
+
+## mutation checks (node scripts/mutation-check-athena.mjs)
+unit:
+mutants caught: 32 of 32
+terraform:
+mutants caught: 20 of 20
+
+## the full list of mutants, as printed
+BASELINE PASS  unit tests on the unmutated copy
+CAUGHT  [unit] QUEUED is no longer a pending state
+CAUGHT  [unit] an unlisted state counts as pending
+CAUGHT  [unit] a failure with no Retryable flag is resubmitted
+CAUGHT  [unit] one resubmit too many (runsUsed <= maxRuns)
+CAUGHT  [unit] backoff has no cap
+CAUGHT  [unit] jitter pushes the wait above the exponential value
+CAUGHT  [unit] backoff never grows
+CAUGHT  [unit] ThrottlingException is not transient
+CAUGHT  [unit] a 500 is not transient (> 500)
+CAUGHT  [unit] a dropped connection is not transient
+CAUGHT  [unit] a repeated NextToken is not noticed
+CAUGHT  [unit] the row cap is checked one row late
+CAUGHT  [unit] the header is skipped for every statement type
+CAUGHT  [unit] the header is skipped on every page
+CAUGHT  [unit] the header is skipped without comparing it to the labels
+CAUGHT  [unit] page size 1001 is accepted
+CAUGHT  [unit] a null cell becomes an empty string
+CAUGHT  [unit] every Start attempt gets a new token
+CAUGHT  [unit] a timeout does not stop the query
+CAUGHT  [unit] the page size is not sent
+CAUGHT  [unit] the next page does not send the token
+CAUGHT  [unit] the workgroup is not sent
+CAUGHT  [unit] the SDK's own retries are left on
+CAUGHT  [unit] a cancelled query is reported as a failure
+CAUGHT  [unit] the wait is not clamped to the time left
+CAUGHT  [unit] an unknown state is waited on
+CAUGHT  [unit] a day that does not exist is accepted
+CAUGHT  [unit] a batch spanning midnight lands all in the first day
+CAUGHT  [unit] the duration column is written in camelCase
+CAUGHT  [unit] an uppercase identifier is accepted
+CAUGHT  [unit] the events prefix changes
+CAUGHT  [unit] a reversed day range is accepted
+BASELINE PASS  terraform tests on the unmutated copy
+CAUGHT  [terraform] lake encryption changed from AES256
+CAUGHT  [terraform] results bucket allows public policies
+CAUGHT  [terraform] query results never expire (lifecycle disabled)
+CAUGHT  [terraform] event lifecycle widened to the whole bucket
+CAUGHT  [terraform] partition projection turned off
+CAUGHT  [terraform] projection range stops at a fixed day
+CAUGHT  [terraform] projected location uses date= instead of dt=
+CAUGHT  [terraform] table uses another JSON SerDe
+CAUGHT  [terraform] duration_ms column becomes a string
+CAUGHT  [terraform] the status column is dropped
+CAUGHT  [terraform] the workgroup stops overriding client settings
+CAUGHT  [terraform] the scan cutoff is removed
+CAUGHT  [terraform] results are no longer encrypted
+CAUGHT  [terraform] results go to the lake bucket
+CAUGHT  [terraform] the policy may write to the events prefix
+CAUGHT  [terraform] the policy reads the whole lake bucket
+CAUGHT  [terraform] Athena actions allowed on every workgroup
+CAUGHT  [terraform] a wildcard Glue action is added
+CAUGHT  [terraform] GetBucketLocation gets the prefix condition back
+CAUGHT  [terraform] the name_prefix check accepts a dash

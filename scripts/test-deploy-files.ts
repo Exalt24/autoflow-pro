@@ -252,9 +252,22 @@ if (hasHelm) {
     const changed = render(["--set", "config.corsOrigin=https://other.example.com"]).docs;
     check("a config change changes the pod checksum annotation, so pods roll", byComponent(changed, "Deployment", "api")?.spec.template.metadata.annotations["checksum/config"] !== byComponent(d, "Deployment", "api")?.spec.template.metadata.annotations["checksum/config"]);
 
+    // Ingress (Traefik): off by default, and when on it points at the API Service.
+    check("the default render has no Ingress", kinds(d, "Ingress").length === 0);
+    const withIngress = render(["--set", "ingress.enabled=true"]);
+    const ing = kinds(withIngress.docs, "Ingress")[0];
+    const ingSvc = kinds(withIngress.docs, "Service")[0];
+    check("ingress.enabled=true renders one Ingress of class traefik with the Traefik entry point annotation", kinds(withIngress.docs, "Ingress").length === 1 && ing?.spec?.ingressClassName === "traefik" && ing?.metadata?.annotations?.["traefik.ingress.kubernetes.io/router.entrypoints"] === "web", JSON.stringify(ing));
+    check("the Ingress sends the host to the API Service by name and port", ing?.spec?.rules?.[0]?.host === "autoflow.example.com" && ing?.spec?.rules?.[0]?.http?.paths?.[0]?.backend?.service?.name === ingSvc?.metadata?.name && ing?.spec?.rules?.[0]?.http?.paths?.[0]?.backend?.service?.port?.number === ingSvc?.spec?.ports?.[0]?.port && ing?.spec?.rules?.[0]?.http?.paths?.[0]?.pathType === "Prefix");
+    check("the Ingress selects no pods of the worker: it names only the API Service", JSON.stringify(ing).includes("-api") && !JSON.stringify(ing).includes("worker"));
+    check("without tlsSecretName the Ingress has no tls block, with one it has it", ing?.spec?.tls === undefined && kinds(render(["--set", "ingress.enabled=true", "--set", "ingress.tlsSecretName=autoflow-tls"]).docs, "Ingress")[0]?.spec?.tls?.[0]?.secretName === "autoflow-tls");
+    check("an enabled Ingress with an empty className is rejected by the values schema", !render(["--set", "ingress.enabled=true", "--set", "ingress.className="]).ok);
+    check("an enabled Ingress with no className at all is rejected by the values schema", !render(["--set", "ingress.enabled=true", "--set", "ingress.className=null"]).ok);
+    check("an Ingress host with a space or a capital is rejected by the values schema", !render(["--set", "ingress.host=Not A Host"]).ok);
+
     // Schema validation of the rendered objects.
     if (hasKubeconform) {
-      for (const [label, r] of [["EKS values", eks], ["kind values", kindRender]] as const) {
+      for (const [label, r] of [["EKS values", eks], ["kind values", kindRender], ["EKS values with the Ingress on", withIngress]] as const) {
         if (!r?.ok) continue;
         const file = join(scratch, `${label.replace(/\W/g, "-")}.yaml`);
         writeFileSync(file, r.out);

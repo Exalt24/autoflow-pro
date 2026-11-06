@@ -6,7 +6,7 @@ Browser automation platform: drag steps onto a canvas, a Playwright worker runs 
 
 *Recorded against a local stack (Supabase CLI, Redis in Docker, a test page served from the same machine). It plays at 2x except for the live run.*
 
-[![CI](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml) **Proof:** 23 step types, 35 backend test scripts, and CI that builds both the backend and the frontend on every push, runs the AWS S3 archive target against a local AWS emulator, runs the RabbitMQ consumer against a real broker, and checks the Terraform and Helm files.
+[![CI](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml) **Proof:** 23 step types, 35 backend test scripts, and CI that builds both the backend and the frontend on every push, runs the AWS S3 archive target against a local AWS emulator, runs the RabbitMQ consumer against a real broker, and checks the Terraform and Helm files, and the Athena client against a stand-in API.
 
 It runs locally with Docker and Node, and the recording above is one such run.
 
@@ -66,6 +66,7 @@ Each target below ships as a config file and was run against the thing named bes
 | AWS EKS | `deploy/eks/` (Terraform) | `terraform validate` and an offline `terraform plan` with dummy credentials (AWS provider 6.72.0), never applied | 29 resources planned (VPC, EKS cluster, managed node group, OIDC provider, IRSA role), 89 deploy file checks passed, 13 of 13 deliberate breaks caught, [output](docs/test-runs/2026-11-07-eks-terraform-and-helm.txt) |
 | Kubernetes (Helm) | `deploy/helm/autoflow-pro/` | `helm lint --strict`, `helm template`, `kubeconform` against Kubernetes 1.34, then a Helm install on a local kind cluster (Kubernetes 1.37) with the real backend image | 9 of 9 objects valid, API and worker pods Ready, [kind run](docs/test-runs/2026-11-07-kind-cluster.txt) |
 | RabbitMQ | `backend/src/messaging/` | a real RabbitMQ 3.13.7 and Redis 7 in Docker | 41 logic checks and 38 broker checks passed, 4 of 4 deliberate breaks caught, [output](docs/test-runs/2026-11-07-rabbitmq-consumer.txt) |
+| Athena | `backend/src/athena/`, `deploy/athena/` (Terraform) | the real AWS SDK against a stand-in Athena API written from the API reference, then `terraform validate` and an offline `terraform plan` with dummy credentials, never applied | 37 checks against the stand-in, 45 logic and property checks over 3000 seeded worlds, 12 resources planned, 33 plan rules, 52 of 52 deliberate breaks caught, [output](docs/test-runs/2026-11-07-athena-client.txt) |
 
 The archive target is one setting. It defaults to R2, so nothing existing changes. For S3 the same client code uses the AWS region and the SDK's own endpoint resolution, and `AWS_S3_ENDPOINT` points it at an emulator:
 
@@ -79,7 +80,9 @@ AWS_S3_BUCKET_NAME=autoflow-archive-123456789012
 
 `npm run test:pipelines` keeps the three pipelines in step. It reads the GitHub, GitLab and Azure files and checks that each job runs the same commands in the same folders with the same environment and Node 22, then validates the Azure file against the schema. It also runs as the `pipelines` job in all three CI files.
 
-The EKS Terraform builds a VPC, a cluster, a managed node group and an IAM role the worker pods assume through the cluster's OIDC provider (IRSA); the Helm chart deploys the API and the worker with probes, limits, an HPA and a secret reference. Details and exactly what was run are in [docs/kubernetes-eks.md](docs/kubernetes-eks.md).
+The EKS Terraform builds a VPC, a cluster, a managed node group and an IAM role the worker pods assume through the cluster's OIDC provider (IRSA); the Helm chart deploys the API and the worker with probes, limits, an HPA, a secret reference and an optional Traefik Ingress (run on the kind cluster, [output](docs/test-runs/2026-11-07-traefik-ingress-kind.txt)). Details and exactly what was run are in [docs/kubernetes-eks.md](docs/kubernetes-eks.md).
+
+An Athena client written from the AWS API reference starts a query, polls it with backoff, reads the results page by page and resubmits a failure Athena marks retryable; run events go to S3 as JSON lines under `dt=` folders, and the Terraform builds the buckets, a Glue table with partition projection and a workgroup. See [docs/athena.md](docs/athena.md).
 
 The RabbitMQ worker reads run requests from a durable queue, retries failures through delay queues and a dead-letter exchange, skips duplicates and stops gracefully on SIGTERM, then adds the run to the BullMQ queue. See [docs/rabbitmq.md](docs/rabbitmq.md).
 
@@ -94,7 +97,7 @@ The Cloud Run image runs the API on the `PORT` Cloud Run provides. The Playwrigh
 
 ## Stack
 
-Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase, Redis, Cloudflare R2, AWS S3, RabbitMQ, Terraform, Kubernetes (EKS), Helm. When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase, Redis, Cloudflare R2, AWS S3, RabbitMQ, Terraform, Kubernetes (EKS), Helm, Traefik, Amazon Athena and Glue. When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
 
 ## License
 

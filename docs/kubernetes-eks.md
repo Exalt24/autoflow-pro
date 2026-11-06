@@ -67,5 +67,5 @@ Full output: [docs/test-runs/2026-11-07-eks-terraform-and-helm.txt](test-runs/20
 
 - No `terraform apply`, no cluster on AWS, no EKS-specific check of the IRSA annotation. The trust policy is verified from the plan and the Terraform source, not by a pod assuming the role.
 - The HPAs were rendered and schema checked but not exercised: the kind run had autoscaling off and no metrics-server.
-- Ingress, TLS and a load balancer are not in the chart. The API Service is `ClusterIP`.
+- TLS and a cloud load balancer are not in the chart. The chart has an optional Ingress (`ingress.enabled`, class `traefik`); it was run behind a Traefik install on a local kind cluster, see [the run](test-runs/2026-11-07-traefik-ingress-kind.txt). The API Service stays `ClusterIP`.
 - The kind cluster used placeholder Supabase values, so `/health` answered `degraded` there.

@@ -146,6 +146,32 @@ jobs:
       - run: npm run test:rabbitmq-logic
       - run: npm run test:rabbitmq
 
+  athena:
+    # The Athena client against a stand-in for the Athena API (no AWS account), and the deploy/athena Terraform:
+    # fmt, validate, an offline plan and rules on the plan JSON. Nothing here touches AWS.
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    env:
+      REQUIRE_TERRAFORM: "1"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.6
+          terraform_wrapper: false
+      - run: npm ci
+      - run: npm run test:athena-logic
+      - run: npm run test:athena
+      - run: npm run test:athena-terraform
+
   kubernetes:
     # Terraform (deploy/eks) and the Helm chart (deploy/helm): fmt, validate, an offline plan, helm lint and template,
     # kubeconform on the rendered objects, and the rules in scripts/test-deploy-files.ts. Nothing here touches AWS.

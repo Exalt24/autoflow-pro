@@ -47,12 +47,16 @@
     "test:retention": "tsx tests/test-retention-policy.ts",
     "test:rabbitmq-logic": "tsx tests/test-rabbitmq-logic.ts",
     "test:rabbitmq": "tsx tests/test-rabbitmq.ts",
+    "test:athena-logic": "tsx tests/test-athena-logic.ts",
+    "test:athena": "tsx tests/test-athena.ts",
+    "test:athena-terraform": "tsx tests/test-athena-terraform.ts",
     "start:rabbitmq": "node dist/src/messaging/main.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-athena": "^3.1163.0",
     "@aws-sdk/client-s3": "^3.1160.0",
     "@aws-sdk/s3-request-presigner": "^3.1160.0",
     "@fastify/autoload": "^6.5.1",

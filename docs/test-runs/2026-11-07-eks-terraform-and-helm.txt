@@ -1,0 +1,201 @@
+# 2026-11-07 deploy/eks (Terraform) and deploy/helm/autoflow-pro (Helm chart): validate, offline plan, lint, template, kubeconform, guard tests, mutation checks
+# Terraform v1.16.6, hashicorp/aws version="6.72.0", Helm v4.3.1+gc0d08d0, kubeconform v0.8.0, node v24.18.0, Windows 11
+# Nothing was applied. The plan used dummy credentials (AWS_ACCESS_KEY_ID=test) with -var offline_plan=true, which skips the credential, account id and metadata checks, so it made no AWS call.
+
+## terraform fmt -check -recursive (deploy/eks)
+exit 0
+
+## terraform init -backend=false
+Terraform has been successfully initialized!
+
+## terraform validate
+Success! The configuration is valid.
+
+
+## terraform plan -var offline_plan=true (tail)
+Plan: 29 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + cluster_endpoint               = (known after apply)
+  + cluster_name                   = "autoflow-pro"
+  + ecr_repository_url             = (known after apply)
+  + kubeconfig_command             = "aws eks update-kubeconfig --region ap-southeast-2 --name autoflow-pro"
+  + oidc_issuer                    = (known after apply)
+  + worker_role_arn                = (known after apply)
+  + worker_service_account_subject = "system:serviceaccount:autoflow:autoflow"
+
+## terraform plan: resource types in the plan
+  1  aws_ecr_repository
+  1  aws_eip
+  1  aws_eks_cluster
+  1  aws_eks_node_group
+  1  aws_iam_openid_connect_provider
+  1  aws_iam_policy
+  1  aws_iam_policy_document
+  3  aws_iam_role
+  5  aws_iam_role_policy_attachment
+  1  aws_internet_gateway
+  1  aws_kms_key
+  1  aws_nat_gateway
+  3  aws_route_table
+  4  aws_route_table_association
+  4  aws_subnet
+  1  aws_vpc
+30 total
+
+## helm lint deploy/helm/autoflow-pro --strict -f values-eks.yaml
+==> Linting deploy/helm/autoflow-pro
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+
+## helm template autoflow-pro deploy/helm/autoflow-pro -n autoflow -f values-eks.yaml (object kinds)
+      1 kind: ConfigMap
+      2 kind: Deployment
+      2 kind: HorizontalPodAutoscaler
+      2 kind: PodDisruptionBudget
+      1 kind: Service
+      1 kind: ServiceAccount
+
+## kubeconform -strict -summary -kubernetes-version 1.34.0 (EKS values)
+Summary: 9 resources found in 1 file - Valid: 9, Invalid: 0, Errors: 0, Skipped: 0
+
+## npm run test:deploy (REQUIRE_DEPLOY_TOOLS=1)
+PASS  terraform is installed
+PASS  helm is installed
+PASS  kubeconform is installed
+PASS  terraform fmt -check passes
+PASS  terraform init -backend=false passes
+PASS  terraform validate passes
+PASS  offline terraform plan runs with dummy credentials
+PASS  the plan creates a VPC, 2 public and 2 private subnets
+PASS  one NAT gateway by default, with an internet gateway
+PASS  subnets are tagged for load balancers (public elb, private internal-elb)
+PASS  private subnets do not map public IPs, public ones do
+PASS  the plan creates one EKS cluster
+PASS  the cluster endpoint is reachable privately and the public range is a variable
+PASS  audit, api and authenticator logs are on
+PASS  Kubernetes secrets are envelope encrypted with a KMS key
+PASS  access entries are on (API_AND_CONFIG_MAP)
+PASS  the plan creates one managed node group
+PASS  node group scaling is 2 to 4 starting at 2
+PASS  the node group sits in the private subnets only
+PASS  the node role carries the three standard node policies
+PASS  an IAM OIDC provider is created for sts.amazonaws.com
+PASS  the OIDC provider URL comes from the cluster's identity issuer
+PASS  the worker trust policy uses sts:AssumeRoleWithWebIdentity
+PASS  the trust policy principal is the cluster's OIDC provider
+PASS  the trust policy pins the subject to one namespace and one service account
+PASS  the trust policy pins the audience to sts.amazonaws.com
+PASS  the two conditions test the :sub and :aud claims of the issuer
+PASS  the trust policy has no wildcard match on the subject
+PASS  the worker S3 policy has no wildcard action
+PASS  object access is limited to the executions/ prefix
+PASS  listing the bucket needs the executions/ prefix
+PASS  the worker role has that policy and nothing broader attached
+PASS  the ECR repository has immutable tags and scan on push
+PASS  the plan exposes the IRSA subject, the role ARN, the issuer and the ECR URL as outputs
+PASS  a single availability zone is rejected by the variable validation
+PASS  helm lint --strict passes with the EKS values
+PASS  helm lint --strict passes with the default values
+PASS  helm template renders with the EKS values
+PASS  helm template renders with the kind values
+PASS  the render holds 2 Deployments, 1 Service, 1 ConfigMap, 1 ServiceAccount, 2 HPAs and 2 PDBs
+PASS  the ServiceAccount carries the IRSA role annotation
+PASS  without irsaRoleArn there is no annotation
+PASS  api: runs as the chart ServiceAccount
+PASS  api: has startup, readiness and liveness probes
+PASS  api: probes point at a named container port that exists
+PASS  api: CPU and memory have both requests and limits
+PASS  api: runs non-root, no privilege escalation, read-only root, all capabilities dropped
+PASS  api: the image is pinned to a tag that is not latest
+PASS  api: the config comes from the ConfigMap
+PASS  api: every secret value is a reference to the existing Secret, none is inline
+PASS  api: the HPA targets this Deployment
+PASS  api: replicas are left to the HPA
+PASS  api: the PDB selector matches the pod labels
+PASS  api: the Deployment selector matches the pod labels
+PASS  worker: runs as the chart ServiceAccount
+PASS  worker: has startup, readiness and liveness probes
+PASS  worker: probes point at a named container port that exists
+PASS  worker: CPU and memory have both requests and limits
+PASS  worker: runs non-root, no privilege escalation, read-only root, all capabilities dropped
+PASS  worker: the image is pinned to a tag that is not latest
+PASS  worker: the config comes from the ConfigMap
+PASS  worker: every secret value is a reference to the existing Secret, none is inline
+PASS  worker: the HPA targets this Deployment
+PASS  worker: replicas are left to the HPA
+PASS  worker: the PDB selector matches the pod labels
+PASS  worker: the Deployment selector matches the pod labels
+PASS  the Service selects the API pods and its targetPort is a named port of the API container
+PASS  the Service does not select the worker pods
+PASS  the worker runs the RabbitMQ entrypoint of the same image
+PASS  the worker entrypoint exists in the backend source
+PASS  the pod grace period is longer than the worker's shutdown wait
+PASS  the worker health probes use the paths the worker serves (/readyz, /healthz)
+PASS  the API gets every variable backend/src/config/environment.ts requires
+PASS  the worker gets every variable messaging/config.ts requires
+PASS  the worker ConfigMap values pass the worker's own config parser rules
+PASS  the chart ServiceAccount name equals the service account the IAM role trusts
+PASS  the documented install namespace equals the namespace the IAM role trusts
+PASS  the IRSA role name in the EKS values equals the Terraform worker role name
+PASS  image.tag=latest is rejected by the values schema
+PASS  a malformed IRSA role ARN is rejected by the values schema
+PASS  a resources block without limits is rejected
+PASS  worker.enabled=false removes the worker Deployment, HPA and PDB
+PASS  with autoscaling off the API Deployment gets its replica count and no HPA
+PASS  api.readinessPath changes the API readiness probe
+PASS  a config change changes the pod checksum annotation, so pods roll
+PASS  kubeconform -strict accepts every object rendered with the EKS values
+PASS  kubeconform -strict accepts every object rendered with the kind values
+PASS  control: kubeconform rejects an HPA with minReplicas: two
+PASS  values.yaml and values-eks.yaml parse as YAML
+All 89 deploy file checks passed
+
+## Mutation checks: each one breaks a scratch copy of the Terraform or the chart in one way (TF_DIR / CHART_DIR) and lists the checks that went red
+== terraform mutation nodes-public
+FAIL  the node group sits in the private subnets only
+1 of 89 deploy file check(s) failed
+== terraform mutation trust-wildcard
+FAIL  the trust policy pins the subject to one namespace and one service account
+FAIL  the trust policy has no wildcard match on the subject
+2 of 89 deploy file check(s) failed
+== terraform mutation s3-wildcard
+FAIL  the worker S3 policy has no wildcard action
+FAIL  object access is limited to the executions/ prefix
+2 of 89 deploy file check(s) failed
+== terraform mutation scale-10
+FAIL  node group scaling is 2 to 4 starting at 2
+1 of 89 deploy file check(s) failed
+== terraform mutation no-kms-rotation
+FAIL  Kubernetes secrets are envelope encrypted with a KMS key
+1 of 89 deploy file check(s) failed
+== helm mutation no-readiness
+FAIL  worker: has startup, readiness and liveness probes
+== helm mutation no-limits
+FAIL  api: CPU and memory have both requests and limits
+1 of 89 deploy file check(s) failed
+== helm mutation latest-tag
+FAIL  worker: the image is pinned to a tag that is not latest
+FAIL  the worker runs the RabbitMQ entrypoint of the same image
+2 of 89 deploy file check(s) failed
+== helm mutation sa-renamed
+FAIL  the chart ServiceAccount name equals the service account the IAM role trusts
+1 of 89 deploy file check(s) failed
+== helm mutation inline-secret
+FAIL  api: every secret value is a reference to the existing Secret, none is inline
+1 of 89 deploy file check(s) failed
+== helm mutation service-wrong-selector
+FAIL  the Service selects the API pods and its targetPort is a named port of the API container
+FAIL  the Service does not select the worker pods
+2 of 89 deploy file check(s) failed
+== helm mutation grace-short
+FAIL  the pod grace period is longer than the worker's shutdown wait
+1 of 89 deploy file check(s) failed
+== helm mutation hpa-wrong-target
+FAIL  worker: the HPA targets this Deployment
+1 of 89 deploy file check(s) failed
+== helm mutation no-readiness (rerun after making the probe checks null safe)
+FAIL  worker: has startup, readiness and liveness probes
+FAIL  worker: probes point at a named container port that exists
+FAIL  the worker health probes use the paths the worker serves (/readyz, /healthz)

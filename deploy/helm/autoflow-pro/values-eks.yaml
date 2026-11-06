@@ -1,0 +1,13 @@
+# Example overrides for an EKS install. Replace the placeholders with the outputs of deploy/eks and deploy/aws:
+#   helm upgrade --install autoflow-pro deploy/helm/autoflow-pro -n autoflow --create-namespace -f deploy/helm/autoflow-pro/values-eks.yaml \
+#     --set image.repository=$(terraform -chdir=deploy/eks output -raw ecr_repository_url) --set image.tag=<tag you pushed>
+image:
+  tag: "1.0.0"
+
+serviceAccount:
+  name: autoflow
+  irsaRoleArn: arn:aws:iam::000000000000:role/autoflow-pro-worker
+
+config:
+  corsOrigin: https://autoflow.example.com
+  archiveBucket: autoflow-archive-000000000000

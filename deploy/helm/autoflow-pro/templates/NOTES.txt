@@ -1,0 +1,13 @@
+AutoFlow Pro installed as {{ include "autoflow.fullname" . }} in namespace {{ .Release.Namespace }}.
+
+The pods read their secrets from the existing Secret "{{ .Values.existingSecret }}". It must hold:
+  SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, REDIS_URL, RABBITMQ_URL
+{{- if .Values.serviceAccount.irsaRoleArn }}
+
+The service account "{{ include "autoflow.serviceAccountName" . }}" is annotated with the IAM role {{ .Values.serviceAccount.irsaRoleArn }}.
+{{- end }}
+
+Check it:
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "autoflow.fullname" . }}-api 8080:{{ .Values.api.service.port }}
+  curl http://localhost:8080/health

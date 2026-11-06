@@ -1,0 +1,29 @@
+# Overrides for the local kind run (see deploy/kind/README.md): a locally built image, small footprint, no IRSA.
+image:
+  repository: autoflow-pro-backend
+  tag: kind-test
+  pullPolicy: Never
+
+serviceAccount:
+  name: autoflow
+  irsaRoleArn: ""
+
+config:
+  nodeEnv: production
+  archiveProvider: r2
+  rabbitmqRetryDelaysMs: "2000,5000"
+  shutdownTimeoutMs: 15000
+
+api:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    minAvailable: 0
+
+worker:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    minAvailable: 0

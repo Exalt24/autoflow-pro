@@ -1,0 +1,17 @@
+{{- range $component, $cfg := dict "api" .Values.api "worker" .Values.worker }}
+{{- if and $cfg.podDisruptionBudget (or (eq $component "api") $cfg.enabled) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "autoflow.fullname" $ }}-{{ $component }}
+  labels:
+    {{- include "autoflow.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  minAvailable: {{ $cfg.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "autoflow.selectorLabels" (dict "root" $ "component" $component) | nindent 6 }}
+{{- end }}
+{{- end }}

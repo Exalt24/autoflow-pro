@@ -1,0 +1,109 @@
+# 2026-11-07 RabbitMQ consumer and publisher (backend/src/messaging): logic tests, tests against a real broker, mutation checks
+# Broker: rabbitmq:3-management (RabbitMQ 3.13.7) in Docker on port 56720, Redis redis:7-alpine on port 56379, amqplib 2.2.1, node v24.18.0, Windows 11
+# Commands: npm run test:rabbitmq-logic ; RABBITMQ_URL=... RABBITMQ_MGMT_URL=... REDIS_URL=... REQUIRE_RABBITMQ=1 npm run test:rabbitmq ; npx tsc --noEmit
+# Both containers were removed with docker rm -f after the run.
+
+## npm run test:rabbitmq-logic
+PASS  a transient failure on attempt 1 retries after the first delay
+PASS  attempt 2 uses the second delay
+PASS  attempt 3 uses the third delay
+PASS  attempt 4 (the last allowed) is dead-lettered as retries-exhausted
+PASS  a permanent error is dead-lettered on attempt 1
+PASS  a non-Error throw is treated as transient
+PASS  an empty delay list means one try and then dead
+PASS  maxAttempts is the delay count plus one
+PASS  uniqueDelays sorts and removes duplicates
+PASS  2000 seeded retry runs obey the attempt, delay and dead-letter rules
+PASS  control: an off-by-one in the attempt index is caught
+PASS  control: retrying a permanent error is caught
+PASS  control: never dead-lettering is caught
+PASS  readAttempt defaults to 1 when the header is missing
+PASS  readAttempt reads a number
+PASS  readAttempt reads a numeric string
+PASS  readAttempt ignores zero, negative, fractional, NaN, huge and non-numeric values
+PASS  parseEnvelope accepts JSON
+PASS  parseEnvelope rejects invalid JSON
+PASS  parseEnvelope rejects an empty body
+PASS  config defaults: queue, prefetch, delays, ports
+PASS  config reads overrides
+PASS  config needs RABBITMQ_URL
+PASS  config needs REDIS_URL
+PASS  config rejects a non-amqp URL
+PASS  config rejects a prefetch of 0
+PASS  config rejects a queue name with a space or slash
+PASS  parseDelays rejects zero, decimals and words
+PASS  parseDelays rejects more than 10 entries
+PASS  redactUrl removes the user and password
+PASS  redactUrl does not echo a bad URL
+PASS  topology names are derived from the queue name
+PASS  each delay gets its own queue name
+PASS  300 seeded store runs match the reference model (claim, busy, done, expiry, release)
+PASS  control: a store whose release forgets a finished message is caught
+PASS  control: a store that ignores expiry and never records done is caught
+PASS  a good run request passes
+PASS  a run request that is null, an array or a string is rejected
+PASS  a run request with a missing or odd id is rejected
+PASS  a run request with no definition object is rejected
+PASS  a bad run request throws a PermanentError, so it is never retried
+All 41 RabbitMQ logic checks passed
+
+## npm run test:rabbitmq (real RabbitMQ and Redis)
+PASS  publish resolves with the message id after the broker confirm
+PASS  the consumer receives the payload once with attempt 1
+PASS  the message is acked: the queue ends up empty
+PASS  management API: the work queue is durable and not auto-delete
+PASS  management API: the work queue dead-letters to the dead exchange
+PASS  management API: the 250 ms delay queue is durable with TTL 250 and dead-letters back to the work exchange
+PASS  management API: the dead-letter queue is durable
+PASS  published messages are persistent (delivery mode 2) with the message id and JSON content type
+PASS  a handler that fails twice is called 3 times with attempts 1, 2, 3
+PASS  each retry waited at least its delay queue's TTL
+PASS  after the success the work queue and the dead-letter queue are both empty
+PASS  a handler that always fails is tried 3 times (first try plus 2 retries)
+PASS  the dead letter keeps the body and message id, and names retries-exhausted and the last error
+PASS  the dead letter records the attempt count
+PASS  the work queue is empty after dead-lettering
+PASS  a PermanentError goes to the dead-letter queue after one call
+PASS  its dead-letter reason is permanent-error
+PASS  invalid JSON and a missing message id both land in the dead-letter queue
+PASS  their reasons are invalid-json and missing-message-id
+PASS  the handler was never called for them
+PASS  four deliveries with 2 distinct message ids run the handler exactly twice
+PASS  nothing is left in the work or dead-letter queue
+PASS  while a message is delivered but unacked it is not gone: it counts as unacked, not ready
+PASS  after the channel closes without an ack the broker redelivers it with the redelivered flag
+PASS  stop() waits for the running handler (it finished before stop resolved)
+PASS  the in-flight message was acked, not requeued or lost
+PASS  a message published after stop stays in the queue for the next consumer
+PASS  stop() twice is harmless
+PASS  stop() gives up after shutdownTimeoutMs instead of hanging
+PASS  the unfinished message is back on the queue
+PASS  publishing to an exchange with no bound queue rejects
+PASS  redis store: first claim wins, second sees busy
+PASS  redis store: after release the key can be claimed again
+PASS  redis store: after complete the key reads done
+PASS  redis store: release never erases a done key
+PASS  redis store: a claim frees itself after its TTL
+PASS  redis store: 20 simultaneous claims give exactly one winner
+PASS  two consumers sharing the Redis store handle 5 copies of one message once
+All 38 RabbitMQ broker checks passed
+
+## npx tsc --noEmit (backend build check)
+tsc exit 0
+
+## Mutation checks: each line breaks src/messaging/consumer.ts in one way, reruns npm run test:rabbitmq against the same broker, and lists the checks that went red.
+## The file was restored byte for byte after each one (diff against a backup printed 'identical').
+A. success path never acks the message
+   FAIL  the in-flight message was acked, not requeued or lost
+   FAIL  a message published after stop stays in the queue for the next consumer
+B. duplicate check removed (claim === done no longer skips the handler)
+   FAIL  four deliveries with 2 distinct message ids run the handler exactly twice
+   FAIL  two consumers sharing the Redis store handle 5 copies of one message once
+C. retry published straight back to the work exchange instead of the delay queue
+   FAIL  each retry waited at least its delay queue's TTL
+D. stop() does not wait for running handlers
+   FAIL  stop() waits for the running handler (it finished before stop resolved)
+   FAIL  the in-flight message was acked, not requeued or lost
+   FAIL  a message published after stop stays in the queue for the next consumer
+   FAIL  stop() gives up after shutdownTimeoutMs instead of hanging
+Note: mutation A was not caught by the happy-path check, because checkQueue counts only ready messages and an unacked message is not ready. The stop test caught it, since closing the channel returns unacked messages to the queue.

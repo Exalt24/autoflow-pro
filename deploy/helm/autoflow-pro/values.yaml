@@ -1,0 +1,81 @@
+# Defaults render a working chart; the image repository and the secret are the two things to set for a real install.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  # Output "ecr_repository_url" of deploy/eks, or any registry the nodes can pull from.
+  repository: 000000000000.dkr.ecr.ap-southeast-2.amazonaws.com/autoflow-pro/backend
+  # Empty uses the chart appVersion. Pin a real tag or digest; "latest" is refused by values.schema.json.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  # Must match k8s_service_account in deploy/eks, because the IAM role trusts this exact name.
+  name: autoflow
+  # IAM role for the pods (IRSA). Output "worker_role_arn" of deploy/eks. Empty adds no annotation.
+  irsaRoleArn: ""
+  annotations: {}
+
+# An existing Secret in the release namespace. The chart reads these keys and never stores a value itself:
+#   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, REDIS_URL, RABBITMQ_URL
+existingSecret: autoflow-secrets
+
+config:
+  nodeEnv: production
+  corsOrigin: https://autoflow.example.com
+  archiveProvider: s3
+  awsRegion: ap-southeast-2
+  archiveBucket: autoflow-archive-000000000000
+  rabbitmqQueue: autoflow.workflow.execute
+  rabbitmqPrefetch: 5
+  rabbitmqRetryDelaysMs: "5000,30000,120000"
+  shutdownTimeoutMs: 25000
+
+api:
+  replicaCount: 2
+  containerPort: 4000
+  # Readiness probe path. "/" is up as soon as the process serves; "/health" also needs Supabase and Redis to answer.
+  readinessPath: /
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 250m
+      memory: 384Mi
+    limits:
+      cpu: "1"
+      memory: 768Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  podDisruptionBudget:
+    minAvailable: 1
+
+worker:
+  enabled: true
+  replicaCount: 2
+  healthPort: 8081
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  podDisruptionBudget:
+    minAvailable: 1
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -10,7 +10,8 @@
     "smoke-test": "tsx scripts/smoke-test.ts",
     "health-check": "tsx scripts/health-check.ts",
     "test:pipelines": "tsx scripts/test-pipeline-parity.ts",
-    "verify-prod": "tsx scripts/verify-production.ts"
+    "verify-prod": "tsx scripts/verify-production.ts",
+    "test:deploy": "tsx scripts/test-deploy-files.ts"
   },
   "repository": {
     "type": "git",

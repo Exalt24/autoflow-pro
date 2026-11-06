@@ -1,0 +1,113 @@
+# 2026-11-07 Helm chart deployed to a local kind cluster (kind 0.33.0, node image kindest/node:v1.37.0, Helm 4.3.1, kubectl client 1.36.1, Docker Desktop 29.9.2)
+# Image: docker build -t autoflow-pro-backend:kind-test backend (485 MB, the repo's backend/Dockerfile), loaded with kind load docker-image
+# Values: deploy/kind/values-kind.yaml (one replica each, autoscaling off, no IRSA, pullPolicy Never). Redis and RabbitMQ: deploy/kind/dev-deps.yaml.
+# Secret autoflow-secrets was created with kubectl create secret generic and placeholder values (SUPABASE_URL=http://supabase.invalid:54321, no real credentials).
+# Not exercised here: the HPAs (autoscaling is off and kind has no metrics-server) and the IRSA annotation (kind is not EKS).
+
+## What happened, in order
+kind create cluster --name afp-test --wait 120s          -> Ready after 15s
+kubectl apply -f deploy/kind/dev-deps.yaml               -> Redis came up. The first RabbitMQ pod crashed (CrashLoopBackOff): "Error when reading /var/lib/rabbitmq/.erlang.cookie: eacces".
+                                                            Fixed in dev-deps.yaml with runAsUser/fsGroup 999 and an emptyDir on /var/lib/rabbitmq; the second pod went Ready.
+helm upgrade --install autoflow-pro deploy/helm/autoflow-pro -n autoflow -f deploy/kind/values-kind.yaml --wait --timeout 4m
+                                                         -> STATUS: deployed, REVISION: 1 (--wait returned only after both Deployments were Ready)
+
+## API through its Service, called from inside the cluster (node fetch in the API pod)
+/ 200 {"name":"AutoFlow Pro API","version":"1.0.0","status":"operational"}
+/health 200 {"status":"degraded","timestamp":"2026-11-06T16:03:23.985Z","uptime":"< 1m","environment":"production"}
+(degraded, not healthy, because the Supabase URL is a placeholder)
+
+## Messages published from inside the worker pod with the compiled ReliablePublisher (node --input-type=module, cwd /app)
+published kind-msg-1
+published again, same message id kind-msg-1
+published a bad run request kind-bad-1
+
+## Worker pod log (kubectl logs deploy/autoflow-pro-worker)
+{"level":"info","msg":"consuming","queue":"autoflow.workflow.execute","prefetch":5}
+{"level":"info","msg":"rabbitmq worker started","broker":"amqp://rabbitmq:5672","queue":"autoflow.workflow.execute","healthPort":8081}
+{"level":"info","msg":"duplicate delivery skipped","messageId":"kind-msg-1"}
+{"level":"error","msg":"message dead-lettered","messageId":"kind-bad-1","reason":"permanent-error","error":"PermanentError: workflowId, executionId and userId must be short ids"}
+
+## Redis (redis-cli --scan)
+bull:workflow-executions:rmq-kind-run-1
+idem:autoflow.workflow.execute:kind-msg-1
+
+## RabbitMQ (rabbitmqctl list_queues name messages consumers)
+name	messages	consumers
+autoflow.workflow.execute	0	1
+autoflow.workflow.execute.dead	1	0
+autoflow.workflow.execute.retry.5000ms	0	0
+autoflow.workflow.execute.retry.2000ms	0	0
+
+## kubectl get nodes
+NAME                     STATUS   ROLES           AGE     VERSION
+afp-test-control-plane   Ready    control-plane   6m48s   v1.37.0
+
+## kubectl -n autoflow get pods,svc,hpa,pdb,sa
+NAME                                       READY   STATUS    RESTARTS   AGE
+pod/autoflow-pro-api-65b79d78f-2lp85       1/1     Running   0          79s
+pod/autoflow-pro-worker-7474856df5-ljgdf   1/1     Running   0          79s
+pod/rabbitmq-75c6b78d8c-hkjwd              1/1     Running   0          97s
+pod/redis-5d85cc97f8-45btq                 1/1     Running   0          6m11s
+
+NAME                       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)              AGE
+service/autoflow-pro-api   ClusterIP   10.96.80.242    <none>        80/TCP               79s
+service/rabbitmq           ClusterIP   10.96.87.5      <none>        5672/TCP,15672/TCP   6m11s
+service/redis              ClusterIP   10.96.131.207   <none>        6379/TCP             6m11s
+
+NAME                                             MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+poddisruptionbudget.policy/autoflow-pro-api      0               N/A               1                     79s
+poddisruptionbudget.policy/autoflow-pro-worker   0               N/A               1                     79s
+
+NAME                      AGE
+serviceaccount/autoflow   79s
+serviceaccount/default    6m11s
+
+## helm list
+NAME        	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART             	APP VERSION
+autoflow-pro	autoflow 	1       	2026-11-07 00:02:49.055808 +0800 +08	deployed	autoflow-pro-0.1.0	1.0.0      
+
+## helm get values (user supplied)
+USER-SUPPLIED VALUES:
+api:
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    minAvailable: 0
+  replicaCount: 1
+config:
+  archiveProvider: r2
+  nodeEnv: production
+  rabbitmqRetryDelaysMs: 2000,5000
+  shutdownTimeoutMs: 15000
+image:
+  pullPolicy: Never
+  repository: autoflow-pro-backend
+  tag: kind-test
+serviceAccount:
+  irsaRoleArn: ""
+  name: autoflow
+worker:
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    minAvailable: 0
+  replicaCount: 1
+
+## graceful stop: SIGTERM to the worker (PID 1), then the previous container's log
+{"level":"info","msg":"consuming","queue":"autoflow.workflow.execute","prefetch":5}
+{"level":"info","msg":"rabbitmq worker started","broker":"amqp://rabbitmq:5672","queue":"autoflow.workflow.execute","healthPort":8081}
+{"level":"info","msg":"duplicate delivery skipped","messageId":"kind-msg-1"}
+{"level":"error","msg":"message dead-lettered","messageId":"kind-bad-1","reason":"permanent-error","error":"PermanentError: workflowId, executionId and userId must be short ids"}
+{"level":"info","msg":"shutting down","signal":"SIGTERM"}
+{"level":"info","msg":"consumer stopped","drained":true}
+
+## pods after the worker restarted
+NAME                                   READY   STATUS    RESTARTS     AGE
+autoflow-pro-api-65b79d78f-2lp85       1/1     Running   0            86s
+autoflow-pro-worker-7474856df5-ljgdf   1/1     Running   1 (7s ago)   86s
+rabbitmq-75c6b78d8c-hkjwd              1/1     Running   0            104s
+redis-5d85cc97f8-45btq                 1/1     Running   0            6m18s
+
+## Cleanup
+Deleting cluster "afp-test" ...
+Deleted nodes: ["afp-test-control-plane"]

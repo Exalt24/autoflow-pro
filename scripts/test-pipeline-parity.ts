@@ -87,15 +87,16 @@ const check = (name: string, ok: boolean, detail = "") => {
 };
 
 const ghAll = fromGithub(parse(read(".github/workflows/ci.yml")));
-// Jobs that exist on GitHub Actions only: aws-emulator needs a Redis service and a Terraform install.
-const GITHUB_ONLY = ["aws-emulator"];
+// Jobs that exist on GitHub Actions only: aws-emulator needs a Redis service and a Terraform install, rabbitmq needs service
+// containers, and kubernetes needs Terraform, Helm and kubeconform.
+const GITHUB_ONLY = ["aws-emulator", "rabbitmq", "kubernetes"];
 const gh: Model = Object.fromEntries(Object.entries(ghAll).filter(([name]) => !GITHUB_ONLY.includes(name)));
 const gl = fromGitlab(parse(read(".gitlab-ci.yml")));
 const azDoc = parse(read("azure-pipelines.yml"));
 const az = fromAzure(azDoc);
 
 check("GitHub defines the backend, frontend and pipelines jobs", ["backend", "frontend", "pipelines"].every((j) => gh[j]));
-check("GitHub defines the GitHub-only aws-emulator job", GITHUB_ONLY.every((j) => ghAll[j]));
+check("GitHub defines the GitHub-only jobs (aws-emulator, rabbitmq, kubernetes)", GITHUB_ONLY.every((j) => ghAll[j]));
 const ghVsGl = diff(gh, gl, "github vs gitlab");
 check("GitLab CI runs the same commands as GitHub Actions", ghVsGl.length === 0, ghVsGl.join("\n      "));
 const ghVsAz = diff(gh, az, "github vs azure");

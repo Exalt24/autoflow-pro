@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "autoflow.fullname" . }}
+  labels:
+    {{- include "autoflow.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.config.nodeEnv | quote }}
+  CORS_ORIGIN: {{ .Values.config.corsOrigin | quote }}
+  ARCHIVE_PROVIDER: {{ .Values.config.archiveProvider | quote }}
+  AWS_REGION: {{ .Values.config.awsRegion | quote }}
+  AWS_S3_BUCKET_NAME: {{ .Values.config.archiveBucket | quote }}
+  RABBITMQ_QUEUE: {{ .Values.config.rabbitmqQueue | quote }}
+  RABBITMQ_PREFETCH: {{ .Values.config.rabbitmqPrefetch | quote }}
+  RABBITMQ_RETRY_DELAYS_MS: {{ .Values.config.rabbitmqRetryDelaysMs | quote }}
+  SHUTDOWN_TIMEOUT_MS: {{ .Values.config.shutdownTimeoutMs | quote }}

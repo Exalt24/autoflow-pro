@@ -1,0 +1,66 @@
+# 2026-11-07 Temporal run workflow tests (backend/src/temporal)
+# node v24.18.0, @temporalio/* 1.25.0, Temporal CLI temporal version 1.10.0 (Server 1.32.2, UI 2.56.1), Windows 11
+# Local only: the SDK's time-skipping test server, and a local 'temporal server start-dev' process. Never Temporal Cloud, never a cluster.
+# The SDK log lines (webpack bundle report, worker state) are filtered out; every PASS and FAIL line is kept.
+
+## npm run test:temporal (TestWorkflowEnvironment.createTimeSkipping)
+PASS  input rules: a good input has no problem
+PASS  input rules: no steps is refused
+PASS  input rules: a repeated step id is refused
+PASS  input rules: a run id with a slash is refused
+PASS  input rules: MAX_STEPS steps pass and one more is refused
+PASS  input rules: stepTimeoutMs 99 and 3600001 and 1.5 are refused, 100 and 3600000 pass
+PASS  input rules: null, a string and an array are refused
+PASS  input rules: 1500 seeded random inputs agree with an independent description
+PASS  success: three steps run in order and the run completes
+PASS  success: validate and start ran once each, every step ran on its first try, and the archive was written once
+PASS  success: the archive record says completed with all three steps
+PASS  retry: a step that fails twice then works is tried 3 times and the run completes
+PASS  retry: the steps after it still ran, once each
+PASS  retry exhausted: a step that never works is tried exactly 4 times, then the run fails
+PASS  retry exhausted: the failure names the step and the real error
+PASS  retry exhausted: s1 is recorded as done, s3 never ran, and the failed run was still archived
+PASS  validation: a run with no steps fails at once, validate ran once (a non retryable error is not retried), no step ran
+PASS  validation: the error says why, and the run was archived
+PASS  cancel: a signal while s2 runs ends the run as cancelled with the reason
+PASS  cancel: s1 is done, s3 never started, and the running step was told to stop
+PASS  cancel: the cancelled run was still archived
+PASS  cancel: a cancel during the very first step leaves nothing completed and no second step
+PASS  timeout: a step that never finishes ends the run as timed_out after its budget
+PASS  timeout: s3 never ran, the stuck step was told to stop, and the run was archived as timed_out
+PASS  timeout: the step budget covers retries, so a retrying step ends as timed_out before its tries run out
+PASS  status query: while s2 runs it reports running, step 2 of 3, s1 done
+PASS  status query: after the run it reports the final state and the reason
+PASS  archive failure: the run still ends completed, with the archive error recorded and no archive key
+PASS  archive failure: steps ran once each
+PASS  real activities: the dry-run executor fails step a once, the retry works, the run completes
+PASS  real activities: the archive file holds the final record
+31 passed, 0 failed
+
+## npm run test:temporal-e2e (TEMPORAL_ADDRESS=localhost:7233, a real 'temporal server start-dev' process)
+connected to localhost:7233, server version 1.32.2
+PASS  e2e retry: a step that fails twice works on the third try and the run completes
+PASS  e2e retry: the executor saw try 1, 2 and 3 of the step (server-side retries with back-off)
+PASS  e2e retry: the 1 s and 2 s back-offs really elapsed (3210 ms)
+PASS  e2e retry: the archive file on disk says completed with both steps
+PASS  e2e exhausted: a step that always fails ends the run as failed after exactly the 4 allowed tries
+PASS  e2e exhausted: the failed run was archived as failed
+PASS  e2e status: the query shows running, step 2 of 3, the first step done
+PASS  e2e cancel: the signal ends a 2 minute step as cancelled in 46 ms
+PASS  e2e cancel: the third step never ran and the cancelled run was archived
+PASS  e2e timeout: a step that outlives its 1.5 s budget ends the run as timed_out
+PASS  e2e validation: a run with no steps fails with the reason and is archived
+PASS  e2e duplicate: starting a run id that already ran is refused by the server
+12 passed, 0 failed
+
+## npm run test:graphql-temporal (TEMPORAL_ADDRESS=localhost:7233, a real 'temporal server start-dev' process)
+PASS  graphql+temporal: startRun returns a QUEUED or RUNNING run at once
+PASS  graphql+temporal: the run reaches COMPLETED through the worker (268 ms), both steps done, start and finish times set
+PASS  graphql+temporal: a step that fails twice is retried by Temporal and the run still ends COMPLETED
+PASS  graphql+temporal: a step that always fails ends FAILED with the step named in the error
+PASS  graphql+temporal: while the run is still going, a finished step already shows in completedSteps
+PASS  graphql+temporal: cancelRun sends the signal; the 20 second step is cut short and the run ends CANCELLED
+PASS  graphql+temporal: cancelling a finished run is a ConflictError
+PASS  graphql+temporal: a stepTimeoutMs of 1500 ends a 20 second step as TIMED_OUT
+PASS  graphql+temporal: the workflows query reports each workflow's run count and last state
+9 passed, 0 failed

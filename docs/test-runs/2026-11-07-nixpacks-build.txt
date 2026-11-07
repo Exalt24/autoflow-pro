@@ -1,0 +1,1393 @@
+# 2026-11-07 Nixpacks build of the backend, run locally
+# Nixpacks 1.41.0 (Linux musl binary) run inside a docker:cli container with the host's Docker socket, so the image lands in Docker Desktop 29.9.2 on Windows 11.
+# Commands: bash scripts/nixpacks-build.sh backend autoflow-backend-nixpacks ; bash scripts/nixpacks-check.sh autoflow-backend-nixpacks
+# Only this machine: not Railway, no deploy. Image download progress lines and nix store copy lines are filtered out of the build logs.
+
+################ ATTEMPT 1: no nixpacks.toml ################
+# Nixpacks chose nodejs_18 and npm-9_x. The build succeeded, but the container crashed at start (see the last lines of the log).
+## nixpacks version
+nixpacks 1.41.0
+## nixpacks plan
+{
+  "providers": [],
+  "buildImage": "ghcr.io/railwayapp/nixpacks:ubuntu-1745885067",
+  "variables": {
+    "CI": "true",
+    "NIXPACKS_METADATA": "node",
+    "NODE_ENV": "production",
+    "NPM_CONFIG_PRODUCTION": "false"
+  },
+  "phases": {
+    "build": {
+      "dependsOn": [
+        "install"
+      ],
+      "cmds": [
+        "npm run build"
+      ],
+      "cacheDirectories": [
+        "node_modules/.cache"
+      ]
+    },
+    "install": {
+      "dependsOn": [
+        "setup"
+      ],
+      "cmds": [
+        "npm ci"
+      ],
+      "cacheDirectories": [
+        "/root/.npm"
+      ],
+      "paths": [
+        "/app/node_modules/.bin"
+      ]
+    },
+    "setup": {
+      "nixPkgs": [
+        "nodejs_18",
+        "npm-9_x"
+      ],
+      "nixLibs": [
+        "gcc-unwrapped"
+      ],
+      "nixOverlays": [
+        "https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"
+      ],
+      "nixpkgsArchive": "ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7"
+    }
+  },
+  "start": {
+    "cmd": "npm run start"
+  }
+}
+## nixpacks build
+
+╔════════ Nixpacks v1.41.0 ═══════╗
+║ setup      │ nodejs_18, npm-9_x ║
+║─────────────────────────────────║
+║ install    │ npm ci             ║
+║─────────────────────────────────║
+║ build      │ npm run build      ║
+║─────────────────────────────────║
+║ start      │ npm run start      ║
+╚═════════════════════════════════╝
+
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile:
+#1 transferring dockerfile: 979B 0.0s done
+#1 DONE 0.2s
+
+#2 [internal] load metadata for ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+#2 DONE 2.8s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 101B done
+#3 DONE 0.1s
+
+#4 [internal] load build context
+#4 transferring context: 786.14kB 0.1s done
+#4 DONE 0.2s
+
+#5 [stage-0  1/10] FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de
+#5 resolve ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de 0.1s done
+#5 DONE 0.3s
+
+#5 [stage-0  1/10] FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de
+#5 sha256:866b26ac4e4722aa6bd512e1e0c5fa91657dc060ef3eebbbcbd6057625e8f518 0B / 335B 0.2s
+#5 sha256:2726e237d1a374379e783053d93d0345c8a3bf3c57b5d35b099de1ad777486ee 0B / 29.72MB 0.2s
+#5 sha256:7962e2b983fd33a26ed1c6cd3dc8130d909d793c6a76893ed532f122edf72913 0B / 33.30MB 0.2s
+#5 sha256:b65af0a51d863b994ae8e73f3b739ad2c14c4ab0f3b8807c7baf25404b897c06 0B / 75.95MB 0.2s
+#5 sha256:866b26ac4e4722aa6bd512e1e0c5fa91657dc060ef3eebbbcbd6057625e8f518 335B / 335B 0.6s done
+#5 DONE 16.4s
+
+#5 [stage-0  1/10] FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de
+#5 DONE 16.4s
+
+#6 [stage-0  2/10] WORKDIR /app/
+#6 DONE 0.6s
+
+#7 [stage-0  3/10] COPY .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix
+#7 DONE 0.1s
+
+#8 [stage-0  4/10] RUN nix-env -if .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix && nix-collect-garbage -d
+#8 42.39 installing 'ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7-env'
+#8 44.21 these 5 derivations will be built:
+#8 44.21   /nix/store/1f4a312hz9m6y1ssip52drgkim8az4d6-libraries.drv
+#8 44.21   /nix/store/79g4v87v1cgrx5vlwzcagcs6v8ps8fk2-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7-env.drv
+#8 44.21   /nix/store/6vy68gykpxfphbmmyd59ya88xvrwvvaa-npm-9.9.4.tgz.drv
+#8 44.21   /nix/store/w9h0z1lhfwxc0m38f3w5brfdqrzm4wyj-npm.drv
+#8 44.21   /nix/store/69jikgj7ilzvyagynzacn8fxpp6wffww-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7-env.drv
+#8 44.21 these 75 paths will be fetched (116.25 MiB download, 554.76 MiB unpacked):
+#8 44.21   /nix/store/cf7gkacyxmm66lwl5nj6j6yykbrg4q5c-acl-2.3.2
+#8 44.21   /nix/store/a9jgnlhkjkxav6qrc3rzg2q84pkl2wvr-attr-2.5.2
+#8 44.21   /nix/store/5mh7kaj2fyv8mk4sfq1brwxgc02884wi-bash-5.2p37
+#8 44.21   /nix/store/j7p46r8v9gcpbxx89pbqlh61zhd33gzv-binutils-2.43.1
+#8 44.21   /nix/store/df2a8k58k00f2dh2x930dg6xs6g6mliv-binutils-2.43.1-lib
+#8 44.21   /nix/store/srcmmqi8kxjfygd0hyy42c8hv6cws83b-binutils-wrapper-2.43.1
+#8 44.21   /nix/store/wf5zj2gbib3gjqllkabxaw4dh0gzcla3-builder.pl
+#8 44.21   /nix/store/ivl2v8rgg7qh1jkj5pwpqycax3rc2hnl-bzip2-1.0.8
+#8 44.21   /nix/store/mglixp03lsp0w986svwdvm7vcy17rdax-bzip2-1.0.8-bin
+#8 44.21   /nix/store/4s9rah4cwaxflicsk5cndnknqlk9n4p3-coreutils-9.5
+#8 44.21   /nix/store/pkc7mb4a4qvyz73srkqh4mwl70w98dsv-curl-8.11.0
+#8 44.21   /nix/store/p123cq20klajcl9hj8jnkjip5nw6awhz-curl-8.11.0-bin
+#8 44.21   /nix/store/5f5linrxzhhb3mrclkwdpm9bd8ygldna-curl-8.11.0-dev
+#8 44.21   /nix/store/agvks3qmzja0yj54szi3vja6vx3cwkkw-curl-8.11.0-man
+#8 44.21   /nix/store/00g69vw7c9lycy63h45ximy0wmzqx5y6-diffutils-3.10
+#8 44.21   /nix/store/74h4z8k82pmp24xryflv4lxkz8jlpqqd-ed-1.20.2
+#8 44.21   /nix/store/qbry6090vlr9ar33kdmmbq2p5apzbga8-expand-response-params
+#8 44.21   /nix/store/c4rj90r2m89rxs64hmm857mipwjhig5d-file-5.46
+#8 44.21   /nix/store/jqrz1vq5nz4lnv9pqzydj0ir58wbjfy1-findutils-4.10.0
+#8 44.21   /nix/store/a3c47r5z1q2c4rz0kvq8hlilkhx2s718-gawk-5.3.1
+#8 44.21   /nix/store/l89iqc7am6i60y8vk507zwrzxf0wcd3v-gcc-14-20241116
+#8 44.21   /nix/store/bpq1s72cw9qb2fs8mnmlw6hn2c7iy0ss-gcc-14-20241116-lib
+#8 44.21   /nix/store/17v0ywnr3akp85pvdi56gwl99ljv95kx-gcc-14-20241116-libgcc
+#8 44.21   /nix/store/xcn9p4xxfbvlkpah7pwchpav4ab9d135-gcc-wrapper-14-20241116
+#8 44.21   /nix/store/65h17wjrrlsj2rj540igylrx7fqcd6vq-glibc-2.40-36
+#8 44.21   /nix/store/1c6bmxrrhm8bd26ai2rjqld2yyjrxhds-glibc-2.40-36-bin
+#8 44.21   /nix/store/kj8hbqx4ds9qm9mq7hyikxyfwwg13kzj-glibc-2.40-36-dev
+#8 44.21   /nix/store/kryrg7ds05iwcmy81amavk8w13y4lxbs-gmp-6.3.0
+#8 44.21   /nix/store/a2byxfv4lc8f2g5xfzw8cz5q8k05wi29-gmp-with-cxx-6.3.0
+#8 44.21   /nix/store/1m67ipsk39xvhyqrxnzv2m2p48pil8kl-gnu-config-2024-01-01
+#8 44.21   /nix/store/aap6cq56amx4mzbyxp2wpgsf1kqjcr1f-gnugrep-3.11
+#8 44.21   /nix/store/fp6cjl1zcmm6mawsnrb5yak1wkz2ma8l-gnumake-4.4.1
+#8 44.21   /nix/store/abm77lnrkrkb58z6xp1qwjcr1xgkcfwm-gnused-4.9
+#8 44.21   /nix/store/9cwwj1c9csmc85l2cqzs3h9hbf1vwl6c-gnutar-1.35
+#8 44.21   /nix/store/nvvj6sk0k6px48436drlblf4gafgbvzr-gzip-1.13
+#8 44.21   /nix/store/wwipgdqb4p2fr46kmw9c5wlk799kbl68-icu4c-74.2
+#8 44.21   /nix/store/m8w3mf0i4862q22bxad0wspkgdy4jnkk-icu4c-74.2-dev
+#8 44.21   /nix/store/xmbv8s4p4i4dbxgkgdrdfb0ym25wh6gk-isl-0.20
+#8 44.21   /nix/store/2wh1gqyzf5xsvxpdz2k0bxiz583wwq29-keyutils-1.6.3-lib
+#8 44.21   /nix/store/milph81dilrh96isyivh5n50agpx39k2-krb5-1.21.3
+#8 44.21   /nix/store/b56mswksrql15knpb1bnhv3ysif340kd-krb5-1.21.3-dev
+#8 44.21   /nix/store/v9c1s50x7magpiqgycxxkn36avzbcg0g-krb5-1.21.3-lib
+#8 44.21   /nix/store/34z2792zyd4ayl5186vx0s98ckdaccz9-libidn2-2.3.7
+#8 44.21   /nix/store/2a3anh8vl3fcgk0fvaravlimrqawawza-libmpc-1.3.1
+#8 44.21   /nix/store/8675pnfr4fqnwv4pzjl67hdwls4q13aa-libssh2-1.11.1
+#8 44.21   /nix/store/d7zhcrcc7q3yfbm3qkqpgc3daq82spwi-libssh2-1.11.1-dev
+#8 44.21   /nix/store/xcqcgqazykf6s7fsn08k0blnh0wisdcl-libunistring-1.3
+#8 44.21   /nix/store/r9ac2hwnmb0nxwsrvr6gi9wsqf2whfqj-libuv-1.49.2
+#8 44.21   /nix/store/ll14czvpxglf6nnwmmrmygplm830fvlv-libuv-1.49.2-dev
+#8 44.21   /nix/store/6cr0spsvymmrp1hj5n0kbaxw55w1lqyp-libxcrypt-4.4.36
+#8 44.21   /nix/store/pc74azbkr19rkd5bjalq2xwx86cj3cga-linux-headers-6.12
+#8 44.21   /nix/store/fv7gpnvg922frkh81w5hkdhpz0nw3iiz-mirrors-list
+#8 44.21   /nix/store/qs22aazzrdd4dnjf9vffl0n31hvls43h-mpfr-4.2.1
+#8 44.21   /nix/store/grixvx878884hy8x3xs0c0s1i00j632k-nghttp2-1.64.0
+#8 44.21   /nix/store/dz97fw51rm5bl9kz1vg0haj1j1a7r1mr-nghttp2-1.64.0-dev
+#8 44.21   /nix/store/qcghigzrz56vczwlzg9c02vbs6zr9jkz-nghttp2-1.64.0-lib
+#8 44.21   /nix/store/wlpq101dsifq98z2bk300x4dk80wcybr-nodejs-18.20.5
+#8 44.21   /nix/store/9l9n7a0v4aibcz0sgd0crs209an9p7dz-openssl-3.3.2
+#8 44.21   /nix/store/h1ydpxkw9qhjdxjpic1pdc2nirggyy6f-openssl-3.3.2
+#8 44.21   /nix/store/lygl27c44xv73kx1spskcgvzwq7z337c-openssl-3.3.2-bin
+#8 44.21   /nix/store/qq5q0alyzywdazhmybi7m69akz0ppk05-openssl-3.3.2-bin
+#8 44.21   /nix/store/kqm7wpqkzc4bwjlzqizcbz0mgkj06a9x-openssl-3.3.2-dev
+#8 44.21   /nix/store/pp2zf8bdgyz60ds8vcshk2603gcjgp72-openssl-3.3.2-dev
+#8 44.21   /nix/store/5yja5dpk2qw1v5mbfbl2d7klcdfrh90w-patch-2.7.6
+#8 44.21   /nix/store/srfxqk119fijwnprgsqvn68ys9kiw0bn-patchelf-0.15.0
+#8 44.21   /nix/store/3j1p598fivxs69wx3a657ysv3rw8k06l-pcre2-10.44
+#8 44.21   /nix/store/1i003ijlh9i0mzp6alqby5hg3090pjdx-perl-5.40.0
+#8 44.21   /nix/store/4ig84cyqi6qy4n0sanrbzsw1ixa497jx-stdenv-linux
+#8 44.21   /nix/store/d0gfdcag8bxzvg7ww4s7px4lf8sxisyx-stdenv-linux
+#8 44.21   /nix/store/d29r1bdmlvwmj52apgcdxfl1mm9c5782-update-autotools-gnu-config-scripts-hook
+#8 44.21   /nix/store/acfkqzj5qrqs88a4a6ixnybbjxja663d-xgcc-14-20241116-libgcc
+#8 44.21   /nix/store/c2njy6bv84kw1i4bjf5k5gn7gz8hn57n-xz-5.6.3
+#8 44.21   /nix/store/h18s640fnhhj2qdh5vivcfbxvz377srg-xz-5.6.3-bin
+#8 44.21   /nix/store/cqlaa2xf6lslnizyj9xqa8j0ii1yqw0x-zlib-1.3.1
+#8 44.21   /nix/store/1lggwqzapn5mn49l9zy4h566ysv9kzdb-zlib-1.3.1-dev
+#8 49.34 building '/nix/store/1f4a312hz9m6y1ssip52drgkim8az4d6-libraries.drv'...
+#8 49.40 building '/nix/store/6vy68gykpxfphbmmyd59ya88xvrwvvaa-npm-9.9.4.tgz.drv'...
+#8 49.61 building '/nix/store/79g4v87v1cgrx5vlwzcagcs6v8ps8fk2-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7-env.drv'...
+#8 50.20 
+#8 50.20 trying https://registry.npmjs.org/npm/-/npm-9.9.4.tgz
+#8 50.20   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+#8 50.21                                  Dload  Upload   Total   Spent    Left  Speed
+#8 50.51 100 2648k  100 2648k    0     0  8777k      0 --:--:-- --:--:-- --:--:-- 8797k
+#8 55.42 building '/nix/store/w9h0z1lhfwxc0m38f3w5brfdqrzm4wyj-npm.drv'...
+#8 55.46 Running phase: unpackPhase
+#8 55.93 source root is package
+#8 56.00 setting SOURCE_DATE_EPOCH to timestamp 499162500 of file package/package.json
+#8 56.00 Running phase: installPhase
+#8 57.03 building '/nix/store/69jikgj7ilzvyagynzacn8fxpp6wffww-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7-env.drv'...
+#8 57.10 created 33 symlinks in user environment
+#8 57.44 building '/nix/store/2s6nns61yczxvy2yaddrzp6952709a4j-user-environment.drv'...
+#8 57.73 removing old generations of profile /nix/var/nix/profiles/per-user/root/channels
+#8 57.73 removing old generations of profile /nix/var/nix/profiles/per-user/root/profile
+#8 57.73 removing profile version 1
+#8 57.73 removing old generations of profile /nix/var/nix/profiles/per-user/root/channels
+#8 57.73 removing old generations of profile /nix/var/nix/profiles/per-user/root/profile
+#8 57.73 finding garbage collector roots...
+#8 57.73 removing stale link from '/nix/var/nix/gcroots/auto/lzjbmb2ry0z7lma2fvpqprb12921pnb5' to '/nix/var/nix/profiles/per-user/root/profile-1-link'
+#8 57.74 deleting garbage...
+#8 57.77 deleting '/nix/store/a9qf4wwhympzs35ncp80r185j6a21w07-user-environment'
+#8 57.77 deleting '/nix/store/253kwn1730vnay87xkjgxa2v97w3y079-user-environment.drv'
+#8 57.77 deleting '/nix/store/hn5mrh362n52x8wwab9s1v6bgn4n5c94-env-manifest.nix'
+#8 57.77 deleting '/nix/store/d0gfdcag8bxzvg7ww4s7px4lf8sxisyx-stdenv-linux'
+#8 57.77 deleting '/nix/store/9fxr7753z31rn59i64dqaajgsx0ap91p-libraries'
+#8 57.77 deleting '/nix/store/xcn9p4xxfbvlkpah7pwchpav4ab9d135-gcc-wrapper-14-20241116'
+#8 57.77 deleting '/nix/store/4ig84cyqi6qy4n0sanrbzsw1ixa497jx-stdenv-linux'
+#8 57.77 deleting '/nix/store/00g69vw7c9lycy63h45ximy0wmzqx5y6-diffutils-3.10'
+#8 57.78 deleting '/nix/store/5f5linrxzhhb3mrclkwdpm9bd8ygldna-curl-8.11.0-dev'
+#8 57.78 deleting '/nix/store/p123cq20klajcl9hj8jnkjip5nw6awhz-curl-8.11.0-bin'
+#8 57.78 deleting '/nix/store/pkc7mb4a4qvyz73srkqh4mwl70w98dsv-curl-8.11.0'
+#8 57.78 deleting '/nix/store/b56mswksrql15knpb1bnhv3ysif340kd-krb5-1.21.3-dev'
+#8 57.78 deleting '/nix/store/milph81dilrh96isyivh5n50agpx39k2-krb5-1.21.3'
+#8 57.78 deleting '/nix/store/v9c1s50x7magpiqgycxxkn36avzbcg0g-krb5-1.21.3-lib'
+#8 57.78 deleting '/nix/store/2wh1gqyzf5xsvxpdz2k0bxiz583wwq29-keyutils-1.6.3-lib'
+#8 57.78 deleting '/nix/store/srcmmqi8kxjfygd0hyy42c8hv6cws83b-binutils-wrapper-2.43.1'
+#8 57.78 deleting '/nix/store/l89iqc7am6i60y8vk507zwrzxf0wcd3v-gcc-14-20241116'
+#8 57.80 deleting '/nix/store/kj8hbqx4ds9qm9mq7hyikxyfwwg13kzj-glibc-2.40-36-dev'
+#8 57.81 deleting '/nix/store/1c6bmxrrhm8bd26ai2rjqld2yyjrxhds-glibc-2.40-36-bin'
+#8 57.81 deleting '/nix/store/aap6cq56amx4mzbyxp2wpgsf1kqjcr1f-gnugrep-3.11'
+#8 57.81 deleting '/nix/store/mglixp03lsp0w986svwdvm7vcy17rdax-bzip2-1.0.8-bin'
+#8 57.82 deleting '/nix/store/ivl2v8rgg7qh1jkj5pwpqycax3rc2hnl-bzip2-1.0.8'
+#8 57.82 deleting '/nix/store/5yja5dpk2qw1v5mbfbl2d7klcdfrh90w-patch-2.7.6'
+#8 57.82 deleting '/nix/store/74h4z8k82pmp24xryflv4lxkz8jlpqqd-ed-1.20.2'
+#8 57.82 deleting '/nix/store/xmbv8s4p4i4dbxgkgdrdfb0ym25wh6gk-isl-0.20'
+#8 57.82 deleting '/nix/store/wf5zj2gbib3gjqllkabxaw4dh0gzcla3-builder.pl'
+#8 57.82 deleting '/nix/store/dz97fw51rm5bl9kz1vg0haj1j1a7r1mr-nghttp2-1.64.0-dev'
+#8 57.82 deleting '/nix/store/1i003ijlh9i0mzp6alqby5hg3090pjdx-perl-5.40.0'
+#8 57.85 deleting '/nix/store/p9wgp8bdxlk4sg80lc8rwdbdcqcxc3cz-source'
+#8 57.85 deleting '/nix/store/abm77lnrkrkb58z6xp1qwjcr1xgkcfwm-gnused-4.9'
+#8 57.85 deleting '/nix/store/lwi59jcfwk2lnrakmm1y5vw85hj3n1bi-source'
+#8 59.14 deleting '/nix/store/fp6cjl1zcmm6mawsnrb5yak1wkz2ma8l-gnumake-4.4.1'
+#8 59.15 deleting '/nix/store/d7zhcrcc7q3yfbm3qkqpgc3daq82spwi-libssh2-1.11.1-dev'
+#8 59.15 deleting '/nix/store/kqm7wpqkzc4bwjlzqizcbz0mgkj06a9x-openssl-3.3.2-dev'
+#8 59.15 deleting '/nix/store/c4rj90r2m89rxs64hmm857mipwjhig5d-file-5.46'
+#8 59.15 deleting '/nix/store/nvvj6sk0k6px48436drlblf4gafgbvzr-gzip-1.13'
+#8 59.15 deleting '/nix/store/9cwwj1c9csmc85l2cqzs3h9hbf1vwl6c-gnutar-1.35'
+#8 59.15 deleting '/nix/store/d29r1bdmlvwmj52apgcdxfl1mm9c5782-update-autotools-gnu-config-scripts-hook'
+#8 59.15 deleting '/nix/store/1m67ipsk39xvhyqrxnzv2m2p48pil8kl-gnu-config-2024-01-01'
+#8 59.15 deleting '/nix/store/2a3anh8vl3fcgk0fvaravlimrqawawza-libmpc-1.3.1'
+#8 59.15 deleting '/nix/store/a3c47r5z1q2c4rz0kvq8hlilkhx2s718-gawk-5.3.1'
+#8 59.16 deleting '/nix/store/8675pnfr4fqnwv4pzjl67hdwls4q13aa-libssh2-1.11.1'
+#8 59.16 deleting '/nix/store/6cr0spsvymmrp1hj5n0kbaxw55w1lqyp-libxcrypt-4.4.36'
+#8 59.16 deleting '/nix/store/srfxqk119fijwnprgsqvn68ys9kiw0bn-patchelf-0.15.0'
+#8 59.16 deleting '/nix/store/fkd1ma3nify8r9wp463yg5rqz9hdcyf1-npm-9.9.4.tgz'
+#8 59.16 deleting '/nix/store/h18s640fnhhj2qdh5vivcfbxvz377srg-xz-5.6.3-bin'
+#8 59.16 deleting '/nix/store/c2njy6bv84kw1i4bjf5k5gn7gz8hn57n-xz-5.6.3'
+#8 59.16 deleting '/nix/store/qbry6090vlr9ar33kdmmbq2p5apzbga8-expand-response-params'
+#8 59.16 deleting '/nix/store/agvks3qmzja0yj54szi3vja6vx3cwkkw-curl-8.11.0-man'
+#8 59.16 deleting '/nix/store/3j1p598fivxs69wx3a657ysv3rw8k06l-pcre2-10.44'
+#8 59.16 deleting '/nix/store/grixvx878884hy8x3xs0c0s1i00j632k-nghttp2-1.64.0'
+#8 59.16 deleting '/nix/store/qs22aazzrdd4dnjf9vffl0n31hvls43h-mpfr-4.2.1'
+#8 59.16 deleting '/nix/store/fv7gpnvg922frkh81w5hkdhpz0nw3iiz-mirrors-list'
+#8 59.16 deleting '/nix/store/j7p46r8v9gcpbxx89pbqlh61zhd33gzv-binutils-2.43.1'
+#8 59.16 deleting '/nix/store/pc74azbkr19rkd5bjalq2xwx86cj3cga-linux-headers-6.12'
+#8 59.18 deleting '/nix/store/jqrz1vq5nz4lnv9pqzydj0ir58wbjfy1-findutils-4.10.0'
+#8 59.18 deleting '/nix/store/qcghigzrz56vczwlzg9c02vbs6zr9jkz-nghttp2-1.64.0-lib'
+#8 59.18 deleting '/nix/store/qq5q0alyzywdazhmybi7m69akz0ppk05-openssl-3.3.2-bin'
+#8 59.18 deleting '/nix/store/9l9n7a0v4aibcz0sgd0crs209an9p7dz-openssl-3.3.2'
+#8 59.18 deleting '/nix/store/df2a8k58k00f2dh2x930dg6xs6g6mliv-binutils-2.43.1-lib'
+#8 59.18 deleting '/nix/store/kryrg7ds05iwcmy81amavk8w13y4lxbs-gmp-6.3.0'
+#8 59.18 deleting unused links...
+#8 61.14 note: currently hard linking saves 1.73 MiB
+#8 61.23 61 store paths deleted, 559.40 MiB freed
+#8 DONE 62.7s
+
+#9 [stage-0  5/10] COPY . /app/.
+#9 DONE 0.4s
+
+#10 [stage-0  6/10] RUN --mount=type=cache,id=SO1bGLQpnUQ-/root/npm,target=/root/.npm npm ci
+#10 0.608 npm warn config production Use `--omit=dev` instead.
+#10 1.099 npm warn EBADENGINE Unsupported engine {
+#10 1.099 npm warn EBADENGINE   package: '@aws-sdk/checksums@3.1002.0',
+#10 1.099 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.099 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.099 npm warn EBADENGINE }
+#10 1.099 npm warn EBADENGINE Unsupported engine {
+#10 1.099 npm warn EBADENGINE   package: '@aws-sdk/client-athena@3.1163.0',
+#10 1.099 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.099 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.099 npm warn EBADENGINE }
+#10 1.100 npm warn EBADENGINE Unsupported engine {
+#10 1.100 npm warn EBADENGINE   package: '@aws-sdk/client-s3@3.1160.0',
+#10 1.100 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.100 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.100 npm warn EBADENGINE }
+#10 1.100 npm warn EBADENGINE Unsupported engine {
+#10 1.100 npm warn EBADENGINE   package: '@aws-sdk/core@3.980.0',
+#10 1.100 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.100 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.100 npm warn EBADENGINE }
+#10 1.100 npm warn EBADENGINE Unsupported engine {
+#10 1.100 npm warn EBADENGINE   package: '@aws-sdk/credential-provider-env@3.972.81',
+#10 1.100 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.100 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.100 npm warn EBADENGINE }
+#10 1.101 npm warn EBADENGINE Unsupported engine {
+#10 1.101 npm warn EBADENGINE   package: '@aws-sdk/credential-provider-http@3.972.83',
+#10 1.101 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.101 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.101 npm warn EBADENGINE }
+#10 1.101 npm warn EBADENGINE Unsupported engine {
+#10 1.101 npm warn EBADENGINE   package: '@aws-sdk/credential-provider-ini@3.973.26',
+#10 1.101 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.101 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.101 npm warn EBADENGINE }
+#10 1.102 npm warn EBADENGINE Unsupported engine {
+#10 1.102 npm warn EBADENGINE   package: '@aws-sdk/credential-provider-login@3.972.88',
+#10 1.102 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.102 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.102 npm warn EBADENGINE }
+#10 1.102 npm warn EBADENGINE Unsupported engine {
+#10 1.102 npm warn EBADENGINE   package: '@aws-sdk/credential-provider-node@3.972.93',
+#10 1.102 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.102 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.102 npm warn EBADENGINE }
+#10 1.102 npm warn EBADENGINE Unsupported engine {
+#10 1.102 npm warn EBADENGINE   package: '@aws-sdk/credential-provider-process@3.972.81',
+#10 1.102 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.102 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.102 npm warn EBADENGINE }
+#10 1.102 npm warn EBADENGINE Unsupported engine {
+#10 1.102 npm warn EBADENGINE   package: '@aws-sdk/credential-provider-sso@3.973.25',
+#10 1.102 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.102 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.102 npm warn EBADENGINE }
+#10 1.102 npm warn EBADENGINE Unsupported engine {
+#10 1.102 npm warn EBADENGINE   package: '@aws-sdk/credential-provider-web-identity@3.972.87',
+#10 1.102 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.102 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.102 npm warn EBADENGINE }
+#10 1.103 npm warn EBADENGINE Unsupported engine {
+#10 1.103 npm warn EBADENGINE   package: '@aws-sdk/middleware-sdk-s3@3.972.84',
+#10 1.103 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.103 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.103 npm warn EBADENGINE }
+#10 1.103 npm warn EBADENGINE Unsupported engine {
+#10 1.103 npm warn EBADENGINE   package: '@aws-sdk/nested-clients@3.998.0',
+#10 1.103 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.103 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.103 npm warn EBADENGINE }
+#10 1.103 npm warn EBADENGINE Unsupported engine {
+#10 1.103 npm warn EBADENGINE   package: '@aws-sdk/s3-request-presigner@3.1160.0',
+#10 1.103 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.103 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.103 npm warn EBADENGINE }
+#10 1.104 npm warn EBADENGINE Unsupported engine {
+#10 1.104 npm warn EBADENGINE   package: '@aws-sdk/signature-v4-multi-region@3.996.51',
+#10 1.104 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.104 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.104 npm warn EBADENGINE }
+#10 1.104 npm warn EBADENGINE Unsupported engine {
+#10 1.104 npm warn EBADENGINE   package: '@aws-sdk/token-providers@3.1162.0',
+#10 1.104 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.104 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.104 npm warn EBADENGINE }
+#10 1.104 npm warn EBADENGINE Unsupported engine {
+#10 1.104 npm warn EBADENGINE   package: '@aws-sdk/types@3.975.0',
+#10 1.104 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.104 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.104 npm warn EBADENGINE }
+#10 1.105 npm warn EBADENGINE Unsupported engine {
+#10 1.105 npm warn EBADENGINE   package: '@aws-sdk/xml-builder@3.972.42',
+#10 1.105 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.105 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.105 npm warn EBADENGINE }
+#10 1.105 npm warn EBADENGINE Unsupported engine {
+#10 1.105 npm warn EBADENGINE   package: '@envelop/core@6.0.0',
+#10 1.105 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.105 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.105 npm warn EBADENGINE }
+#10 1.105 npm warn EBADENGINE Unsupported engine {
+#10 1.105 npm warn EBADENGINE   package: '@envelop/instrumentation@2.0.0',
+#10 1.105 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.105 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.105 npm warn EBADENGINE }
+#10 1.106 npm warn EBADENGINE Unsupported engine {
+#10 1.106 npm warn EBADENGINE   package: '@envelop/types@6.0.0',
+#10 1.106 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.106 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.106 npm warn EBADENGINE }
+#10 1.106 npm warn EBADENGINE Unsupported engine {
+#10 1.106 npm warn EBADENGINE   package: 'cliui@9.0.1',
+#10 1.106 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.106 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.106 npm warn EBADENGINE }
+#10 1.107 npm warn EBADENGINE Unsupported engine {
+#10 1.107 npm warn EBADENGINE   package: 'string-width@8.3.0',
+#10 1.107 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.107 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.107 npm warn EBADENGINE }
+#10 1.107 npm warn EBADENGINE Unsupported engine {
+#10 1.107 npm warn EBADENGINE   package: 'yargs@18.2.0',
+#10 1.107 npm warn EBADENGINE   required: { node: '^20.19.0 || ^22.12.0 || >=23' },
+#10 1.107 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.107 npm warn EBADENGINE }
+#10 1.107 npm warn EBADENGINE Unsupported engine {
+#10 1.107 npm warn EBADENGINE   package: 'yargs-parser@22.0.0',
+#10 1.107 npm warn EBADENGINE   required: { node: '^20.19.0 || ^22.12.0 || >=23' },
+#10 1.107 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.107 npm warn EBADENGINE }
+#10 1.108 npm warn EBADENGINE Unsupported engine {
+#10 1.108 npm warn EBADENGINE   package: '@graphql-hive/logger@1.1.1',
+#10 1.108 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.108 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.108 npm warn EBADENGINE }
+#10 1.108 npm warn EBADENGINE Unsupported engine {
+#10 1.108 npm warn EBADENGINE   package: '@graphql-hive/signal@2.1.0',
+#10 1.108 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.108 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.108 npm warn EBADENGINE }
+#10 1.108 npm warn EBADENGINE Unsupported engine {
+#10 1.108 npm warn EBADENGINE   package: '@graphql-tools/batch-execute@10.3.1',
+#10 1.108 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.108 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.108 npm warn EBADENGINE }
+#10 1.108 npm warn EBADENGINE Unsupported engine {
+#10 1.108 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 1.108 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.108 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.108 npm warn EBADENGINE }
+#10 1.108 npm warn EBADENGINE Unsupported engine {
+#10 1.108 npm warn EBADENGINE   package: '@graphql-tools/delegate@12.3.2',
+#10 1.108 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.108 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.108 npm warn EBADENGINE }
+#10 1.109 npm warn EBADENGINE Unsupported engine {
+#10 1.109 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 1.109 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.109 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.109 npm warn EBADENGINE }
+#10 1.109 npm warn EBADENGINE Unsupported engine {
+#10 1.109 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 1.109 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.109 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.109 npm warn EBADENGINE }
+#10 1.109 npm warn EBADENGINE Unsupported engine {
+#10 1.109 npm warn EBADENGINE   package: '@graphql-tools/executor@4.1.7',
+#10 1.109 npm warn EBADENGINE   required: { node: '>=22.18.0' },
+#10 1.109 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.109 npm warn EBADENGINE }
+#10 1.109 npm warn EBADENGINE Unsupported engine {
+#10 1.109 npm warn EBADENGINE   package: '@graphql-tools/executor-common@1.1.0',
+#10 1.109 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.109 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.109 npm warn EBADENGINE }
+#10 1.110 npm warn EBADENGINE Unsupported engine {
+#10 1.110 npm warn EBADENGINE   package: '@graphql-tools/executor-graphql-ws@3.2.0',
+#10 1.110 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.110 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.110 npm warn EBADENGINE }
+#10 1.110 npm warn EBADENGINE Unsupported engine {
+#10 1.110 npm warn EBADENGINE   package: '@graphql-tools/executor-http@3.6.0',
+#10 1.110 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.110 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.110 npm warn EBADENGINE }
+#10 1.110 npm warn EBADENGINE Unsupported engine {
+#10 1.110 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 1.110 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.110 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.110 npm warn EBADENGINE }
+#10 1.110 npm warn EBADENGINE Unsupported engine {
+#10 1.110 npm warn EBADENGINE   package: '@graphql-tools/github-loader@9.1.13',
+#10 1.110 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.110 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.110 npm warn EBADENGINE }
+#10 1.110 npm warn EBADENGINE Unsupported engine {
+#10 1.110 npm warn EBADENGINE   package: '@graphql-tools/merge@10.0.8',
+#10 1.110 npm warn EBADENGINE   required: { node: '>=22.18.0' },
+#10 1.110 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.110 npm warn EBADENGINE }
+#10 1.111 npm warn EBADENGINE Unsupported engine {
+#10 1.111 npm warn EBADENGINE   package: '@graphql-tools/schema@11.0.8',
+#10 1.111 npm warn EBADENGINE   required: { node: '>=22.18.0' },
+#10 1.111 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.111 npm warn EBADENGINE }
+#10 1.111 npm warn EBADENGINE Unsupported engine {
+#10 1.111 npm warn EBADENGINE   package: '@graphql-tools/url-loader@9.1.14',
+#10 1.111 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.111 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.111 npm warn EBADENGINE }
+#10 1.111 npm warn EBADENGINE Unsupported engine {
+#10 1.111 npm warn EBADENGINE   package: '@graphql-tools/utils@13.2.1',
+#10 1.111 npm warn EBADENGINE   required: { node: '>=22.18.0' },
+#10 1.111 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.111 npm warn EBADENGINE }
+#10 1.111 npm warn EBADENGINE Unsupported engine {
+#10 1.111 npm warn EBADENGINE   package: '@graphql-tools/wrap@11.2.4',
+#10 1.111 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.111 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.111 npm warn EBADENGINE }
+#10 1.111 npm warn EBADENGINE Unsupported engine {
+#10 1.111 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 1.111 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.111 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.111 npm warn EBADENGINE }
+#10 1.111 npm warn EBADENGINE Unsupported engine {
+#10 1.111 npm warn EBADENGINE   package: '@graphql-yoga/subscription@6.0.0',
+#10 1.111 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.111 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.111 npm warn EBADENGINE }
+#10 1.112 npm warn EBADENGINE Unsupported engine {
+#10 1.112 npm warn EBADENGINE   package: '@graphql-yoga/typed-event-target@4.0.0',
+#10 1.112 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.112 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.112 npm warn EBADENGINE }
+#10 1.112 npm warn EBADENGINE Unsupported engine {
+#10 1.112 npm warn EBADENGINE   package: '@inquirer/ansi@2.0.10',
+#10 1.112 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.112 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.112 npm warn EBADENGINE }
+#10 1.112 npm warn EBADENGINE Unsupported engine {
+#10 1.112 npm warn EBADENGINE   package: '@inquirer/checkbox@5.2.8',
+#10 1.112 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.112 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.112 npm warn EBADENGINE }
+#10 1.112 npm warn EBADENGINE Unsupported engine {
+#10 1.112 npm warn EBADENGINE   package: '@inquirer/confirm@6.3.5',
+#10 1.112 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.112 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.112 npm warn EBADENGINE }
+#10 1.113 npm warn EBADENGINE Unsupported engine {
+#10 1.113 npm warn EBADENGINE   package: '@inquirer/core@12.0.6',
+#10 1.113 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.113 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.113 npm warn EBADENGINE }
+#10 1.113 npm warn EBADENGINE Unsupported engine {
+#10 1.113 npm warn EBADENGINE   package: '@inquirer/editor@5.3.6',
+#10 1.113 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.113 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.113 npm warn EBADENGINE }
+#10 1.113 npm warn EBADENGINE Unsupported engine {
+#10 1.113 npm warn EBADENGINE   package: '@inquirer/expand@5.1.8',
+#10 1.113 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.113 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.113 npm warn EBADENGINE }
+#10 1.113 npm warn EBADENGINE Unsupported engine {
+#10 1.113 npm warn EBADENGINE   package: '@inquirer/external-editor@3.0.7',
+#10 1.113 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.113 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.113 npm warn EBADENGINE }
+#10 1.113 npm warn EBADENGINE Unsupported engine {
+#10 1.113 npm warn EBADENGINE   package: '@inquirer/figures@2.0.10',
+#10 1.113 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.113 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.113 npm warn EBADENGINE }
+#10 1.113 npm warn EBADENGINE Unsupported engine {
+#10 1.113 npm warn EBADENGINE   package: '@inquirer/input@5.1.9',
+#10 1.113 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.113 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.113 npm warn EBADENGINE }
+#10 1.114 npm warn EBADENGINE Unsupported engine {
+#10 1.114 npm warn EBADENGINE   package: '@inquirer/number@4.2.6',
+#10 1.114 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.114 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.114 npm warn EBADENGINE }
+#10 1.114 npm warn EBADENGINE Unsupported engine {
+#10 1.114 npm warn EBADENGINE   package: '@inquirer/password@5.2.5',
+#10 1.114 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.114 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.114 npm warn EBADENGINE }
+#10 1.114 npm warn EBADENGINE Unsupported engine {
+#10 1.114 npm warn EBADENGINE   package: '@inquirer/prompts@8.7.5',
+#10 1.114 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.114 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.114 npm warn EBADENGINE }
+#10 1.114 npm warn EBADENGINE Unsupported engine {
+#10 1.114 npm warn EBADENGINE   package: '@inquirer/rawlist@5.3.8',
+#10 1.114 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.114 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.114 npm warn EBADENGINE }
+#10 1.114 npm warn EBADENGINE Unsupported engine {
+#10 1.114 npm warn EBADENGINE   package: '@inquirer/search@4.3.6',
+#10 1.114 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.114 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.114 npm warn EBADENGINE }
+#10 1.115 npm warn EBADENGINE Unsupported engine {
+#10 1.115 npm warn EBADENGINE   package: '@inquirer/select@5.2.8',
+#10 1.115 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.115 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.115 npm warn EBADENGINE }
+#10 1.115 npm warn EBADENGINE Unsupported engine {
+#10 1.115 npm warn EBADENGINE   package: '@inquirer/type@4.2.1',
+#10 1.115 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 1.115 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.115 npm warn EBADENGINE }
+#10 1.115 npm warn EBADENGINE Unsupported engine {
+#10 1.115 npm warn EBADENGINE   package: '@supabase/auth-js@2.118.0',
+#10 1.115 npm warn EBADENGINE   required: { node: '>=22.0.0' },
+#10 1.115 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.115 npm warn EBADENGINE }
+#10 1.115 npm warn EBADENGINE Unsupported engine {
+#10 1.115 npm warn EBADENGINE   package: '@supabase/functions-js@2.118.0',
+#10 1.115 npm warn EBADENGINE   required: { node: '>=22.0.0' },
+#10 1.115 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.115 npm warn EBADENGINE }
+#10 1.116 npm warn EBADENGINE Unsupported engine {
+#10 1.116 npm warn EBADENGINE   package: '@supabase/postgrest-js@2.118.0',
+#10 1.116 npm warn EBADENGINE   required: { node: '>=22.0.0' },
+#10 1.116 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.116 npm warn EBADENGINE }
+#10 1.116 npm warn EBADENGINE Unsupported engine {
+#10 1.116 npm warn EBADENGINE   package: '@supabase/realtime-js@2.118.0',
+#10 1.116 npm warn EBADENGINE   required: { node: '>=22.0.0' },
+#10 1.116 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.116 npm warn EBADENGINE }
+#10 1.116 npm warn EBADENGINE Unsupported engine {
+#10 1.116 npm warn EBADENGINE   package: '@supabase/storage-js@2.118.0',
+#10 1.116 npm warn EBADENGINE   required: { node: '>=22.0.0' },
+#10 1.116 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.116 npm warn EBADENGINE }
+#10 1.116 npm warn EBADENGINE Unsupported engine {
+#10 1.116 npm warn EBADENGINE   package: '@supabase/supabase-js@2.118.0',
+#10 1.116 npm warn EBADENGINE   required: { node: '>=22.0.0' },
+#10 1.116 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.116 npm warn EBADENGINE }
+#10 1.116 npm warn EBADENGINE Unsupported engine {
+#10 1.116 npm warn EBADENGINE   package: '@temporalio/activity@1.25.0',
+#10 1.116 npm warn EBADENGINE   required: { node: '>= 20.3.0' },
+#10 1.116 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.116 npm warn EBADENGINE }
+#10 1.116 npm warn EBADENGINE Unsupported engine {
+#10 1.116 npm warn EBADENGINE   package: '@temporalio/client@1.25.0',
+#10 1.116 npm warn EBADENGINE   required: { node: '>= 20.3.0' },
+#10 1.116 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.116 npm warn EBADENGINE }
+#10 1.116 npm warn EBADENGINE Unsupported engine {
+#10 1.116 npm warn EBADENGINE   package: '@temporalio/common@1.25.0',
+#10 1.116 npm warn EBADENGINE   required: { node: '>= 20.3.0' },
+#10 1.116 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.116 npm warn EBADENGINE }
+#10 1.117 npm warn EBADENGINE Unsupported engine {
+#10 1.117 npm warn EBADENGINE   package: '@temporalio/core-bridge@1.25.0',
+#10 1.117 npm warn EBADENGINE   required: { node: '>= 20.3.0' },
+#10 1.117 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.117 npm warn EBADENGINE }
+#10 1.117 npm warn EBADENGINE Unsupported engine {
+#10 1.117 npm warn EBADENGINE   package: '@temporalio/nexus@1.25.0',
+#10 1.117 npm warn EBADENGINE   required: { node: '>= 20.3.0' },
+#10 1.117 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.117 npm warn EBADENGINE }
+#10 1.117 npm warn EBADENGINE Unsupported engine {
+#10 1.117 npm warn EBADENGINE   package: '@temporalio/proto@1.25.0',
+#10 1.117 npm warn EBADENGINE   required: { node: '>= 20.3.0' },
+#10 1.117 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.117 npm warn EBADENGINE }
+#10 1.117 npm warn EBADENGINE Unsupported engine {
+#10 1.117 npm warn EBADENGINE   package: '@temporalio/testing@1.25.0',
+#10 1.117 npm warn EBADENGINE   required: { node: '>= 20.3.0' },
+#10 1.117 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.117 npm warn EBADENGINE }
+#10 1.117 npm warn EBADENGINE Unsupported engine {
+#10 1.117 npm warn EBADENGINE   package: '@temporalio/worker@1.25.0',
+#10 1.117 npm warn EBADENGINE   required: { node: '>= 20.3.0' },
+#10 1.117 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.117 npm warn EBADENGINE }
+#10 1.118 npm warn EBADENGINE Unsupported engine {
+#10 1.118 npm warn EBADENGINE   package: '@temporalio/workflow@1.25.0',
+#10 1.118 npm warn EBADENGINE   required: { node: '>= 20.3.0' },
+#10 1.118 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.118 npm warn EBADENGINE }
+#10 1.118 npm warn EBADENGINE Unsupported engine {
+#10 1.118 npm warn EBADENGINE   package: '@whatwg-node/disposablestack@0.1.0',
+#10 1.118 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.118 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.118 npm warn EBADENGINE }
+#10 1.118 npm warn EBADENGINE Unsupported engine {
+#10 1.118 npm warn EBADENGINE   package: '@whatwg-node/fetch@0.12.1',
+#10 1.118 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.118 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.118 npm warn EBADENGINE }
+#10 1.118 npm warn EBADENGINE Unsupported engine {
+#10 1.118 npm warn EBADENGINE   package: '@whatwg-node/node-fetch@0.9.3',
+#10 1.118 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.118 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.118 npm warn EBADENGINE }
+#10 1.119 npm warn EBADENGINE Unsupported engine {
+#10 1.119 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 1.119 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.119 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.119 npm warn EBADENGINE }
+#10 1.119 npm warn EBADENGINE Unsupported engine {
+#10 1.119 npm warn EBADENGINE   package: '@whatwg-node/server@0.13.2',
+#10 1.119 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.119 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.119 npm warn EBADENGINE }
+#10 1.119 npm warn EBADENGINE Unsupported engine {
+#10 1.119 npm warn EBADENGINE   package: 'brace-expansion@5.0.12',
+#10 1.119 npm warn EBADENGINE   required: { node: '20 || >=22' },
+#10 1.119 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.119 npm warn EBADENGINE }
+#10 1.120 npm warn EBADENGINE Unsupported engine {
+#10 1.120 npm warn EBADENGINE   package: 'chalk@6.0.1',
+#10 1.120 npm warn EBADENGINE   required: { node: '>=22' },
+#10 1.120 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.120 npm warn EBADENGINE }
+#10 1.120 npm warn EBADENGINE Unsupported engine {
+#10 1.120 npm warn EBADENGINE   package: 'chokidar@5.0.0',
+#10 1.120 npm warn EBADENGINE   required: { node: '>= 20.19.0' },
+#10 1.120 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.120 npm warn EBADENGINE }
+#10 1.120 npm warn EBADENGINE Unsupported engine {
+#10 1.120 npm warn EBADENGINE   package: 'cli-truncate@5.2.0',
+#10 1.120 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.120 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.120 npm warn EBADENGINE }
+#10 1.121 npm warn EBADENGINE Unsupported engine {
+#10 1.121 npm warn EBADENGINE   package: 'string-width@8.3.0',
+#10 1.121 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.121 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.121 npm warn EBADENGINE }
+#10 1.121 npm warn EBADENGINE Unsupported engine {
+#10 1.121 npm warn EBADENGINE   package: 'debounce@3.0.0',
+#10 1.121 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.121 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.121 npm warn EBADENGINE }
+#10 1.121 npm warn EBADENGINE Unsupported engine {
+#10 1.121 npm warn EBADENGINE   package: 'find-my-way@9.10.0',
+#10 1.121 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.121 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.121 npm warn EBADENGINE }
+#10 1.122 npm warn EBADENGINE Unsupported engine {
+#10 1.122 npm warn EBADENGINE   package: 'graphql@17.1.0',
+#10 1.122 npm warn EBADENGINE   required: { node: '^22.0.0 || ^24.0.0 || >=26.0.0' },
+#10 1.122 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.122 npm warn EBADENGINE }
+#10 1.122 npm warn EBADENGINE Unsupported engine {
+#10 1.122 npm warn EBADENGINE   package: 'graphql-ws@6.4.1',
+#10 1.122 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.122 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.122 npm warn EBADENGINE }
+#10 1.122 npm warn EBADENGINE Unsupported engine {
+#10 1.122 npm warn EBADENGINE   package: 'graphql-yoga@6.0.1',
+#10 1.122 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 1.122 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.122 npm warn EBADENGINE }
+#10 1.122 npm warn EBADENGINE Unsupported engine {
+#10 1.122 npm warn EBADENGINE   package: 'iceberg-js@0.8.1',
+#10 1.122 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.122 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.122 npm warn EBADENGINE }
+#10 1.123 npm warn EBADENGINE Unsupported engine {
+#10 1.123 npm warn EBADENGINE   package: 'ioredis@6.0.0',
+#10 1.123 npm warn EBADENGINE   required: { node: '>=20.0.0' },
+#10 1.123 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.123 npm warn EBADENGINE }
+#10 1.123 npm warn EBADENGINE Unsupported engine {
+#10 1.123 npm warn EBADENGINE   package: 'is-docker@4.0.0',
+#10 1.123 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.123 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.123 npm warn EBADENGINE }
+#10 1.123 npm warn EBADENGINE Unsupported engine {
+#10 1.123 npm warn EBADENGINE   package: 'listr2@10.2.2',
+#10 1.123 npm warn EBADENGINE   required: { node: '>=22.13.0' },
+#10 1.123 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.123 npm warn EBADENGINE }
+#10 1.123 npm warn EBADENGINE Unsupported engine {
+#10 1.123 npm warn EBADENGINE   package: 'string-width@8.3.0',
+#10 1.123 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.123 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.123 npm warn EBADENGINE }
+#10 1.124 npm warn EBADENGINE Unsupported engine {
+#10 1.124 npm warn EBADENGINE   package: 'wrap-ansi@10.0.2',
+#10 1.124 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.124 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.124 npm warn EBADENGINE }
+#10 1.124 npm warn EBADENGINE Unsupported engine {
+#10 1.124 npm warn EBADENGINE   package: 'mute-stream@3.0.0',
+#10 1.124 npm warn EBADENGINE   required: { node: '^20.17.0 || >=22.9.0' },
+#10 1.124 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.124 npm warn EBADENGINE }
+#10 1.124 npm warn EBADENGINE Unsupported engine {
+#10 1.124 npm warn EBADENGINE   package: 'nexus-rpc@0.0.3',
+#10 1.124 npm warn EBADENGINE   required: { node: '>= 20.0.0' },
+#10 1.124 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.124 npm warn EBADENGINE }
+#10 1.125 npm warn EBADENGINE Unsupported engine {
+#10 1.125 npm warn EBADENGINE   package: 'playwright-core@1.64.1',
+#10 1.125 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.125 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.125 npm warn EBADENGINE }
+#10 1.125 npm warn EBADENGINE Unsupported engine {
+#10 1.125 npm warn EBADENGINE   package: 'readdirp@5.1.1',
+#10 1.125 npm warn EBADENGINE   required: { node: '>= 20.19.0' },
+#10 1.125 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.125 npm warn EBADENGINE }
+#10 1.126 npm warn EBADENGINE Unsupported engine {
+#10 1.126 npm warn EBADENGINE   package: 'slice-ansi@8.0.0',
+#10 1.126 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.126 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.126 npm warn EBADENGINE }
+#10 1.126 npm warn EBADENGINE Unsupported engine {
+#10 1.126 npm warn EBADENGINE   package: 'sync-fetch@0.7.1',
+#10 1.126 npm warn EBADENGINE   required: { node: '>=22.12.0' },
+#10 1.126 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.126 npm warn EBADENGINE }
+#10 1.126 npm warn EBADENGINE Unsupported engine {
+#10 1.126 npm warn EBADENGINE   package: 'thread-stream@4.2.0',
+#10 1.126 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.126 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.126 npm warn EBADENGINE }
+#10 1.127 npm warn EBADENGINE Unsupported engine {
+#10 1.127 npm warn EBADENGINE   package: 'ts-log@3.0.3',
+#10 1.127 npm warn EBADENGINE   required: { node: '>=20', npm: '>=10' },
+#10 1.127 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.127 npm warn EBADENGINE }
+#10 1.127 npm warn EBADENGINE Unsupported engine {
+#10 1.127 npm warn EBADENGINE   package: 'whatwg-mimetype@5.0.0',
+#10 1.127 npm warn EBADENGINE   required: { node: '>=20' },
+#10 1.127 npm warn EBADENGINE   current: { node: 'v18.20.5', npm: '10.8.2' }
+#10 1.127 npm warn EBADENGINE }
+#10 3.189 npm warn deprecated pkg-up@5.0.0: Renamed to package-up
+#10 4.030 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+#10 12.87 npm warn deprecated @smithy/core@3.38.0: Deprecated due to a bug in custom logger data redaction. See https://github.com/aws/aws-sdk-js-v3/issues/8393.
+#10 16.22 
+#10 16.22 added 645 packages, and audited 646 packages in 16s
+#10 16.22 
+#10 16.22 132 packages are looking for funding
+#10 16.22   run `npm fund` for details
+#10 16.26 
+#10 16.26 3 moderate severity vulnerabilities
+#10 16.26 
+#10 16.26 To address all issues (including breaking changes), run:
+#10 16.26   npm audit fix --force
+#10 16.26 
+#10 16.26 Run `npm audit` for details.
+#10 DONE 18.1s
+
+#11 [stage-0  7/10] COPY . /app/.
+#11 DONE 0.5s
+
+#12 [stage-0  8/10] RUN --mount=type=cache,id=SO1bGLQpnUQ-node_modules/cache,target=/app/node_modules/.cache npm run build
+#12 0.407 npm warn config production Use `--omit=dev` instead.
+#12 0.422 
+#12 0.422 > backend@1.0.0 build
+#12 0.422 > tsc
+#12 0.422 
+#12 DONE 2.1s
+
+#13 [stage-0  9/10] RUN printf '\nPATH=/app/node_modules/.bin:$PATH' >> /root/.profile
+#13 DONE 0.5s
+
+#14 [stage-0 10/10] COPY . /app
+#14 DONE 0.2s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 12.9s done
+#15 exporting manifest sha256:d251c1900f2025167339093127cddb67c4ec7d93b391a63d410b7bafa4b12437 0.0s done
+#15 exporting config sha256:a64112035f41707a9430d440fcfdfc3c74fa147165a371256a21e4658c6ca878 0.1s done
+#15 exporting attestation manifest sha256:6414225b2b61b1b8a1a3d6cd5512af362171829fe9ee9d6897241ab45dc97022
+#15 exporting attestation manifest sha256:6414225b2b61b1b8a1a3d6cd5512af362171829fe9ee9d6897241ab45dc97022 0.1s done
+#15 exporting manifest list sha256:a2ae33eefab21ebe5fcf1cd996d35f94aa9ff63fa93065da6981ab06dac7a89d 0.0s done
+#15 naming to docker.io/library/autoflow-backend-nixpacks:latest 0.0s done
+#15 DONE 29.6s
+
+ [33m1 warning found (use docker --debug to expand):
+[0m - UndefinedVar: Usage of undefined variable '$NIXPACKS_PATH' (line 18)
+=== Successfully Built! ===
+
+Run:
+  docker run -it autoflow-backend-nixpacks
+
+## image
+size 1573016631 bytes, user "", cmd [npm run start], entrypoint [/bin/bash -l -c]
+## GET /health
+HTTP 000: /health did not answer 200
+## GET /
+
+HTTP 000
+## container user and process
+Error response from daemon: container c9073d860e490421e53fd4202da0b2b3b7049cac0c2b434164f02724c0d7d099 is not running
+## container log (tail)
+    at WebSocketFactory.getWebSocketConstructor (/app/node_modules/@supabase/realtime-js/dist/main/lib/websocket-factory.js:86:15)
+    at RealtimeClient._initializeOptions (/app/node_modules/@supabase/realtime-js/dist/main/RealtimeClient.js:656:164)
+    at new RealtimeClient (/app/node_modules/@supabase/realtime-js/dist/main/RealtimeClient.js:185:43)
+    at SupabaseClient._initRealtimeClient (file:///app/node_modules/@supabase/supabase-js/dist/index.mjs:867:10)
+    at new SupabaseClient (file:///app/node_modules/@supabase/supabase-js/dist/index.mjs:674:24)
+    at createClient (file:///app/node_modules/@supabase/supabase-js/dist/index.mjs:900:9)
+    at file:///app/dist/src/config/supabase.js:3:25
+    at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+    at async loadESM (node:internal/process/esm_loader:34:7)
+
+Node.js v18.20.5
+
+
+################ ATTEMPT 2: backend/nixpacks.toml sets nixPkgs = ["nodejs_22"] ################
+## nixpacks version
+nixpacks 1.41.0
+## nixpacks plan
+{
+  "providers": [],
+  "buildImage": "ghcr.io/railwayapp/nixpacks:ubuntu-1745885067",
+  "variables": {
+    "CI": "true",
+    "NIXPACKS_METADATA": "node",
+    "NODE_ENV": "production",
+    "NPM_CONFIG_PRODUCTION": "false"
+  },
+  "phases": {
+    "build": {
+      "dependsOn": [
+        "install"
+      ],
+      "cmds": [
+        "npm run build"
+      ],
+      "cacheDirectories": [
+        "node_modules/.cache"
+      ]
+    },
+    "install": {
+      "dependsOn": [
+        "setup"
+      ],
+      "cmds": [
+        "npm ci"
+      ],
+      "cacheDirectories": [
+        "/root/.npm"
+      ],
+      "paths": [
+        "/app/node_modules/.bin"
+      ]
+    },
+    "setup": {
+      "nixPkgs": [
+        "nodejs_22"
+      ],
+      "nixLibs": [
+        "gcc-unwrapped"
+      ],
+      "nixOverlays": [
+        "https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"
+      ],
+      "nixpkgsArchive": "ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7"
+    }
+  },
+  "start": {
+    "cmd": "npm run start"
+  }
+}
+## nixpacks build
+
+╔═════ Nixpacks v1.41.0 ═════╗
+║ setup      │ nodejs_22     ║
+║────────────────────────────║
+║ install    │ npm ci        ║
+║────────────────────────────║
+║ build      │ npm run build ║
+║────────────────────────────║
+║ start      │ npm run start ║
+╚════════════════════════════╝
+
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 979B done
+#1 DONE 0.1s
+
+#2 [internal] load metadata for ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+#2 DONE 1.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 101B done
+#3 DONE 0.1s
+
+#4 [internal] load build context
+#4 ...
+
+#5 [stage-0  1/10] FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de
+#5 resolve ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de 0.1s done
+#5 DONE 0.1s
+
+#4 [internal] load build context
+#4 transferring context: 786.99kB 0.0s done
+#4 DONE 0.2s
+
+#6 [stage-0  2/10] WORKDIR /app/
+#6 CACHED
+
+#7 [stage-0  3/10] COPY .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix
+#7 DONE 0.2s
+
+#8 [stage-0  4/10] RUN nix-env -if .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix && nix-collect-garbage -d
+#8 43.26 installing 'ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7-env'
+#8 44.61 these 3 derivations will be built:
+#8 44.61   /nix/store/1f4a312hz9m6y1ssip52drgkim8az4d6-libraries.drv
+#8 44.61   /nix/store/79g4v87v1cgrx5vlwzcagcs6v8ps8fk2-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7-env.drv
+#8 44.61   /nix/store/xcgsl1v2b50w26sbbc96a5ip2pgms4b1-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7-env.drv
+#8 44.61 these 47 paths will be fetched (53.95 MiB download, 269.63 MiB unpacked):
+#8 44.61   /nix/store/cf7gkacyxmm66lwl5nj6j6yykbrg4q5c-acl-2.3.2
+#8 44.61   /nix/store/a9jgnlhkjkxav6qrc3rzg2q84pkl2wvr-attr-2.5.2
+#8 44.61   /nix/store/5mh7kaj2fyv8mk4sfq1brwxgc02884wi-bash-5.2p37
+#8 44.61   /nix/store/wf5zj2gbib3gjqllkabxaw4dh0gzcla3-builder.pl
+#8 44.61   /nix/store/ivl2v8rgg7qh1jkj5pwpqycax3rc2hnl-bzip2-1.0.8
+#8 44.61   /nix/store/mglixp03lsp0w986svwdvm7vcy17rdax-bzip2-1.0.8-bin
+#8 44.61   /nix/store/4s9rah4cwaxflicsk5cndnknqlk9n4p3-coreutils-9.5
+#8 44.61   /nix/store/00g69vw7c9lycy63h45ximy0wmzqx5y6-diffutils-3.10
+#8 44.61   /nix/store/74h4z8k82pmp24xryflv4lxkz8jlpqqd-ed-1.20.2
+#8 44.61   /nix/store/c4rj90r2m89rxs64hmm857mipwjhig5d-file-5.46
+#8 44.61   /nix/store/jqrz1vq5nz4lnv9pqzydj0ir58wbjfy1-findutils-4.10.0
+#8 44.61   /nix/store/a3c47r5z1q2c4rz0kvq8hlilkhx2s718-gawk-5.3.1
+#8 44.61   /nix/store/bpq1s72cw9qb2fs8mnmlw6hn2c7iy0ss-gcc-14-20241116-lib
+#8 44.61   /nix/store/17v0ywnr3akp85pvdi56gwl99ljv95kx-gcc-14-20241116-libgcc
+#8 44.61   /nix/store/65h17wjrrlsj2rj540igylrx7fqcd6vq-glibc-2.40-36
+#8 44.61   /nix/store/a2byxfv4lc8f2g5xfzw8cz5q8k05wi29-gmp-with-cxx-6.3.0
+#8 44.61   /nix/store/1m67ipsk39xvhyqrxnzv2m2p48pil8kl-gnu-config-2024-01-01
+#8 44.61   /nix/store/aap6cq56amx4mzbyxp2wpgsf1kqjcr1f-gnugrep-3.11
+#8 44.61   /nix/store/fp6cjl1zcmm6mawsnrb5yak1wkz2ma8l-gnumake-4.4.1
+#8 44.61   /nix/store/abm77lnrkrkb58z6xp1qwjcr1xgkcfwm-gnused-4.9
+#8 44.61   /nix/store/9cwwj1c9csmc85l2cqzs3h9hbf1vwl6c-gnutar-1.35
+#8 44.61   /nix/store/nvvj6sk0k6px48436drlblf4gafgbvzr-gzip-1.13
+#8 44.61   /nix/store/wwipgdqb4p2fr46kmw9c5wlk799kbl68-icu4c-74.2
+#8 44.61   /nix/store/m8w3mf0i4862q22bxad0wspkgdy4jnkk-icu4c-74.2-dev
+#8 44.61   /nix/store/34z2792zyd4ayl5186vx0s98ckdaccz9-libidn2-2.3.7
+#8 44.61   /nix/store/xcqcgqazykf6s7fsn08k0blnh0wisdcl-libunistring-1.3
+#8 44.61   /nix/store/r9ac2hwnmb0nxwsrvr6gi9wsqf2whfqj-libuv-1.49.2
+#8 44.61   /nix/store/ll14czvpxglf6nnwmmrmygplm830fvlv-libuv-1.49.2-dev
+#8 44.61   /nix/store/6cr0spsvymmrp1hj5n0kbaxw55w1lqyp-libxcrypt-4.4.36
+#8 44.61   /nix/store/fkyp1bm5gll9adnfcj92snyym524mdrj-nodejs-22.11.0
+#8 44.61   /nix/store/h1ydpxkw9qhjdxjpic1pdc2nirggyy6f-openssl-3.3.2
+#8 44.61   /nix/store/lygl27c44xv73kx1spskcgvzwq7z337c-openssl-3.3.2-bin
+#8 44.61   /nix/store/pp2zf8bdgyz60ds8vcshk2603gcjgp72-openssl-3.3.2-dev
+#8 44.61   /nix/store/5yja5dpk2qw1v5mbfbl2d7klcdfrh90w-patch-2.7.6
+#8 44.61   /nix/store/srfxqk119fijwnprgsqvn68ys9kiw0bn-patchelf-0.15.0
+#8 44.61   /nix/store/3j1p598fivxs69wx3a657ysv3rw8k06l-pcre2-10.44
+#8 44.61   /nix/store/1i003ijlh9i0mzp6alqby5hg3090pjdx-perl-5.40.0
+#8 44.61   /nix/store/dj96qp9vps02l3n8xgc2vallqa9rhafb-sqlite-3.47.0
+#8 44.61   /nix/store/yc39wvfz87i0bl8r6vnhq48n6clbx2pb-sqlite-3.47.0-bin
+#8 44.61   /nix/store/i47d0rzbbnihcxkcaj48jgii5pj58djc-sqlite-3.47.0-dev
+#8 44.61   /nix/store/4ig84cyqi6qy4n0sanrbzsw1ixa497jx-stdenv-linux
+#8 44.61   /nix/store/d29r1bdmlvwmj52apgcdxfl1mm9c5782-update-autotools-gnu-config-scripts-hook
+#8 44.61   /nix/store/acfkqzj5qrqs88a4a6ixnybbjxja663d-xgcc-14-20241116-libgcc
+#8 44.61   /nix/store/c2njy6bv84kw1i4bjf5k5gn7gz8hn57n-xz-5.6.3
+#8 44.61   /nix/store/h18s640fnhhj2qdh5vivcfbxvz377srg-xz-5.6.3-bin
+#8 44.61   /nix/store/cqlaa2xf6lslnizyj9xqa8j0ii1yqw0x-zlib-1.3.1
+#8 44.61   /nix/store/1lggwqzapn5mn49l9zy4h566ysv9kzdb-zlib-1.3.1-dev
+#8 46.85 building '/nix/store/1f4a312hz9m6y1ssip52drgkim8az4d6-libraries.drv'...
+#8 46.98 building '/nix/store/79g4v87v1cgrx5vlwzcagcs6v8ps8fk2-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7-env.drv'...
+#8 51.28 building '/nix/store/xcgsl1v2b50w26sbbc96a5ip2pgms4b1-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7-env.drv'...
+#8 51.33 created 5 symlinks in user environment
+#8 51.62 building '/nix/store/sn1239gahqswicaj7gpyd1jpm5a6d6qw-user-environment.drv'...
+#8 51.84 removing old generations of profile /nix/var/nix/profiles/per-user/root/channels
+#8 51.84 removing old generations of profile /nix/var/nix/profiles/per-user/root/profile
+#8 51.84 removing profile version 1
+#8 51.84 removing old generations of profile /nix/var/nix/profiles/per-user/root/channels
+#8 51.84 removing old generations of profile /nix/var/nix/profiles/per-user/root/profile
+#8 51.84 finding garbage collector roots...
+#8 51.84 removing stale link from '/nix/var/nix/gcroots/auto/lzjbmb2ry0z7lma2fvpqprb12921pnb5' to '/nix/var/nix/profiles/per-user/root/profile-1-link'
+#8 51.84 deleting garbage...
+#8 51.86 deleting '/nix/store/a9qf4wwhympzs35ncp80r185j6a21w07-user-environment'
+#8 51.86 deleting '/nix/store/253kwn1730vnay87xkjgxa2v97w3y079-user-environment.drv'
+#8 51.86 deleting '/nix/store/hn5mrh362n52x8wwab9s1v6bgn4n5c94-env-manifest.nix'
+#8 51.86 deleting '/nix/store/9fxr7753z31rn59i64dqaajgsx0ap91p-libraries'
+#8 51.87 deleting '/nix/store/4ig84cyqi6qy4n0sanrbzsw1ixa497jx-stdenv-linux'
+#8 51.87 deleting '/nix/store/00g69vw7c9lycy63h45ximy0wmzqx5y6-diffutils-3.10'
+#8 51.87 deleting '/nix/store/aap6cq56amx4mzbyxp2wpgsf1kqjcr1f-gnugrep-3.11'
+#8 51.87 deleting '/nix/store/mglixp03lsp0w986svwdvm7vcy17rdax-bzip2-1.0.8-bin'
+#8 51.87 deleting '/nix/store/ivl2v8rgg7qh1jkj5pwpqycax3rc2hnl-bzip2-1.0.8'
+#8 51.87 deleting '/nix/store/5yja5dpk2qw1v5mbfbl2d7klcdfrh90w-patch-2.7.6'
+#8 51.87 deleting '/nix/store/74h4z8k82pmp24xryflv4lxkz8jlpqqd-ed-1.20.2'
+#8 51.87 deleting '/nix/store/wf5zj2gbib3gjqllkabxaw4dh0gzcla3-builder.pl'
+#8 51.87 deleting '/nix/store/1i003ijlh9i0mzp6alqby5hg3090pjdx-perl-5.40.0'
+#8 51.90 deleting '/nix/store/p9wgp8bdxlk4sg80lc8rwdbdcqcxc3cz-source'
+#8 51.90 deleting '/nix/store/abm77lnrkrkb58z6xp1qwjcr1xgkcfwm-gnused-4.9'
+#8 51.90 deleting '/nix/store/lwi59jcfwk2lnrakmm1y5vw85hj3n1bi-source'
+#8 52.99 deleting '/nix/store/fp6cjl1zcmm6mawsnrb5yak1wkz2ma8l-gnumake-4.4.1'
+#8 52.99 deleting '/nix/store/c4rj90r2m89rxs64hmm857mipwjhig5d-file-5.46'
+#8 52.99 deleting '/nix/store/nvvj6sk0k6px48436drlblf4gafgbvzr-gzip-1.13'
+#8 52.99 deleting '/nix/store/9cwwj1c9csmc85l2cqzs3h9hbf1vwl6c-gnutar-1.35'
+#8 52.99 deleting '/nix/store/d29r1bdmlvwmj52apgcdxfl1mm9c5782-update-autotools-gnu-config-scripts-hook'
+#8 52.99 deleting '/nix/store/1m67ipsk39xvhyqrxnzv2m2p48pil8kl-gnu-config-2024-01-01'
+#8 52.99 deleting '/nix/store/a3c47r5z1q2c4rz0kvq8hlilkhx2s718-gawk-5.3.1'
+#8 53.00 deleting '/nix/store/6cr0spsvymmrp1hj5n0kbaxw55w1lqyp-libxcrypt-4.4.36'
+#8 53.00 deleting '/nix/store/srfxqk119fijwnprgsqvn68ys9kiw0bn-patchelf-0.15.0'
+#8 53.00 deleting '/nix/store/h18s640fnhhj2qdh5vivcfbxvz377srg-xz-5.6.3-bin'
+#8 53.00 deleting '/nix/store/c2njy6bv84kw1i4bjf5k5gn7gz8hn57n-xz-5.6.3'
+#8 53.00 deleting '/nix/store/3j1p598fivxs69wx3a657ysv3rw8k06l-pcre2-10.44'
+#8 53.00 deleting '/nix/store/jqrz1vq5nz4lnv9pqzydj0ir58wbjfy1-findutils-4.10.0'
+#8 53.00 deleting unused links...
+#8 54.32 note: currently hard linking saves -0.18 MiB
+#8 54.37 29 store paths deleted, 247.85 MiB freed
+#8 DONE 54.7s
+
+#9 [stage-0  5/10] COPY . /app/.
+#9 DONE 0.1s
+
+#10 [stage-0  6/10] RUN --mount=type=cache,id=SO1bGLQpnUQ-/root/npm,target=/root/.npm npm ci
+#10 0.213 npm warn config production Use `--omit=dev` instead.
+#10 0.533 npm warn EBADENGINE Unsupported engine {
+#10 0.533 npm warn EBADENGINE   package: '@envelop/core@6.0.0',
+#10 0.533 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.533 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.533 npm warn EBADENGINE }
+#10 0.534 npm warn EBADENGINE Unsupported engine {
+#10 0.534 npm warn EBADENGINE   package: '@envelop/instrumentation@2.0.0',
+#10 0.534 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.534 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.534 npm warn EBADENGINE }
+#10 0.535 npm warn EBADENGINE Unsupported engine {
+#10 0.535 npm warn EBADENGINE   package: '@envelop/types@6.0.0',
+#10 0.535 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.535 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.535 npm warn EBADENGINE }
+#10 0.566 npm warn EBADENGINE Unsupported engine {
+#10 0.566 npm warn EBADENGINE   package: 'yargs@18.2.0',
+#10 0.566 npm warn EBADENGINE   required: { node: '^20.19.0 || ^22.12.0 || >=23' },
+#10 0.566 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.566 npm warn EBADENGINE }
+#10 0.568 npm warn EBADENGINE Unsupported engine {
+#10 0.568 npm warn EBADENGINE   package: 'yargs-parser@22.0.0',
+#10 0.568 npm warn EBADENGINE   required: { node: '^20.19.0 || ^22.12.0 || >=23' },
+#10 0.568 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.568 npm warn EBADENGINE }
+#10 0.591 npm warn EBADENGINE Unsupported engine {
+#10 0.591 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 0.591 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.591 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.591 npm warn EBADENGINE }
+#10 0.596 npm warn EBADENGINE Unsupported engine {
+#10 0.596 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 0.596 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.596 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.596 npm warn EBADENGINE }
+#10 0.600 npm warn EBADENGINE Unsupported engine {
+#10 0.600 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 0.600 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.600 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.600 npm warn EBADENGINE }
+#10 0.604 npm warn EBADENGINE Unsupported engine {
+#10 0.604 npm warn EBADENGINE   package: '@graphql-tools/executor@4.1.7',
+#10 0.604 npm warn EBADENGINE   required: { node: '>=22.18.0' },
+#10 0.604 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.604 npm warn EBADENGINE }
+#10 0.618 npm warn EBADENGINE Unsupported engine {
+#10 0.618 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 0.618 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.618 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.618 npm warn EBADENGINE }
+#10 0.642 npm warn EBADENGINE Unsupported engine {
+#10 0.642 npm warn EBADENGINE   package: '@graphql-tools/merge@10.0.8',
+#10 0.642 npm warn EBADENGINE   required: { node: '>=22.18.0' },
+#10 0.642 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.642 npm warn EBADENGINE }
+#10 0.647 npm warn EBADENGINE Unsupported engine {
+#10 0.647 npm warn EBADENGINE   package: '@graphql-tools/schema@11.0.8',
+#10 0.647 npm warn EBADENGINE   required: { node: '>=22.18.0' },
+#10 0.647 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.647 npm warn EBADENGINE }
+#10 0.654 npm warn EBADENGINE Unsupported engine {
+#10 0.654 npm warn EBADENGINE   package: '@graphql-tools/utils@13.2.1',
+#10 0.654 npm warn EBADENGINE   required: { node: '>=22.18.0' },
+#10 0.654 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.654 npm warn EBADENGINE }
+#10 0.659 npm warn EBADENGINE Unsupported engine {
+#10 0.659 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 0.659 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.659 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.659 npm warn EBADENGINE }
+#10 0.663 npm warn EBADENGINE Unsupported engine {
+#10 0.663 npm warn EBADENGINE   package: '@graphql-yoga/subscription@6.0.0',
+#10 0.663 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.663 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.663 npm warn EBADENGINE }
+#10 0.664 npm warn EBADENGINE Unsupported engine {
+#10 0.664 npm warn EBADENGINE   package: '@graphql-yoga/typed-event-target@4.0.0',
+#10 0.664 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.664 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.664 npm warn EBADENGINE }
+#10 0.668 npm warn EBADENGINE Unsupported engine {
+#10 0.668 npm warn EBADENGINE   package: '@inquirer/ansi@2.0.10',
+#10 0.668 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.668 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.668 npm warn EBADENGINE }
+#10 0.669 npm warn EBADENGINE Unsupported engine {
+#10 0.669 npm warn EBADENGINE   package: '@inquirer/checkbox@5.2.8',
+#10 0.669 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.669 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.669 npm warn EBADENGINE }
+#10 0.670 npm warn EBADENGINE Unsupported engine {
+#10 0.670 npm warn EBADENGINE   package: '@inquirer/confirm@6.3.5',
+#10 0.670 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.670 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.670 npm warn EBADENGINE }
+#10 0.671 npm warn EBADENGINE Unsupported engine {
+#10 0.671 npm warn EBADENGINE   package: '@inquirer/core@12.0.6',
+#10 0.671 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.671 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.671 npm warn EBADENGINE }
+#10 0.672 npm warn EBADENGINE Unsupported engine {
+#10 0.672 npm warn EBADENGINE   package: '@inquirer/editor@5.3.6',
+#10 0.672 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.672 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.672 npm warn EBADENGINE }
+#10 0.673 npm warn EBADENGINE Unsupported engine {
+#10 0.673 npm warn EBADENGINE   package: '@inquirer/expand@5.1.8',
+#10 0.673 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.673 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.673 npm warn EBADENGINE }
+#10 0.675 npm warn EBADENGINE Unsupported engine {
+#10 0.675 npm warn EBADENGINE   package: '@inquirer/external-editor@3.0.7',
+#10 0.675 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.675 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.675 npm warn EBADENGINE }
+#10 0.677 npm warn EBADENGINE Unsupported engine {
+#10 0.677 npm warn EBADENGINE   package: '@inquirer/figures@2.0.10',
+#10 0.677 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.677 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.677 npm warn EBADENGINE }
+#10 0.678 npm warn EBADENGINE Unsupported engine {
+#10 0.678 npm warn EBADENGINE   package: '@inquirer/input@5.1.9',
+#10 0.678 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.678 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.678 npm warn EBADENGINE }
+#10 0.679 npm warn EBADENGINE Unsupported engine {
+#10 0.679 npm warn EBADENGINE   package: '@inquirer/number@4.2.6',
+#10 0.679 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.679 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.679 npm warn EBADENGINE }
+#10 0.680 npm warn EBADENGINE Unsupported engine {
+#10 0.680 npm warn EBADENGINE   package: '@inquirer/password@5.2.5',
+#10 0.680 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.680 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.680 npm warn EBADENGINE }
+#10 0.681 npm warn EBADENGINE Unsupported engine {
+#10 0.681 npm warn EBADENGINE   package: '@inquirer/prompts@8.7.5',
+#10 0.681 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.681 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.681 npm warn EBADENGINE }
+#10 0.683 npm warn EBADENGINE Unsupported engine {
+#10 0.683 npm warn EBADENGINE   package: '@inquirer/rawlist@5.3.8',
+#10 0.683 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.683 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.683 npm warn EBADENGINE }
+#10 0.684 npm warn EBADENGINE Unsupported engine {
+#10 0.684 npm warn EBADENGINE   package: '@inquirer/search@4.3.6',
+#10 0.684 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.684 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.684 npm warn EBADENGINE }
+#10 0.685 npm warn EBADENGINE Unsupported engine {
+#10 0.685 npm warn EBADENGINE   package: '@inquirer/select@5.2.8',
+#10 0.685 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.685 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.685 npm warn EBADENGINE }
+#10 0.686 npm warn EBADENGINE Unsupported engine {
+#10 0.686 npm warn EBADENGINE   package: '@inquirer/type@4.2.1',
+#10 0.686 npm warn EBADENGINE   required: { node: '>=23.5.0 || ^22.13.0 || ^20.17.0' },
+#10 0.686 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.686 npm warn EBADENGINE }
+#10 0.768 npm warn EBADENGINE Unsupported engine {
+#10 0.768 npm warn EBADENGINE   package: '@whatwg-node/disposablestack@0.1.0',
+#10 0.768 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.768 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.768 npm warn EBADENGINE }
+#10 0.770 npm warn EBADENGINE Unsupported engine {
+#10 0.770 npm warn EBADENGINE   package: '@whatwg-node/fetch@0.12.1',
+#10 0.770 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.770 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.770 npm warn EBADENGINE }
+#10 0.771 npm warn EBADENGINE Unsupported engine {
+#10 0.771 npm warn EBADENGINE   package: '@whatwg-node/node-fetch@0.9.3',
+#10 0.771 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.771 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.771 npm warn EBADENGINE }
+#10 0.772 npm warn EBADENGINE Unsupported engine {
+#10 0.772 npm warn EBADENGINE   package: '@whatwg-node/promise-helpers@2.0.1',
+#10 0.772 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.772 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.772 npm warn EBADENGINE }
+#10 0.773 npm warn EBADENGINE Unsupported engine {
+#10 0.773 npm warn EBADENGINE   package: '@whatwg-node/server@0.13.2',
+#10 0.773 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.773 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.773 npm warn EBADENGINE }
+#10 0.883 npm warn EBADENGINE Unsupported engine {
+#10 0.883 npm warn EBADENGINE   package: 'graphql-yoga@6.0.1',
+#10 0.883 npm warn EBADENGINE   required: { node: '>=22.15.0' },
+#10 0.883 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.883 npm warn EBADENGINE }
+#10 0.924 npm warn EBADENGINE Unsupported engine {
+#10 0.924 npm warn EBADENGINE   package: 'listr2@10.2.2',
+#10 0.924 npm warn EBADENGINE   required: { node: '>=22.13.0' },
+#10 0.924 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 0.924 npm warn EBADENGINE }
+#10 1.039 npm warn EBADENGINE Unsupported engine {
+#10 1.039 npm warn EBADENGINE   package: 'sync-fetch@0.7.1',
+#10 1.039 npm warn EBADENGINE   required: { node: '>=22.12.0' },
+#10 1.039 npm warn EBADENGINE   current: { node: 'v22.11.0', npm: '10.9.0' }
+#10 1.039 npm warn EBADENGINE }
+#10 3.325 npm warn deprecated pkg-up@5.0.0: Renamed to package-up
+#10 4.493 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+#10 11.73 npm warn deprecated @smithy/core@3.38.0: Deprecated due to a bug in custom logger data redaction. See https://github.com/aws/aws-sdk-js-v3/issues/8393.
+#10 15.45 
+#10 15.45 added 645 packages, and audited 646 packages in 15s
+#10 15.45 
+#10 15.45 132 packages are looking for funding
+#10 15.45   run `npm fund` for details
+#10 15.52 
+#10 15.52 3 moderate severity vulnerabilities
+#10 15.52 
+#10 15.52 To address all issues (including breaking changes), run:
+#10 15.52   npm audit fix --force
+#10 15.52 
+#10 15.52 Run `npm audit` for details.
+#10 DONE 16.4s
+
+#11 [stage-0  7/10] COPY . /app/.
+#11 DONE 0.8s
+
+#12 [stage-0  8/10] RUN --mount=type=cache,id=SO1bGLQpnUQ-node_modules/cache,target=/app/node_modules/.cache npm run build
+#12 0.653 npm warn config production Use `--omit=dev` instead.
+#12 0.677 
+#12 0.677 > backend@1.0.0 build
+#12 0.677 > tsc
+#12 0.677 
+#12 DONE 2.6s
+
+#13 [stage-0  9/10] RUN printf '\nPATH=/app/node_modules/.bin:$PATH' >> /root/.profile
+#13 DONE 0.5s
+
+#14 [stage-0 10/10] COPY . /app
+#14 DONE 0.2s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 11.8s done
+#15 exporting manifest sha256:7e6caf66b0b77ded61a3a326086b568f869618e95e20b0f99cdb64e172e6032d 0.1s done
+#15 exporting config sha256:2b04e8061921b8d9470fe41071b113b3ebd14eeaff29cb654374f65a618d9e3c
+#15 exporting config sha256:2b04e8061921b8d9470fe41071b113b3ebd14eeaff29cb654374f65a618d9e3c 0.1s done
+#15 exporting attestation manifest sha256:2f7b60717a6bf6c6b1611e93d36bc212aa3b43b83ec7cdb5b28fe1538b645d16
+#15 exporting attestation manifest sha256:2f7b60717a6bf6c6b1611e93d36bc212aa3b43b83ec7cdb5b28fe1538b645d16 0.1s done
+#15 exporting manifest list sha256:c1502f59229f7e1eabfb81e6d46ee62056fcb77d4dde90fda1fbd23376f9bb45
+#15 exporting manifest list sha256:c1502f59229f7e1eabfb81e6d46ee62056fcb77d4dde90fda1fbd23376f9bb45 0.1s done
+#15 naming to docker.io/library/autoflow-backend-nixpacks:latest 0.0s done
+#15 DONE 24.2s
+
+ [33m1 warning found (use docker --debug to expand):
+[0m - UndefinedVar: Usage of undefined variable '$NIXPACKS_PATH' (line 18)
+=== Successfully Built! ===
+
+Run:
+  docker run -it autoflow-backend-nixpacks
+
+## image
+size 1594624312 bytes, user "", cmd [npm run start], entrypoint [/bin/bash -l -c]
+## GET /health
+{"status":"healthy","timestamp":"2026-11-07T03:36:15.052Z","uptime":"< 1m","environment":"production"}
+HTTP 200 (after 2 tries)
+## GET /
+{"name":"AutoFlow Pro API","version":"1.0.0","status":"operational"}
+HTTP 200
+## container user and process
+uid=0(root) gid=0(root) groups=0(root)
+    PID COMMAND
+      1 npm run start
+## container log (tail)
+║  WebSocket: ✅ | Queue: ✅ | Scheduler: ✅          ║
+║  Archival: ✅ (Daily at 2:00 AM)                   ║
+║  Security: ✅ | Monitoring: ✅                      ║
+╚════════════════════════════════════════════════════╝
+    
+{"level":"INFO","time":"2026-11-07T03:36:07.476Z","pid":20,"hostname":"2e4712ec9e5c","msg":"Queue worker initialized"}
+{"level":"INFO","time":"2026-11-07T03:36:07.479Z","pid":20,"hostname":"2e4712ec9e5c","msg":"Server listening on port 8080"}
+{"level":"INFO","time":"2026-11-07T03:36:07.480Z","pid":20,"hostname":"2e4712ec9e5c","msg":"WebSocket server initialized"}
+{"level":"INFO","time":"2026-11-07T03:36:07.481Z","pid":20,"hostname":"2e4712ec9e5c","msg":"Scheduler service initialized"}
+{"level":"INFO","time":"2026-11-07T03:36:07.481Z","pid":20,"hostname":"2e4712ec9e5c","msg":"Daily archival scheduled"}
+{"level":"INFO","time":"2026-11-07T03:36:15.054Z","pid":20,"hostname":"2e4712ec9e5c","method":"GET","url":"/health","statusCode":200,"duration":7057,"msg":"GET /health"}
+{"level":"INFO","time":"2026-11-07T03:36:15.121Z","pid":20,"hostname":"2e4712ec9e5c","method":"GET","url":"/","statusCode":200,"duration":1,"msg":"GET /"}
+

@@ -1,0 +1,151 @@
+# 2026-11-07 Mutation check for the Temporal workflow, the GraphQL API and the Rust CLI: each guard removed or broken in a scratch copy, the matching tests must go red
+# node v24.18.0, rustc 1.99.1 (58cf8f9c3 2026-10-13), Windows 11. The unmutated copy runs first and must pass (BASELINE PASS).
+# Four sections, one command each: temporal (tests/test-temporal.ts), e2e (tests/test-temporal-e2e.ts against a local 'temporal server start-dev'), graphql (tests/test-graphql.ts), cli (cargo test).
+# A mutant that makes a workflow wait forever is caught by the test's own deadline, which prints a FAIL line.
+
+################ node scripts/mutation-check-services.mjs temporal ################
+BASELINE PASS  temporal tests on the unmutated copy
+KILLED    [temporal] the retry policy is deleted from the activity options
+          first red: FAIL  retry exhausted: a step that never works is tried exactly 4 times, then the run fails | FAIL  retry exhausted: the failure names the step and the real error
+KILLED    [temporal] the retry policy allows one try only
+          first red: FAIL  retry: a step that fails twice then works is tried 3 times and the run completes | FAIL  retry: the steps after it still ran, once each
+KILLED    [temporal] a validation error is retried like any other failure
+          first red: FAIL  validation: a run with no steps fails at once, validate ran once (a non retryable error is not retried), no step ran
+KILLED    [temporal] the cancel signal handler does nothing
+          first red: FAIL  scenario run5 did not finish in 40000 ms
+KILLED    [temporal] the step timeout is not part of the race
+          first red: FAIL  scenario run6 did not finish in 40000 ms
+KILLED    [temporal] the cancel signal is not part of the race
+          first red: FAIL  scenario run5 did not finish in 40000 ms
+KILLED    [temporal] the timeout does not stop the step (no work.cancel())
+          first red: FAIL  scenario run5 did not finish in 40000 ms
+KILLED    [temporal] the step budget is the default 60 s, not the input's
+          first red: FAIL  scenario run6 did not finish in 40000 ms
+KILLED    [temporal] a run that did not complete is not archived
+          first red: FAIL  retry exhausted: the failure names the step and the real error | FAIL  retry exhausted: s1 is recorded as done, s3 never ran, and the failed run was still archived
+KILLED    [temporal] a finished step is not recorded as completed
+          first red: FAIL  success: three steps run in order and the run completes | FAIL  success: the archive record says completed with all three steps
+KILLED    [temporal] the status query never learns which step is running
+          first red: FAIL  status query: while s2 runs it reports running, step 2 of 3, s1 done
+KILLED    [temporal] an archive failure fails the whole run
+          test crashed: WorkflowFailedError: Workflow execution failed
+KILLED    [temporal] the failure message loses the real cause
+          first red: FAIL  retry exhausted: the failure names the step and the real error | FAIL  validation: the error says why, and the run was archived
+KILLED    [temporal] the steps run in reverse order
+          first red: FAIL  success: three steps run in order and the run completes | FAIL  retry exhausted: s1 is recorded as done, s3 never ran, and the failed run was still archived
+KILLED    [temporal] a repeated step id is allowed
+          first red: FAIL  input rules: a repeated step id is refused | FAIL  input rules: 1500 seeded random inputs agree with an independent description
+KILLED    [temporal] a run with no steps is allowed
+          first red: FAIL  input rules: no steps is refused | FAIL  input rules: 1500 seeded random inputs agree with an independent description
+KILLED    [temporal] the step limit is off by one
+          first red: FAIL  input rules: MAX_STEPS steps pass and one more is refused
+KILLED    [temporal] a timeout under 100 ms is allowed
+          first red: FAIL  input rules: stepTimeoutMs 99 and 3600001 and 1.5 are refused, 100 and 3600000 pass | FAIL  input rules: 1500 seeded random inputs agree with an independent description
+KILLED    [temporal] the dry run executor fails one try too few
+          first red: FAIL  real activities: the dry-run executor fails step a once, the retry works, the run completes
+
+mutants killed: 19 of 19
+
+
+################ node scripts/mutation-check-services.mjs graphql ################
+BASELINE PASS  graphql tests on the unmutated copy
+KILLED    [graphql] the depth limit is not installed
+          first red: FAIL  depth limit: a query 7 levels deep is refused with code DEPTH_LIMIT_EXCEEDED | FAIL  depth limit: the refused query never reached the store
+KILLED    [graphql] the depth limit is off by one (>=)
+          first red: FAIL  depth limit: a query exactly at the limit (6) runs
+KILLED    [graphql] the depth limit allows one level too many
+          first red: FAIL  depth limit: a query 7 levels deep is refused with code DEPTH_LIMIT_EXCEEDED | FAIL  depth limit: the refused query never reached the store
+KILLED    [graphql] fragments are not followed by the depth limit
+          first red: FAIL  depth limit: nesting hidden behind fragments is counted
+KILLED    [graphql] inline fragments are not followed by the depth limit
+          first red: FAIL  depth limit: nesting inside an inline fragment is counted
+KILLED    [graphql] the workflow loader does not batch (one store call per run)
+          first red: FAIL  dataloader: 40 runs that each ask for their workflow load the 8 workflows in ONE store call (not 40) | FAIL  dataloader: a query that goes run to workflow to runs to workflow again still makes 1 + 1 + 1 store calls
+KILLED    [graphql] the runs loader does not batch (one store call per workflow)
+          first red: FAIL  dataloader: 8 workflows asking runCount, lastRun and runs(first) share ONE runs-by-workflow call (not 24) | FAIL  dataloader: a query that goes run to workflow to runs to workflow again still makes 1 + 1 + 1 store calls
+KILLED    [graphql] the workflow resolver skips the loader
+          first red: FAIL  dataloader: 40 runs that each ask for their workflow load the 8 workflows in ONE store call (not 40) | FAIL  dataloader: a query that goes run to workflow to runs to workflow again still makes 1 + 1 + 1 store calls
+KILLED    [graphql] loaders are shared by every request
+          first red: FAIL  dataloader: a query that goes run to workflow to runs to workflow again still makes 1 + 1 + 1 store calls | FAIL  dataloader: a second request loads again, so one request's cache is never shared with another
+KILLED    [graphql] the name may be empty
+          first red: FAIL  validation: an empty name gives a ValidationError with the field path
+KILLED    [graphql] the name length is not limited
+          first red: FAIL  validation: a name over 100 characters gives a ValidationError with the field path
+KILLED    [graphql] any text is a step type
+          first red: FAIL  validation: an unknown step type gives a ValidationError with the field path
+KILLED    [graphql] step ids may repeat
+          first red: FAIL  validation: two steps with the same id gives a ValidationError with the field path
+KILLED    [graphql] a workflow may have no steps
+          first red: FAIL  validation: no steps gives a ValidationError with the field path
+KILLED    [graphql] a step timeout under 100 ms is allowed
+          first red: FAIL  startRun: a bad workflow id and a timeout under 100 ms are ValidationErrors
+KILLED    [graphql] an id may hold a slash
+          first red: FAIL  validation: a step id with a slash gives a ValidationError with the field path
+KILLED    [graphql] a page of 0 or 100000 is allowed
+          first red: FAIL  pagination: first of 0 and 101 are BAD_USER_INPUT, 1.5 is refused by GraphQL
+KILLED    [graphql] a made up cursor is accepted as the start
+          first red: FAIL  pagination: a made up cursor is a BAD_USER_INPUT error with the field named
+KILLED    [graphql] an unknown workflow is not reported
+          test crashed: TypeError: Cannot read properties of null (reading 'startRun')
+KILLED    [graphql] an ended run can be cancelled again
+          first red: FAIL  cancelRun: a run that already ended is a ConflictError that names its state
+KILLED    [graphql] a run that never started stays QUEUED
+          first red: FAIL  startRun: when Temporal is unreachable the answer is an UnavailableError and the run is marked FAILED, not left QUEUED
+KILLED    [graphql] cancel does not signal Temporal
+          first red: FAIL  cancelRun: sends the signal and returns the Run with cancelRequested true | FAIL  cancelRun: when Temporal is unreachable it is an UnavailableError
+KILLED    [graphql] unexpected errors are shown to the client
+          first red: FAIL  masked errors: a bug inside a resolver reaches the client as 'Unexpected error.' with no stack and no secret
+KILLED    [graphql] runs come oldest first
+          first red: FAIL  pagination: 25 runs read 10 at a time give pages of 10, 10, 5 with hasNextPage true, true, false | FAIL  pagination: newest first, no run twice, none skipped, even though a run was created between page 1 and 2
+KILLED    [graphql] a page starts at the cursor run again (a repeat)
+          first red: FAIL  pagination: 25 runs read 10 at a time give pages of 10, 10, 5 with hasNextPage true, true, false | FAIL  pagination: newest first, no run twice, none skipped, even though a run was created between page 1 and 2
+KILLED    [graphql] hasNextPage is always false
+          first red: FAIL  pagination: 25 runs read 10 at a time give pages of 10, 10, 5 with hasNextPage true, true, false | FAIL  pagination: newest first, no run twice, none skipped, even though a run was created between page 1 and 2
+KILLED    [graphql] the state filter is ignored
+          first red: FAIL  startRun: when Temporal is unreachable the answer is an UnavailableError and the run is marked FAILED, not left QUEUED | FAIL  pagination: the state filter counts QUEUED 26 and RUNNING 0
+KILLED    [graphql] a workflow's runs page skips its first run
+          first red: FAIL  pagination: a workflow's own runs connection pages the same way (10 then the other 16), runCount is 26
+KILLED    [graphql] the schema changes without the snapshot
+          first red: FAIL  schema snapshot: src/graphql/schema.graphql is exactly what typeDefs.ts prints
+
+mutants killed: 29 of 29
+
+################ TEMPORAL_ADDRESS=localhost:7233 node scripts/mutation-check-services.mjs e2e ################
+BASELINE PASS  e2e tests on the unmutated copy
+KILLED    [e2e] the retry policy is deleted from the activity options
+          first red: FAIL  e2e exhausted: a step that always fails ends the run as failed after exactly the 4 allowed tries | FAIL  e2e exhausted: the failed run was archived as failed
+KILLED    [e2e] the retry policy allows one try only
+          first red: FAIL  e2e retry: a step that fails twice works on the third try and the run completes | FAIL  e2e retry: the executor saw try 1, 2 and 3 of the step (server-side retries with back-off)
+KILLED    [e2e] the cancel signal handler does nothing
+          first red: FAIL  e2e cancel: the signal ends a 2 minute step as cancelled in 60115 ms | FAIL  e2e cancel: the third step never ran and the cancelled run was archived
+KILLED    [e2e] the step timeout is not part of the race
+          first red: FAIL  run late-mw5w4jxp did not finish in 90000 ms
+KILLED    [e2e] the same run id can be started twice
+          first red: FAIL  e2e duplicate: starting a run id that already ran is refused by the server
+KILLED    [e2e] the client sends the cancel signal under another name
+          first red: FAIL  e2e cancel: the signal ends a 2 minute step as cancelled in 60107 ms | FAIL  e2e cancel: the third step never ran and the cancelled run was archived
+
+mutants killed: 6 of 6
+
+################ TEMPORAL_ADDRESS=localhost:7233 node scripts/mutation-check-services.mjs cli ################
+BASELINE PASS  cli tests on the unmutated copy
+KILLED    [cli] follow stops polling after the first look
+          first red: ---- follow_gives_up_at_its_timeout_and_says_what_state_the_run_is_in stdout ---- | ---- follow_waits_longer_while_nothing_changes_and_starts_over_on_progress stdout ----
+KILLED    [cli] follow treats QUEUED as finished
+          first red: ---- follow::tests::terminal_states_are_exactly_the_four_final_ones stdout ----
+KILLED    [cli] the back-off never grows
+          first red: ---- follow::tests::the_wait_doubles_and_stops_at_the_ceiling stdout ----
+KILLED    [cli] the back-off has no ceiling
+          first red: ---- follow::tests::the_wait_doubles_and_stops_at_the_ceiling stdout ---- | ---- follow::tests::the_wait_never_exceeds_the_ceiling_for_any_start stdout ----
+KILLED    [cli] follow never gives up
+          first red: ---- follow_gives_up_at_its_timeout_and_says_what_state_the_run_is_in stdout ----
+KILLED    [cli] a GraphQL error in the answer is ignored
+          first red: ---- graphql_errors_in_a_200_answer_are_errors_too stdout ----
+KILLED    [cli] an HTTP error status is ignored
+          first red: ---- a_plain_server_error_is_reported_with_its_status stdout ----
+KILLED    [cli] a typed error from a mutation is shown as success
+          first red: ---- typed_errors_from_a_mutation_become_errors_with_their_details stdout ----
+KILLED    [cli] the exit code of a failed run is 0
+          first red: ---- follow::tests::each_final_state_has_its_own_exit_code stdout ----
+
+mutants killed: 9 of 9

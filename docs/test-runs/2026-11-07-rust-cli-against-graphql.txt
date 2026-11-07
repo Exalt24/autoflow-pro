@@ -1,0 +1,127 @@
+# 2026-11-07 autoflow-cli against the real local GraphQL server
+# Server: node backend/dist/src/graphql/main.js on 127.0.0.1:4000 (Fastify + Yoga, in-memory run store, a Temporal worker in the same process) -> a local 'temporal server start-dev' (Temporal CLI 1.10.0, server 1.32.2). The step executor is the dry-run one: no browser opens.
+# Client: cli/target/debug/autoflow-cli.exe (Rust 1.99.1). Ids are generated each run. The 'next look in' lines go to stderr.
+
+$ autoflow-cli workflows
+ID                                      NAME                  STEPS  RUNS
+18ad2dd7-8c55-4407-9bcd-8dc1cf3628f3    Quick check               3     1
+774cfca0-de6a-428a-b9da-62571a131783    Flaky page                2     1
+6a5f1123-a75f-40c7-ad8d-a0068da45ff0    Slow job                  3     2
+350a52ec-d730-4a20-b319-1b3ad1000c4f    Broken page               2     1
+[exit 0]
+
+$ autoflow-cli start "Quick check" --follow
+started ad00ce72-e1e1-4b36-884b-b0d8398eaee8  QUEUED      0/3 steps  Quick check
+ad00ce72-e1e1-4b36-884b-b0d8398eaee8  QUEUED      0/3 steps  Quick check
+  next look in 250 ms
+ad00ce72-e1e1-4b36-884b-b0d8398eaee8  RUNNING     1/3 steps  Quick check
+  next look in 250 ms
+ad00ce72-e1e1-4b36-884b-b0d8398eaee8  COMPLETED   3/3 steps  Quick check
+[exit 0]
+
+$ autoflow-cli start "Flaky page" --follow --interval-ms 250 --max-interval-ms 2000
+started f04b2596-a52c-49b5-bcef-cef833f82499  QUEUED      0/2 steps  Flaky page
+f04b2596-a52c-49b5-bcef-cef833f82499  QUEUED      0/2 steps  Flaky page
+  next look in 250 ms
+f04b2596-a52c-49b5-bcef-cef833f82499  RUNNING     1/2 steps  Flaky page
+  next look in 250 ms
+  next look in 500 ms
+  next look in 1000 ms
+  next look in 2000 ms
+f04b2596-a52c-49b5-bcef-cef833f82499  COMPLETED   2/2 steps  Flaky page
+[exit 0]
+
+$ autoflow-cli start "Broken page" --follow
+started 32059217-e926-4c5f-a0bf-b19e81c7cc22  QUEUED      0/2 steps  Broken page
+32059217-e926-4c5f-a0bf-b19e81c7cc22  QUEUED      0/2 steps  Broken page
+  next look in 250 ms
+32059217-e926-4c5f-a0bf-b19e81c7cc22  RUNNING     1/2 steps  Broken page
+  next look in 250 ms
+  next look in 500 ms
+  next look in 1000 ms
+  next look in 2000 ms
+  next look in 3000 ms
+  next look in 3000 ms
+32059217-e926-4c5f-a0bf-b19e81c7cc22  FAILED      1/2 steps  Broken page  error: step broken-click failed: step broken-click was told to always fail
+[exit 1]
+
+# cancel: start the 20 second job, cancel it, follow it to the end
+
+$ autoflow-cli start "Slow job"
+started 86ef00ff-9601-44ee-a35c-5657948c2839  QUEUED      0/3 steps  Slow job
+
+$ autoflow-cli cancel 86ef00ff-9601-44ee-a35c-5657948c2839
+cancel requested: 86ef00ff-9601-44ee-a35c-5657948c2839  RUNNING     1/3 steps  Slow job  (cancel requested)
+[exit 0]
+
+$ autoflow-cli follow 86ef00ff-9601-44ee-a35c-5657948c2839
+86ef00ff-9601-44ee-a35c-5657948c2839  RUNNING     1/3 steps  Slow job  (cancel requested)
+  next look in 250 ms
+86ef00ff-9601-44ee-a35c-5657948c2839  CANCELLED   1/3 steps  Slow job
+[exit 2]
+
+# step timeout: the 20 second step gets a 1500 ms budget
+
+$ autoflow-cli start "Slow job" --step-timeout-ms 1500 --follow
+started 82cb3ab4-8bca-4041-b365-30db3bfb411c  QUEUED      0/3 steps  Slow job
+82cb3ab4-8bca-4041-b365-30db3bfb411c  QUEUED      0/3 steps  Slow job
+  next look in 250 ms
+82cb3ab4-8bca-4041-b365-30db3bfb411c  RUNNING     1/3 steps  Slow job
+  next look in 250 ms
+  next look in 500 ms
+  next look in 1000 ms
+82cb3ab4-8bca-4041-b365-30db3bfb411c  TIMED_OUT   1/3 steps  Slow job  error: step slow-wait did not finish within 1500 ms
+[exit 3]
+
+# typed errors and bad input
+
+$ autoflow-cli start "No such workflow"
+error: no workflow with id or name "No such workflow"
+[exit 10]
+
+$ autoflow-cli cancel no-such-run
+error: NotFoundError: No run with id no-such-run.
+[exit 10]
+
+$ autoflow-cli follow no-such-run
+error: no run with id no-such-run
+[exit 10]
+
+$ autoflow-cli start "Quick check" --step-timeout-ms 99
+error: invalid value '99' for '--step-timeout-ms <STEP_TIMEOUT_MS>': 99 is not in 100..=3600000
+
+For more information, try '--help'.
+[exit 2]
+
+# cancel a run that already ended
+
+$ autoflow-cli cancel 86ef00ff-9601-44ee-a35c-5657948c2839
+error: ConflictError: The run already ended as CANCELLED.
+[exit 10]
+
+$ autoflow-cli runs --state FAILED
+32059217-e926-4c5f-a0bf-b19e81c7cc22  FAILED      1/2 steps  Broken page  error: step broken-click failed: step broken-click was told to always fail
+1ebd3af5-02a1-48cb-a751-7bf0f17e6362  FAILED      1/2 steps  Broken page  error: step broken-click failed: step broken-click was told to always fail
+2 of 2 runs
+[exit 0]
+
+$ autoflow-cli runs --first 3
+82cb3ab4-8bca-4041-b365-30db3bfb411c  TIMED_OUT   1/3 steps  Slow job  error: step slow-wait did not finish within 1500 ms
+86ef00ff-9601-44ee-a35c-5657948c2839  CANCELLED   1/3 steps  Slow job
+32059217-e926-4c5f-a0bf-b19e81c7cc22  FAILED      1/2 steps  Broken page  error: step broken-click failed: step broken-click was told to always fail
+3 of 10 runs
+[exit 0]
+
+$ autoflow-cli runs --all --first 4
+82cb3ab4-8bca-4041-b365-30db3bfb411c  TIMED_OUT   1/3 steps  Slow job  error: step slow-wait did not finish within 1500 ms
+86ef00ff-9601-44ee-a35c-5657948c2839  CANCELLED   1/3 steps  Slow job
+32059217-e926-4c5f-a0bf-b19e81c7cc22  FAILED      1/2 steps  Broken page  error: step broken-click failed: step broken-click was told to always fail
+f04b2596-a52c-49b5-bcef-cef833f82499  COMPLETED   2/2 steps  Flaky page
+ad00ce72-e1e1-4b36-884b-b0d8398eaee8  COMPLETED   3/3 steps  Quick check
+6a542692-b32b-435d-a36a-cc155f65e1a6  TIMED_OUT   1/3 steps  Slow job  error: step slow-wait did not finish within 1500 ms
+1afd5ab2-848b-4824-88e7-3175178c40e4  CANCELLED   1/3 steps  Slow job
+1ebd3af5-02a1-48cb-a751-7bf0f17e6362  FAILED      1/2 steps  Broken page  error: step broken-click failed: step broken-click was told to always fail
+fd88e751-1a2b-4128-ae39-31beef9f0399  COMPLETED   2/2 steps  Flaky page
+46f39f9f-9723-42ac-b352-36eb4790fab4  COMPLETED   3/3 steps  Quick check
+10 of 10 runs
+[exit 0]

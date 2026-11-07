@@ -1,0 +1,69 @@
+# 2026-11-07 Rust CLI (cli/, crate autoflow-cli)
+# rustc 1.99.1 (58cf8f9c3 2026-10-13), cargo 1.99.1 (5f94df478 2026-08-27), clap 4.6.7, reqwest 0.13.5, tokio 1.54.1, wiremock 0.6.5 (dev), Windows 11
+# Tests run against a local mock GraphQL server (wiremock) and against the compiled binary; the run against the real local GraphQL server is in 2026-11-07-rust-cli-against-graphql.txt.
+
+$ cargo fmt --check
+[exit 0]
+
+$ cargo clippy --all-targets -- -D warnings
+    Checking autoflow-cli v0.1.0 (C:\Projects\Professional\Projects\Apps\autoflow-pro\cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.77s
+[exit 0]
+
+$ cargo test
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.06s
+     Running unittests src\lib.rs (target\debug\deps\autoflow_cli-c59d52c6dfbcca35.exe)
+
+running 14 tests
+test cli::tests::follow_options_never_let_the_ceiling_sit_below_the_start ... ok
+test commands::tests::a_pending_cancel_and_an_error_are_shown ... ok
+test commands::tests::a_run_is_not_a_typed_error ... ok
+test commands::tests::empty_lists_say_so ... ok
+test commands::tests::every_error_member_of_the_unions_is_recognised ... ok
+test commands::tests::validation_issues_are_listed_with_their_path ... ok
+test follow::tests::each_final_state_has_its_own_exit_code ... ok
+test follow::tests::terminal_states_are_exactly_the_four_final_ones ... ok
+test cli::tests::the_url_can_come_after_the_subcommand ... ok
+test follow::tests::the_wait_doubles_and_stops_at_the_ceiling ... ok
+test follow::tests::the_wait_never_exceeds_the_ceiling_for_any_start ... ok
+test commands::tests::a_run_line_shows_state_progress_and_workflow ... ok
+test cli::tests::every_subcommand_parses ... ok
+test cli::tests::bad_values_are_refused ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\main.rs (target\debug\deps\autoflow_cli-4af868b26c6fa684.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\mock_server.rs (target\debug\deps\mock_server-21f188de81886393.exe)
+
+running 17 tests
+test follow_on_an_unknown_run_is_not_found ... ok
+test a_refused_query_shows_the_graphql_message_even_on_a_400 ... ok
+test graphql_errors_in_a_200_answer_are_errors_too ... ok
+test the_filters_are_sent_as_variables ... ok
+test start_returns_the_run_and_sends_the_timeout ... ok
+test cancel_returns_the_run_with_the_request_flag ... ok
+test a_plain_server_error_is_reported_with_its_status ... ok
+test typed_errors_from_a_mutation_become_errors_with_their_details ... ok
+test runs_follow_the_cursor_across_pages_only_when_asked ... ok
+test workflows_are_listed_and_resolved_by_id_or_name ... ok
+test follow_gives_up_at_its_timeout_and_says_what_state_the_run_is_in ... ok
+test follow_waits_longer_while_nothing_changes_and_starts_over_on_progress ... ok
+test binary_workflows_and_runs_print_tables ... ok
+test binary_follow_exits_1_for_a_failed_run_and_2_for_a_cancelled_one ... ok
+test binary_start_follow_prints_progress_and_exits_0_when_the_run_completes ... ok
+test a_server_that_is_not_there_is_a_transport_error ... ok
+test binary_reports_an_unreachable_server_and_a_typed_error_with_exit_10 ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.45s
+
+   Doc-tests autoflow_cli
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+(every 'test result' line above is ok: 14 unit tests, 17 tests against the mock server, 0 failed)

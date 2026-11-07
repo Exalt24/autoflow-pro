@@ -6,7 +6,7 @@ Browser automation platform: drag steps onto a canvas, a Playwright worker runs 
 
 *Recorded against a local stack (Supabase CLI, Redis in Docker, a test page served from the same machine). It plays at 2x except for the live run.*
 
-[![CI](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml) **Proof:** 23 step types, 42 backend test scripts, and CI that builds both the backend and the frontend on every push, runs the AWS S3 archive target against a local AWS emulator, runs the RabbitMQ consumer and the telemetry worker against a real broker, and checks the Terraform and Helm files, and the Athena client against a stand-in API.
+[![CI](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml) **Proof:** 23 step types, 46 backend test scripts, and CI that builds both the backend and the frontend on every push, runs the AWS S3 archive target against a local AWS emulator, runs the RabbitMQ consumer and the telemetry worker against a real broker, checks the Terraform and Helm files and the Athena client against a stand-in API, and runs the Temporal workflow, the GraphQL API, the Rust CLI and a Nixpacks build.
 
 It runs locally with Docker and Node, and the recording above is one such run.
 
@@ -48,7 +48,7 @@ Open http://localhost:3000 and sign up (a local Supabase has email confirmation 
 
 ## Tests
 
-CI runs `npm ci` and `npm run build` for the backend and the frontend, plus `npm run test:pipelines`. A fourth job, `aws-emulator`, starts moto, applies the Terraform in `deploy/aws` to it, runs the archive tests and destroys it again. The 42 scripts in `backend/tests/` run with `tsx` (for example `npm run test:queue`, `npm run test:api`), print their results, and most run against a local Supabase and Redis. The frontend is checked with `npm run lint` and `npx tsc --noEmit`.
+CI runs `npm ci` and `npm run build` for the backend and the frontend, plus `npm run test:pipelines`. A fourth job, `aws-emulator`, starts moto, applies the Terraform in `deploy/aws` to it, runs the archive tests and destroys it again. The 46 scripts in `backend/tests/` run with `tsx` (for example `npm run test:queue`, `npm run test:api`), print their results, and most run against a local Supabase and Redis. The frontend is checked with `npm run lint` and `npx tsc --noEmit`.
 
 ## CI and deploy targets
 
@@ -68,6 +68,10 @@ Each target below ships as a config file and was run against the thing named bes
 | RabbitMQ | `backend/src/messaging/` | a real RabbitMQ 3.13.7 and Redis 7 in Docker | 41 logic checks and 38 broker checks passed, 4 of 4 deliberate breaks caught, [output](docs/test-runs/2026-11-07-rabbitmq-consumer.txt) |
 | Athena | `backend/src/athena/`, `deploy/athena/` (Terraform) | the real AWS SDK against a stand-in Athena API written from the API reference, then `terraform validate` and an offline `terraform plan` with dummy credentials, never applied | 37 checks against the stand-in, 45 logic and property checks over 3000 seeded worlds, 12 resources planned, 33 plan rules, 52 of 52 deliberate breaks caught, [output](docs/test-runs/2026-11-07-athena-client.txt) |
 | Telemetry | `backend/src/telemetry/`, `deploy/athena/telemetry.tf` (Terraform) | generated solar telemetry on a local filesystem and a real RabbitMQ 3.13.7 broker in Docker; Terraform validated and planned offline with dummy credentials, never applied; no real telemetry system, no Iceberg, no live S3 or Athena on this data | 160 logic and property checks over 400 seeded worlds, 21 end to end checks, 48 Terraform plan checks, 22 broker checks passed, 18 resources planned, 101 of 101 deliberate breaks caught, 1,023,000 readings through ingest and rollup in 1.25 s (821,245 per second), [output](docs/test-runs/2026-11-07-telemetry-tests.txt), [load run](docs/test-runs/2026-11-07-telemetry-load.txt) |
+| Temporal | `backend/src/temporal/` | the SDK's time-skipping test server, then a real local `temporal server start-dev` with a real worker; not Temporal Cloud, no cluster; the step executor is a dry run | `npm run test:temporal` 31 checks, `npm run test:temporal-e2e` 12 checks, 19 of 19 deliberate breaks caught on the test server and 6 of 6 on the dev server, [output](docs/test-runs/2026-11-07-temporal-tests.txt), [breaks](docs/test-runs/2026-11-07-services-mutation-check.txt) |
+| GraphQL | `backend/src/graphql/` | the real Yoga on Fastify server over HTTP with an in-memory run store, and driving a real worker on the Temporal dev server; no authentication | `npm run test:graphql` 42 checks, `npm run test:graphql-temporal` 9 checks, 29 of 29 deliberate breaks caught, [output](docs/test-runs/2026-11-07-graphql-tests.txt) |
+| Rust CLI | `cli/` | `cargo test` against a mock GraphQL server, then the binary against the local GraphQL and Temporal servers | fmt and `clippy -D warnings` clean, 14 unit and 17 mock server tests passed, 9 of 9 deliberate breaks caught, [tests](docs/test-runs/2026-11-07-rust-cli.txt), [real run](docs/test-runs/2026-11-07-rust-cli-against-graphql.txt) |
+| Nixpacks | `backend/nixpacks.toml`, `scripts/nixpacks-*.sh` | `nixpacks build` 1.41.0 on this machine, not Railway | with no config it chose Node 18 and the container crashed at start; with Node 22 pinned `GET /health` answered 200, [output](docs/test-runs/2026-11-07-nixpacks-build.txt) |
 
 The archive target is one setting. It defaults to R2, so nothing existing changes. For S3 the same client code uses the AWS region and the SDK's own endpoint resolution, and `AWS_S3_ENDPOINT` points it at an emulator:
 
@@ -87,6 +91,8 @@ An Athena client written from the AWS API reference starts a query, polls it wit
 
 The telemetry pipeline takes batches of readings from an asset (power, voltage, temperature), quarantines the ones that break a rule, stores each reading once by asset and timestamp, merges late data inside a per asset watermark, rolls up 5 minute and hourly buckets with energy in kWh, reports gaps without filling them, and writes JSON lines to a partitioned lake layout that new Glue tables project. A RabbitMQ worker acks only after the files are written. See [docs/telemetry.md](docs/telemetry.md).
 
+A Temporal workflow orchestrates one run (retries, a step deadline, a cancel signal, a status query, always archived), a TypeScript GraphQL API starts and cancels runs through it, and a small Rust CLI follows a run with a back-off, all against a local Temporal dev server only. See [docs/temporal-graphql-rust.md](docs/temporal-graphql-rust.md) and [cli/README.md](cli/README.md).
+
 The RabbitMQ worker reads run requests from a durable queue, retries failures through delay queues and a dead-letter exchange, skips duplicates and stops gracefully on SIGTERM, then adds the run to the BullMQ queue. See [docs/rabbitmq.md](docs/rabbitmq.md).
 
 The Cloud Run image runs the API on the `PORT` Cloud Run provides. The Playwright worker reaches its browser through `BROWSER_WS_URL`, the remote browser setting the engine already supports. Secrets (Supabase, Redis) are read from Secret Manager references in `service.yaml`, and the Netlify site takes the two `NEXT_PUBLIC_SUPABASE_*` values from its settings.
@@ -100,7 +106,7 @@ The Cloud Run image runs the API on the `PORT` Cloud Run provides. The Playwrigh
 
 ## Stack
 
-Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase, Redis, Cloudflare R2, AWS S3, RabbitMQ, Terraform, Kubernetes (EKS), Helm, Traefik, Amazon Athena and Glue. When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase, Redis, Cloudflare R2, AWS S3, RabbitMQ, Terraform, Kubernetes (EKS), Helm, Traefik, Amazon Athena and Glue, Temporal, GraphQL (Yoga, zod, DataLoader), Rust (clap, reqwest, tokio), Nixpacks. When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
 
 ## License
 

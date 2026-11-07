@@ -39,10 +39,16 @@ variable "single_nat_gateway" {
   default     = true
 }
 
+variable "node_group_suffix" {
+  description = "Suffix of the managed node group name. Changing it creates a new node group beside a slow deleting one, since AWS keeps a name reserved until its deletion finishes."
+  type        = string
+  default     = "default"
+}
+
 variable "node_instance_types" {
-  description = "Instance types for the managed node group."
+  description = "Instance types for the managed node group. m7i-flex.large (2 vCPU, 8 GiB) is on AWS's free tier list, which an account on the free plan is limited to; a t3.large node group could not launch there."
   type        = list(string)
-  default     = ["t3.large"]
+  default     = ["m7i-flex.large"]
 }
 
 variable "node_min_size" {

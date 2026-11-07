@@ -94,7 +94,7 @@ resource "aws_iam_role_policy_attachment" "node" {
 
 resource "aws_eks_node_group" "default" {
   cluster_name    = aws_eks_cluster.this.name
-  node_group_name = "${var.cluster_name}-default"
+  node_group_name = "${var.cluster_name}-${var.node_group_suffix}"
   node_role_arn   = aws_iam_role.node.arn
   subnet_ids      = [for s in aws_subnet.private : s.id]
 

@@ -6,7 +6,7 @@ Two pieces, plus a local cluster to try the chart on.
 - `deploy/helm/autoflow-pro/` is the Helm chart for the API and the RabbitMQ worker.
 - `deploy/kind/` has the values and the Redis and RabbitMQ manifests for running the chart on a local kind cluster.
 
-**Nothing here was applied to an AWS account.** The Terraform was validated and planned offline. The chart was linted, rendered, schema checked and installed on a local kind cluster, not on EKS. The commands and results are below.
+**The Terraform was validated, planned offline, then applied for real on my own AWS account and destroyed** (the apply output is `docs/test-runs/2026-11-07-eks-apply.txt`): the VPC, the cluster and a two node managed node group came up and ran; the IAM OIDC provider and the IRSA role were blocked by an organization policy on that account. The chart was linted, rendered, schema checked and installed on a local kind cluster, not on the EKS cluster. The commands and results are below.
 
 ## Terraform (`deploy/eks/`)
 

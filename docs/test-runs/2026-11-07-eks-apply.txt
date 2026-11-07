@@ -1,0 +1,42 @@
+EKS Terraform, applied for real and destroyed, 2026-11-07
+Region ap-southeast-2, my own AWS account, module deploy/eks/, AWS provider 6.72.0.
+
+What came up
+  VPC with four subnets and a NAT gateway, an EKS control plane at Kubernetes 1.34 (ACTIVE, its OIDC issuer present),
+  a managed node group of two m7i-flex.large nodes (ACTIVE, created in 1 minute 52 seconds).
+  Read back with kubectl and a signed token:
+
+    $ kubectl get nodes
+    NAME                                              STATUS   ROLES    VERSION
+    ip-10-20-142-48.ap-southeast-2.compute.internal   Ready    <none>   v1.34.12-eks-6e7947a
+    ip-10-20-155-99.ap-southeast-2.compute.internal   Ready    <none>   v1.34.12-eks-6e7947a
+
+    $ kubectl get pods -A
+    kube-system   aws-node (2 pods)      2/2   Running
+    kube-system   coredns (2 pods)       1/1   Running
+    kube-system   kube-proxy (2 pods)    1/1   Running
+
+What the run found and what changed
+  1. A node group on t3.large could not launch: the autoscaling group reported
+     "InvalidParameterCombination: the specified instance type is not eligible for Free Tier".
+     The account is on a plan limited to free tier instance types. The default is now m7i-flex.large
+     (2 vCPU, 8 GiB, on the free tier list).
+  2. The deleted first node group stayed in DELETING for more than 20 minutes and kept its name reserved.
+     The module now has a node_group_suffix variable (default "default"); the run used "nodes" beside it.
+  3. The IAM OIDC provider could not be created: an organization service control policy on the account
+     denies iam:CreateOpenIDConnectProvider. So the OIDC provider and the IRSA role were not created in this run;
+     the cluster's own OIDC issuer was present. Everything else in the plan came up.
+
+Teardown
+  terraform destroy removed 26 resources. A read back of the account afterwards found no EKS cluster,
+  no VPC named autoflow-pro, no NAT gateway, no Elastic IP, no EC2 instance, no autoflow-pro IAM role and
+  no ECR repository. The one KMS key (the cluster's secrets key) is in PendingDeletion, which AWS requires
+  and which carries no running charge.
+
+Timing and cost
+  Apply started 09:34 and the destroy finished 10:29 (the node group retries are most of that).
+  The run was paid from the account's AWS Free Tier credit.
+
+What this is not
+  The Helm chart was not installed on this cluster (it was installed on a local kind cluster, see
+  2026-11-07-eks-terraform-and-helm.txt), no workload ran on it, and no IRSA role was exercised.

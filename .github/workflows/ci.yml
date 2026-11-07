@@ -236,3 +236,87 @@ jobs:
           kubeconform -v
       - run: npm ci
       - run: npm run test:deploy
+
+  temporal:
+    # The Temporal run workflow (backend/src/temporal): unit tests on the SDK's time-skipping test server, then the same
+    # workflow against a real `temporal server start-dev` process (Temporal CLI 1.10.0), then the GraphQL API driving it.
+    # Local dev server only: no Temporal Cloud, no cluster.
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    env:
+      REQUIRE_TEMPORAL: "1"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run test:temporal
+      - name: Start the Temporal dev server
+        run: |
+          curl -sSfL "https://temporal.download/cli/archive/v1.10.0?platform=linux&arch=amd64" | tar xz -C "$RUNNER_TEMP" temporal
+          nohup "$RUNNER_TEMP/temporal" server start-dev --headless --port 7233 --log-level warn > "$RUNNER_TEMP/temporal.log" 2>&1 &
+          for i in $(seq 1 60); do (echo > /dev/tcp/127.0.0.1/7233) 2>/dev/null && break; sleep 1; done
+          "$RUNNER_TEMP/temporal" --version
+      - run: npm run test:temporal-e2e
+      - run: npm run test:graphql-temporal
+      - name: Temporal dev server log
+        if: failure()
+        run: tail -100 "$RUNNER_TEMP/temporal.log"
+
+  graphql:
+    # The GraphQL API (backend/src/graphql) served in process with a recording launcher. The schema snapshot and the
+    # generated types are rebuilt and must match what is committed.
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run graphql:schema
+      - run: npm run graphql:codegen
+      - name: Schema snapshot and generated types are committed
+        run: git diff --exit-code -- src/graphql
+      - run: npm run test:graphql
+      - name: Every mutation target still exists in the code
+        run: node ../scripts/mutation-check-services.mjs check
+
+  rust-cli:
+    # The Rust CLI (cli/): format, clippy with warnings as errors, unit tests and the tests against a mock GraphQL server.
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - run: rustup component add rustfmt clippy
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  nixpacks:
+    # A real `nixpacks build` of the backend (Nixpacks 1.41.0), then the image is started next to a Redis container and
+    # /health must answer 200. The script starts its own Redis.
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install Nixpacks 1.41.0
+        run: curl -sSfL https://github.com/railwayapp/nixpacks/releases/download/v1.41.0/nixpacks-v1.41.0-x86_64-unknown-linux-musl.tar.gz | sudo tar xz -C /usr/local/bin
+      - run: nixpacks --version
+      - run: nixpacks build backend --name autoflow-backend-nixpacks
+      - name: Start the image and ask /health
+        run: bash scripts/nixpacks-check.sh autoflow-backend-nixpacks

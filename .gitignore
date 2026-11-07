@@ -64,3 +64,6 @@ CLAUDE.md
 
 # Local lake folder of the telemetry worker (npm run start:telemetry)
 telemetry-lake/
+
+# Temporal worker archive (JSON files per run)
+run-archive/

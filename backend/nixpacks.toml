@@ -1,0 +1,5 @@
+# Nixpacks build settings for the backend (nixpacks build backend --name autoflow-backend-nixpacks).
+# Without this file Nixpacks 1.41.0 picks Node 18, the image builds, and the container then crashes at start because
+# the Supabase client needs the WebSocket that Node 22 ships. Dockerfile in this folder uses node:22 for the same reason.
+[phases.setup]
+nixPkgs = ["nodejs_22"]

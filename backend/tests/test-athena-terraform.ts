@@ -64,7 +64,8 @@ try {
     if (plan.ok) {
       const shown = tf(["show", "-json", planFile]);
       const p = JSON.parse(shown.out);
-      const resources: any[] = p.planned_values.root_module.resources;
+      // deploy/athena/telemetry.tf adds the telemetry tables and policies to the same plan; test-telemetry-terraform.ts checks those.
+      const resources: any[] = p.planned_values.root_module.resources.filter((r: any) => !String(r.name).startsWith("telemetry_"));
       const ofType = (t: string) => resources.filter((r) => r.type === t);
       const byName = (t: string, n: string) => resources.find((r) => r.type === t && r.name === n)?.values ?? {};
 

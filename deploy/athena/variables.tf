@@ -78,3 +78,20 @@ variable "offline_plan" {
   type        = bool
   default     = false
 }
+
+variable "telemetry_prefix" {
+  description = "Prefix the telemetry pipeline writes under (backend/src/telemetry/lake.ts TELEMETRY_PREFIX). The four telemetry tables, the telemetry policies and the telemetry lifecycle rule are limited to it."
+  type        = string
+  default     = "telemetry/"
+
+  validation {
+    condition     = can(regex("^[a-z0-9][a-z0-9_-]*/$", var.telemetry_prefix))
+    error_message = "telemetry_prefix must be lowercase letters, digits, _ or - and end with a slash, like telemetry/."
+  }
+}
+
+variable "telemetry_expiry_days" {
+  description = "Days after which telemetry files (readings, rollups, quarantine) are expired."
+  type        = number
+  default     = 400
+}

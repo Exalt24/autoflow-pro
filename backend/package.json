@@ -50,7 +50,13 @@
     "test:athena-logic": "tsx tests/test-athena-logic.ts",
     "test:athena": "tsx tests/test-athena.ts",
     "test:athena-terraform": "tsx tests/test-athena-terraform.ts",
-    "start:rabbitmq": "node dist/src/messaging/main.js"
+    "test:telemetry-logic": "tsx tests/test-telemetry-logic.ts",
+    "test:telemetry-e2e": "tsx tests/test-telemetry-e2e.ts",
+    "test:telemetry-terraform": "tsx tests/test-telemetry-terraform.ts",
+    "test:telemetry-rabbitmq": "tsx tests/test-telemetry-rabbitmq.ts",
+    "telemetry:load": "tsx tests/telemetry-load.ts",
+    "start:rabbitmq": "node dist/src/messaging/main.js",
+    "start:telemetry": "node dist/src/telemetry/main.js"
   },
   "keywords": [],
   "author": "",

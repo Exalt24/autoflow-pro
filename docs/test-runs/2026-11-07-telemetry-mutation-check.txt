@@ -1,0 +1,212 @@
+# 2026-11-07 Telemetry mutation check: each guard removed or broken in a scratch copy, the matching tests must go red
+# node v24.18.0, Terraform v1.16.6, RabbitMQ 3.13.7 in Docker on port 56730, Windows 11. Unit mutants run 6 at a time.
+# Command: RABBITMQ_URL=amqp://guest:guest@localhost:56730 node scripts/mutation-check-telemetry.mjs all
+# unit: test-telemetry-logic, then test-telemetry-e2e. terraform: test-telemetry-terraform. broker: test-telemetry-rabbitmq alone.
+
+BASELINE PASS  unit tests on the unmutated copy
+KILLED    [unit] a negative power is accepted
+          first red: FAIL  schema: a negative power is refused (a solar asset does not consume) | FAIL  quarantine: bad readings are kept with their reasons and are never stored
+KILLED    [unit] power_kw is no longer required
+          first red: FAIL  schema: a missing power_kw is missing_value
+KILLED    [unit] the upper range limit is not checked
+          first red: FAIL  schema: power at its limits 0 and 10000 is accepted, just past them is refused | FAIL  schema: voltage 0 to 2000 and temperature -60 to 150 are the limits
+KILLED    [unit] a missing required value is accepted
+          first red: FAIL  schema: a missing power_kw is missing_value
+KILLED    [unit] a numeric string is coerced to a number
+          first red: FAIL  schema: NaN, Infinity, a numeric string and a boolean are invalid_value, never coerced
+KILLED    [unit] the time zone offset is ignored
+          first red: FAIL  schema: an offset is converted to UTC (+08:00 is 8 hours earlier, -05:30 is 5.5 hours later) | FAIL  schema: an offset of +25:00 or +01:60 is refused
+KILLED    [unit] a time with no zone is accepted as UTC
+          first red: FAIL  schema: a time with no zone is refused as ambiguous | FAIL  generator: ingest finds exactly the planted defects (1 duplicate, 1 late merge, too_late, conflicting_duplicate, out_of_range, 2 invalid_timestamp)
+KILLED    [unit] the calendar check on the month is removed
+          first red: FAIL  schema: month 13, day 45, hour 25 and minute 61 are not real times | FAIL  schema: 2026-02-30 and a non leap 02-29 do not exist, 2028-02-29 does
+KILLED    [unit] hour 24 is accepted
+          first red: FAIL  schema: hour 24 and second 60 are refused
+KILLED    [unit] a time before 2000 is accepted
+          first red: FAIL  schema: a time before 2000-01-01 is refused (a device that lost its clock)
+KILLED    [unit] a time in the far future is accepted
+          first red: FAIL  schema: a time exactly at the allowed future skew is accepted and one millisecond past it is refused | FAIL  late data: a rejected reading (bad power, too far in the future) does not move the watermark
+KILLED    [unit] the future skew limit is off by one
+          first red: FAIL  schema: a time exactly at the allowed future skew is accepted and one millisecond past it is refused
+KILLED    [unit] an unknown field is ignored
+          first red: FAIL  schema: an unknown field is refused, not ignored | FAIL  quarantine: bad readings are kept with their reasons and are never stored
+KILLED    [unit] an asset id may hold a slash
+          first red: FAIL  schema: asset ids that are empty, too long, hold a slash or a space, or are not strings are refused
+KILLED    [unit] two readings differing only in temperature count as the same
+          first red: FAIL  schema: sameValues compares every channel, null against a number differs
+KILLED    [unit] an already stored key is not looked up (duplicates are not noticed)
+          test crashed: Error: stale staged batch: a at 2026-11-06T10:00:00.000Z is already stored
+KILLED    [unit] a repeat inside one batch is not noticed
+          test crashed: Error: stale staged batch: a at 2026-11-06T10:00:00.000Z is already stored
+KILLED    [unit] a conflicting repeat is treated as a plain duplicate and not quarantined
+          first red: FAIL  duplicate rule: the same key with other values is quarantined as conflicting_duplicate and the first value is kept | FAIL  duplicate rule: a different voltage alone makes a conflict
+KILLED    [unit] a reading exactly at the watermark is too late
+          first red: FAIL  late data: a reading exactly at the watermark is accepted and counted as late and merged | FAIL  late data: a merged late reading lands in its place in time order
+KILLED    [unit] no reading is ever too late
+          first red: FAIL  late data: one millisecond behind the watermark is quarantined as too_late
+KILLED    [unit] the watermark follows the oldest reading, not the newest
+          first red: FAIL  late data: one millisecond behind the watermark is quarantined as too_late
+KILLED    [unit] one watermark is shared by every asset
+          first red: FAIL  property: 400 seeded random worlds (1 to 3 assets, gaps, repeats, conflicting repeats, junk, late and very late data, any batch size) match the reference model and obey every rule
+KILLED    [unit] late and merged readings are not counted
+          first red: FAIL  late data: a reading exactly at the watermark is accepted and counted as late and merged | FAIL  late data: one reading delivered four minutes late is merged (counted once as late)
+KILLED    [unit] a rejected input is not counted by reason
+          first red: FAIL  duplicate rule: the same key with other values is quarantined as conflicting_duplicate and the first value is kept | FAIL  duplicate rule: a different voltage alone makes a conflict
+KILLED    [unit] the same rejected input is quarantined again every time
+          first red: FAIL  pipeline: sending every batch again, same ids, changes no file | FAIL  pipeline: sending every batch again under new batch ids still changes no file (nothing new to store or quarantine)
+KILLED    [unit] apply forgets the quarantined inputs
+          first red: FAIL  pipeline: sending every batch again, same ids, changes no file | FAIL  pipeline: sending every batch again under new batch ids still changes no file (nothing new to store or quarantine)
+KILLED    [unit] a late reading is appended instead of placed in time order
+          first red: FAIL  restore: loads readings from the lake without applying the rules, keeps the first of a repeated key and sorts them | FAIL  late data: one millisecond behind the watermark is quarantined as too_late
+KILLED    [unit] a late reading does not report the reading before it
+          first red: FAIL  late data: apply reports the reading before each insert, so the changed segment is known | FAIL  late data: a late reading in the next 5 minute bucket re-rolls the earlier bucket whose last segment it split
+KILLED    [unit] restore overwrites a key it already holds
+          test crashed: Error: stale staged batch: a at 2026-11-06T10:00:00.000Z is already stored
+KILLED    [unit] energy is a rectangle (left value) instead of a trapezoid
+          first red: FAIL  rollup: a ramp from 0 to 6 kW over an hour is 3 kWh by the trapezoid rule | FAIL  late data: a late reading in the next 5 minute bucket re-rolls the earlier bucket whose last segment it split
+KILLED    [unit] a gap segment is integrated like any other
+          first red: FAIL  gap: a segment one millisecond longer is a gap, adds no energy and is counted in gap_segments | FAIL  gap: a 10 minute hole in an hour of 4 kW leaves 48 minutes of segments in the energy (nothing is invented to fill it)
+KILLED    [unit] a segment of exactly 1.5 intervals is called a gap
+          first red: FAIL  gap: a segment of exactly 1.5 expected intervals is still integrated | FAIL  property: 400 seeded random worlds (1 to 3 assets, gaps, repeats, conflicting repeats, junk, late and very late data, any batch size) match the reference model and obey every rule
+KILLED    [unit] the mean divides by all readings, not the readings that have the channel
+          first red: FAIL  rollup: min, max, mean and n are per channel and skip missing values | FAIL  property: 400 seeded random worlds (1 to 3 assets, gaps, repeats, conflicting repeats, junk, late and very late data, any batch size) match the reference model and obey every rule
+KILLED    [unit] a missing channel value is counted as zero
+          first red: FAIL  rollup: min, max, mean and n are per channel and skip missing values | FAIL  rollup: a channel with no values has n 0 and null stats, not zeros
+KILLED    [unit] the minimum is never updated
+          first red: FAIL  rollup: 2 kW for a full hour is 2 kWh, one reading per minute, with the stats of one channel | FAIL  rollup: min, max, mean and n are per channel and skip missing values
+KILLED    [unit] a channel with no values reports 0 instead of null
+          first red: FAIL  rollup: a channel with no values has n 0 and null stats, not zeros | FAIL  property: 400 seeded random worlds (1 to 3 assets, gaps, repeats, conflicting repeats, junk, late and very late data, any batch size) match the reference model and obey every rule
+KILLED    [unit] buckets are rounded to the nearest start instead of floored
+          first red: FAIL  property: 400 seeded random worlds (1 to 3 assets, gaps, repeats, conflicting repeats, junk, late and very late data, any batch size) match the reference model and obey every rule
+KILLED    [unit] a gap exactly 1.5 intervals long is reported
+          first red: FAIL  gap: two readings exactly 1.5 intervals apart are not a gap, one millisecond more is, and it counts one missing reading
+KILLED    [unit] a gap counts one reading too many
+          first red: FAIL  gap: detectGaps names the stretch, the last reading before it, the first after, and how many readings are missing | FAIL  gap: two readings exactly 1.5 intervals apart are not a gap, one millisecond more is, and it counts one missing reading
+KILLED    [unit] a gap at the start of a window is not reported
+          first red: FAIL  gap: with a window, the start of the hour before the first reading counts (3 missing)
+KILLED    [unit] a gap at the end of a window is not reported
+          first red: FAIL  gap: with a window, the end of the hour after the last reading counts (5 missing) | FAIL  gap: with a window and every slot present, readings plus missing equals the slots of the window
+KILLED    [unit] an asset with no data in the window reports no gap
+          first red: FAIL  gap: an asset with no readings in the window is one gap for the whole window
+KILLED    [unit] missingBuckets reports nothing
+          first red: FAIL  gap: a 5 minute bucket with no readings has no row, and missingBuckets reports it
+KILLED    [unit] a new reading does not re-roll the bucket of the reading before it
+          first red: FAIL  late data: after the merge the 5 minute and hourly rollups equal the ones from the same readings in time order, exactly | FAIL  late data: a late reading in the next 5 minute bucket re-rolls the earlier bucket whose last segment it split
+KILLED    [unit] a changed bucket is not marked for its day file
+          first red: FAIL  pipeline: the lake holds reading files, a 5 minute and an hourly rollup file for the day, and a quarantine file | FAIL  crash: when a rollup write fails the readings are already stored and applied
+KILLED    [unit] rows come back in insertion order, not time order
+          first red: FAIL  restart: opening the lake rebuilds every reading and quarantined input, and finds the rollup files already right | FAIL  restart: after a restart the redelivered messages find everything stored, count nothing twice and change no file
+KILLED    [unit] the hour in the key is not zero padded
+          first red: FAIL  layout: a reading goes to asset=<id>/dt=<UTC day>/hour=<UTC hour>/part-<batch>.jsonl | FAIL  layout: 23:59:59.999 stays in its day and hour, and the next millisecond opens the next day at hour 00
+KILLED    [unit] the readings folder says asset_ instead of asset=
+          first red: FAIL  layout: a reading goes to asset=<id>/dt=<UTC day>/hour=<UTC hour>/part-<batch>.jsonl | FAIL  layout: the day and hour are UTC even for a reading sent with an offset
+KILLED    [unit] the 5 minute rollup moves to another folder
+          first red: FAIL  layout: rollup and quarantine keys | FAIL  pipeline: the lake holds reading files, a 5 minute and an hourly rollup file for the day, and a quarantine file
+KILLED    [unit] an asset id may hold dots and slashes in a key
+          first red: FAIL  layout: an asset id or batch id that could escape the folder is refused
+KILLED    [unit] a batch id may hold slashes
+          first red: FAIL  layout: an asset id or batch id that could escape the folder is refused
+KILLED    [unit] a key with .. is accepted by the local store
+          first red: FAIL  lake store (local folder): a key with .., a leading slash, a backslash or an empty part is refused | FAIL  lake store (memory): a key with .., a leading slash, a backslash or an empty part is refused
+KILLED    [unit] the local store lists half written temporary files
+          first red: FAIL  lake store (local folder): an unfinished temporary file from a crash is not listed
+KILLED    [unit] lines in a reading file are not sorted by time
+          first red: FAIL  write: the lines of a file are in time order whatever the arrival order | FAIL  write: writing the same batch again, in another order, leaves the same files with the same bytes
+KILLED    [unit] a reading line drops the temperature
+          first red: FAIL  columns: reading and quarantine files carry exactly the columns the tables declare | FAIL  columns: a reading line reads back to the same reading, nulls included
+KILLED    [unit] the S3 listing stops after the first page
+          first red: FAIL  lake store (S3 calls against an in-memory stand-in): list returns the keys under a prefix, sorted, across several pages | FAIL  lake store (S3 calls against an in-memory stand-in): putting the same key again replaces the content and adds no key
+KILLED    [unit] the S3 store throws on a missing key instead of answering null
+          first red: FAIL  lake store (S3 calls against an in-memory stand-in): get returns what put wrote, and null for a missing key
+KILLED    [unit] the lake read skips a missing file silently but also skips corrupt lines
+          first red: FAIL  read: a broken file stops the read with an error instead of dropping lines
+KILLED    [unit] the store is changed before the files are written
+          first red: FAIL  crash: when the reading write fails the batch is rejected and memory is untouched | FAIL  crash: the retry of the same message is staged as new and stored once
+KILLED    [unit] quarantined input is not written to the lake
+          first red: FAIL  pipeline: the lake holds reading files, a 5 minute and an hourly rollup file for the day, and a quarantine file | FAIL  restart: opening the lake rebuilds every reading and quarantined input, and finds the rollup files already right
+KILLED    [unit] a rollup day that failed to write is forgotten
+          first red: FAIL  crash: the redelivered message is all duplicates but still writes the rollup files that were missed | FAIL  crash: the lake then equals the lake of an uninterrupted run
+KILLED    [unit] batches are processed at the same time, not one after another
+          test crashed: Error: stale staged batch: pv-001 at 2026-11-06T04:51:00.000Z is already stored
+KILLED    [unit] one failed batch blocks every batch behind it
+          test crashed: Error: disk full
+KILLED    [unit] opening the lake does not reload the quarantine
+          first red: FAIL  restart: opening the lake rebuilds every reading and quarantined input, and finds the rollup files already right | FAIL  restart: after a restart the redelivered messages find everything stored, count nothing twice and change no file
+KILLED    [unit] opening the lake does not repair a wrong rollup file
+          first red: FAIL  restart: a deleted rollup file and a stale one are both rewritten when the lake is opened
+KILLED    [unit] the clock for quarantine days is ignored
+          first red: FAIL  pipeline: the lake holds reading files, a 5 minute and an hourly rollup file for the day, and a quarantine file | FAIL  quarantine: the file holds the reason, asset, timestamp and the rejected input, under the day of the ingest clock
+KILLED    [unit] the batch id is random, so a redelivery writes other file names
+          first red: FAIL  worker: the file name part comes from the message id, the same every time, and is a safe name
+KILLED    [unit] a body whose readings is not an array is accepted
+          first red: FAIL  worker: a body that is not an object with a readings array is a PermanentError (dead letter, no retry)
+KILLED    [unit] the message size limit is off by one
+          test crashed: PermanentError: payload.readings holds more than 10000 readings
+KILLED    [unit] the generator is not deterministic
+          first red: FAIL  generator: the same options give the same readings, byte for byte
+KILLED    [unit] the planted late reading arrives past the allowed lateness
+          first red: FAIL  generator: ingest finds exactly the planted defects (1 duplicate, 1 late merge, too_late, conflicting_duplicate, out_of_range, 2 invalid_timestamp) | FAIL  generator: what ingest stored is the clean list
+KILLED    [unit] the planted too late reading arrives inside the allowed lateness
+          first red: FAIL  generator: ingest finds exactly the planted defects (1 duplicate, 1 late merge, too_late, conflicting_duplicate, out_of_range, 2 invalid_timestamp) | FAIL  generator: what ingest stored is the clean list
+BASELINE PASS  terraform tests on the unmutated copy
+KILLED    [terraform] the telemetry prefix is no longer validated
+          first red: FAIL  terraform init -backend=false passes | FAIL  terraform validate passes
+KILLED    [terraform] telemetry files expire on the events schedule
+          first red: FAIL  the lake expires telemetry files after 400 days, under telemetry/ only
+KILLED    [terraform] the telemetry lifecycle rule covers the whole bucket
+          first red: FAIL  the lake expires telemetry files after 400 days, under telemetry/ only | FAIL  changing telemetry_prefix moves the table locations, the policies and the lifecycle rule together
+KILLED    [terraform] the telemetry expiry default changes
+          first red: FAIL  the lake expires telemetry files after 400 days, under telemetry/ only
+KILLED    [terraform] asset is no longer an injected projection
+          first red: FAIL  telemetry_readings: asset is an injected projection (a query must name the asset) | FAIL  telemetry_rollup_5m: asset is an injected projection (a query must name the asset)
+KILLED    [terraform] hour is padded to one digit
+          first red: FAIL  telemetry_readings: hour is a projected integer from 0 to 23 padded to 2 digits, so it matches hour=00 to hour=23
+KILLED    [terraform] hour projects 0 to 24
+          first red: FAIL  telemetry_readings: hour is a projected integer from 0 to 23 padded to 2 digits, so it matches hour=00 to hour=23
+KILLED    [terraform] the 5 minute table reads date= instead of dt=
+          first red: FAIL  telemetry_rollup_5m: the projected location is the path the writer uses (telemetry/rollups_5m/asset={asset}/dt={dt}/)
+KILLED    [terraform] the projection range stops at a fixed day
+          first red: FAIL  telemetry_readings: dt is a projected date, yyyy-MM-dd, daily, from the start day to NOW | FAIL  telemetry_rollup_5m: dt is a projected date, yyyy-MM-dd, daily, from the start day to NOW
+KILLED    [terraform] the power column becomes a bigint
+          first red: FAIL  telemetry_readings: columns are exactly the ones the code writes, same names, types and order
+KILLED    [terraform] the rollup energy column is dropped
+          first red: FAIL  telemetry_rollup_5m: columns are exactly the ones the code writes, same names, types and order | FAIL  telemetry_rollup_1h: columns are exactly the ones the code writes, same names, types and order
+KILLED    [terraform] the gap_segments column becomes a string
+          first red: FAIL  telemetry_rollup_5m: columns are exactly the ones the code writes, same names, types and order | FAIL  telemetry_rollup_1h: columns are exactly the ones the code writes, same names, types and order
+KILLED    [terraform] the quarantine detail column is dropped
+          first red: FAIL  telemetry_quarantine: columns are exactly the ones the code writes, same names, types and order
+KILLED    [terraform] the readings table loses its hour partition key
+          first red: FAIL  telemetry_readings: partition keys are asset, dt, hour as strings, and none of them is also a data column
+KILLED    [terraform] the readings table uses another JSON SerDe
+          first red: FAIL  telemetry_readings: the table location is the folder, the SerDe reads one JSON document per line
+KILLED    [terraform] the quarantine table location leaves its folder
+          first red: FAIL  terraform fmt -check passes | FAIL  telemetry_quarantine: the table location is the folder, the SerDe reads one JSON document per line
+KILLED    [terraform] the writer policy may delete files
+          first red: FAIL  telemetry_write may put (and abort a multipart upload) only under telemetry/, and has no delete anywhere
+KILLED    [terraform] the writer policy may write to the whole lake bucket
+          first red: FAIL  telemetry_write may put (and abort a multipart upload) only under telemetry/, and has no delete anywhere
+KILLED    [terraform] the reader policy may write telemetry files
+          first red: FAIL  telemetry_read has no wildcard action and no write or delete action | FAIL  telemetry_read reads objects under telemetry/ only and lists only with that prefix
+KILLED    [terraform] the reader policy lists the whole bucket
+          first red: FAIL  telemetry_read reads objects under telemetry/ only and lists only with that prefix
+KILLED    [terraform] the reader policy cannot see the quarantine table
+          first red: FAIL  telemetry_read sees the four telemetry tables, the database and the catalog, and nothing else in Glue
+KILLED    [terraform] the reader policy gets a wildcard Glue action
+          first red: FAIL  telemetry_read has no wildcard action and no write or delete action | FAIL  telemetry_read sees the four telemetry tables, the database and the catalog, and nothing else in Glue
+BASELINE PASS  broker tests on the unmutated copy
+KILLED    [broker] the handler returns before the files are written, so the ack comes first
+          first red: FAIL  a new process opening the lake rebuilds exactly the readings that were written | FAIL  it found every reading already stored: the count did not move and no file changed
+KILLED    [broker] the store is changed before the files are written (a failed write loses the retry)
+          first red: FAIL  the failed try had applied nothing to memory | FAIL  after the retry the lake holds every accepted reading of the message once
+KILLED    [broker] messages are processed at the same time, not one after another
+          first red: FAIL  the lake holds each reading once, not twenty times
+KILLED    [broker] a restarted worker does not reload the readings from the lake
+          first red: FAIL  a new process opening the lake rebuilds exactly the readings that were written | FAIL  it found every reading already stored: the count did not move and no file changed
+KILLED    [broker] a body with the wrong shape is retried instead of dead lettered
+          first red: FAIL  its dead letter reason is permanent-error
+KILLED    [broker] bad readings reject the whole message instead of being quarantined
+          test crashed: Error: bad reading in message
+KILLED    [broker] the redelivered message is written again under a new file name
+          first red: FAIL  the lake the worker wrote equals, file for file and byte for byte, the lake of a direct in-process run
+
+mutants killed: 101 of 101

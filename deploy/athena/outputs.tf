@@ -21,3 +21,20 @@ output "workgroup" {
 output "query_policy_arn" {
   value = aws_iam_policy.query.arn
 }
+
+output "telemetry_tables" {
+  value = [
+    aws_glue_catalog_table.telemetry_readings.name,
+    aws_glue_catalog_table.telemetry_rollup_5m.name,
+    aws_glue_catalog_table.telemetry_rollup_1h.name,
+    aws_glue_catalog_table.telemetry_quarantine.name,
+  ]
+}
+
+output "telemetry_read_policy_arn" {
+  value = aws_iam_policy.telemetry_read.arn
+}
+
+output "telemetry_write_policy_arn" {
+  value = aws_iam_policy.telemetry_write.arn
+}

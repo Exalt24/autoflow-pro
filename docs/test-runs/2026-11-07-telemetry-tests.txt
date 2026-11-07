@@ -1,0 +1,291 @@
+# 2026-11-07 Telemetry pipeline (backend/src/telemetry, deploy/athena/telemetry.tf): logic, end to end, Terraform and RabbitMQ tests
+# node v24.18.0, Terraform v1.16.6, RabbitMQ 3.13.7 (rabbitmq:3-management in Docker on port 56730), amqplib 2.2.1, Windows 11
+# Commands: npm run test:telemetry-logic ; npm run test:telemetry-e2e ; npm run test:telemetry-terraform ; RABBITMQ_URL=amqp://guest:guest@localhost:56730 REQUIRE_RABBITMQ=1 npm run test:telemetry-rabbitmq ; npx tsc --noEmit ; npm run test:athena-terraform ; npm run test:pipelines
+# The mutation harness output (node scripts/mutation-check-telemetry.mjs) is in docs/test-runs/2026-11-07-telemetry-mutation-check.txt. The load run is in docs/test-runs/2026-11-07-telemetry-load.txt.
+# The container was removed with docker rm -f after the run.
+
+## npm run test:telemetry-logic
+PASS  schema: a full reading passes and ts becomes UTC epoch milliseconds
+PASS  schema: only power_kw is required, voltage and temperature become null, and 0 kW is a valid power
+PASS  schema: an explicit null for an optional channel is accepted
+PASS  schema: an offset is converted to UTC (+08:00 is 8 hours earlier, -05:30 is 5.5 hours later)
+PASS  schema: milliseconds are kept, one to three digits
+PASS  schema: four fractional digits are refused
+PASS  schema: a time with no zone is refused as ambiguous
+PASS  schema: month 13, day 45, hour 25 and minute 61 are not real times
+PASS  schema: 2026-02-30 and a non leap 02-29 do not exist, 2028-02-29 does
+PASS  schema: hour 24 and second 60 are refused
+PASS  schema: an offset of +25:00 or +01:60 is refused
+PASS  schema: a number, null, an empty string and free text are not timestamps
+PASS  schema: a time before 2000-01-01 is refused (a device that lost its clock)
+PASS  schema: a time exactly at the allowed future skew is accepted and one millisecond past it is refused
+PASS  schema: null, an array and a string are not readings
+PASS  schema: an unknown field is refused, not ignored
+PASS  schema: asset ids that are empty, too long, hold a slash or a space, or are not strings are refused
+PASS  schema: a 64 character asset id with letters, digits, _ and - is accepted
+PASS  schema: a negative power is refused (a solar asset does not consume)
+PASS  schema: power at its limits 0 and 10000 is accepted, just past them is refused
+PASS  schema: voltage 0 to 2000 and temperature -60 to 150 are the limits
+PASS  schema: a missing power_kw is missing_value
+PASS  schema: NaN, Infinity, a numeric string and a boolean are invalid_value, never coerced
+PASS  schema: sameValues compares every channel, null against a number differs
+PASS  ingest: a new batch is accepted in full
+PASS  ingest: the same batch twice changes nothing and is counted as 3 duplicates
+PASS  ingest: a replay in another order, with a repeat, changes nothing either
+PASS  duplicate rule: the same key with other values is quarantined as conflicting_duplicate and the first value is kept
+PASS  duplicate rule: a different voltage alone makes a conflict
+PASS  duplicate rule: the same conflicting input sent again is not added to the quarantine list twice
+PASS  duplicate rule: inside one batch the first wins, an identical repeat is a duplicate, a different one is quarantined
+PASS  duplicate rule: the same timestamp under two assets is two readings, not a duplicate
+PASS  duplicate rule: the same instant written with another offset is the same key
+PASS  quarantine: bad readings are kept with their reasons and are never stored
+PASS  quarantine: an entry names the reason, a detail, the asset and ts when they can be read, and the raw input
+PASS  quarantine: received = stored + duplicates + quarantined
+PASS  quarantine: the raw text is cut at 2000 characters
+PASS  quarantine: an input JSON cannot print (a cycle) is still quarantined
+PASS  stage and apply: stage changes nothing in the store
+PASS  stage and apply: apply stores the staged readings
+PASS  stage and apply: applying a staged batch whose keys were stored meanwhile is refused instead of corrupting the series
+PASS  restore: loads readings from the lake without applying the rules, keeps the first of a repeated key and sorts them
+PASS  watermark: an asset never seen has none
+PASS  watermark: it is the newest accepted timestamp minus the allowed lateness
+PASS  late data: a reading exactly at the watermark is accepted and counted as late and merged
+PASS  late data: one millisecond behind the watermark is quarantined as too_late
+PASS  late data: the too_late detail says how far behind the watermark it was
+PASS  late data: a merged late reading lands in its place in time order
+PASS  late data: the watermark follows the newest reading, never goes back after a late one
+PASS  late data: the watermark is per asset, so a busy asset does not make a quiet one late
+PASS  late data: readings are judged in arrival order inside a batch (a newer one first makes an older one late)
+PASS  late data: the same two readings in time order are both accepted and none is late
+PASS  late data: splitting the same arrivals into two batches gives the same verdict
+PASS  late data: a rejected reading (bad power, too far in the future) does not move the watermark
+PASS  late data: an old reading that is already stored is a plain duplicate when it is sent again after the watermark passed it
+PASS  late data: a reading far in the future is refused so it cannot push every other reading behind the watermark
+PASS  late data: apply reports the reading before each insert, so the changed segment is known
+PASS  rollup: 2 kW for a full hour is 2 kWh, one reading per minute, with the stats of one channel
+PASS  rollup: a segment belongs to the bucket of the reading it starts at, so 61 readings put the 60th minute's segment in hour one
+PASS  rollup: a ramp from 0 to 6 kW over an hour is 3 kWh by the trapezoid rule
+PASS  rollup: a triangle 0, 4, 0 kW over two half hours is 2 kWh
+PASS  rollup: min, max, mean and n are per channel and skip missing values
+PASS  rollup: a channel with no values has n 0 and null stats, not zeros
+PASS  rollup: the bucket start is the UTC start of the 5 minute or 1 hour window
+PASS  rollup: a reading exactly on a boundary belongs to the bucket that starts there
+PASS  rollup: an hour is exactly the sum of its twelve 5 minute buckets, in energy and in count
+PASS  rollup: the hourly min and max are the min and max of the 5 minute rows
+PASS  gap: a segment of exactly 1.5 expected intervals is still integrated
+PASS  gap: a segment one millisecond longer is a gap, adds no energy and is counted in gap_segments
+PASS  gap: a 10 minute hole in an hour of 4 kW leaves 48 minutes of segments in the energy (nothing is invented to fill it)
+PASS  gap: that hole is one gap segment
+PASS  gap: a 5 minute bucket with no readings has no row, and missingBuckets reports it
+PASS  gap: detectGaps names the stretch, the last reading before it, the first after, and how many readings are missing
+PASS  gap: a clean series has no gap
+PASS  gap: readings off their grid by 10 seconds either way are not gaps
+PASS  gap: two readings exactly 1.5 intervals apart are not a gap, one millisecond more is, and it counts one missing reading
+PASS  gap: with a window, the start of the hour before the first reading counts (3 missing)
+PASS  gap: with a window, the end of the hour after the last reading counts (5 missing)
+PASS  gap: with a window and every slot present, readings plus missing equals the slots of the window
+PASS  gap: an asset with no readings in the window is one gap for the whole window
+PASS  gap: the threshold is 1.5 times the expected interval
+PASS  late data: one reading delivered four minutes late is merged (counted once as late)
+PASS  late data: after the merge the 5 minute and hourly rollups equal the ones from the same readings in time order, exactly
+PASS  late data: the merge changed the hour that held the hole (59 readings before the late one arrived, 60 after)
+PASS  late data: filling the hole turns a 2 minute gap segment into energy and removes the gap count
+PASS  late data: a late reading in the next 5 minute bucket re-rolls the earlier bucket whose last segment it split
+PASS  rollup columns: the rollup file keys are exactly ROLLUP_COLUMNS in order, and the types are bigint for counts, double for stats
+PASS  rollup columns: the file body has one line per row with only those columns
+PASS  rollup: computeRows on an empty range gives no rows (nothing is made up)
+PASS  rollup: the two resolutions are 5 minutes and 1 hour
+PASS  layout: a reading goes to asset=<id>/dt=<UTC day>/hour=<UTC hour>/part-<batch>.jsonl
+PASS  layout: the day and hour are UTC even for a reading sent with an offset
+PASS  layout: 23:59:59.999 stays in its day and hour, and the next millisecond opens the next day at hour 00
+PASS  layout: rollup and quarantine keys
+PASS  layout: every key starts with the template of its table
+PASS  layout: an asset id or batch id that could escape the folder is refused
+PASS  columns: reading and quarantine files carry exactly the columns the tables declare
+PASS  columns: a reading line reads back to the same reading, nulls included
+PASS  columns: a corrupt line in the lake is an error, never skipped
+PASS  lake store (local folder): get returns what put wrote, and null for a missing key
+PASS  lake store (local folder): list returns the keys under a prefix, sorted, across several pages
+PASS  lake store (local folder): putting the same key again replaces the content and adds no key
+PASS  lake store (local folder): a key with .., a leading slash, a backslash or an empty part is refused
+PASS  lake store (memory): get returns what put wrote, and null for a missing key
+PASS  lake store (memory): list returns the keys under a prefix, sorted, across several pages
+PASS  lake store (memory): putting the same key again replaces the content and adds no key
+PASS  lake store (memory): a key with .., a leading slash, a backslash or an empty part is refused
+PASS  lake store (S3 calls against an in-memory stand-in): get returns what put wrote, and null for a missing key
+PASS  lake store (S3 calls against an in-memory stand-in): list returns the keys under a prefix, sorted, across several pages
+PASS  lake store (S3 calls against an in-memory stand-in): putting the same key again replaces the content and adds no key
+PASS  lake store (S3 calls against an in-memory stand-in): a key with .., a leading slash, a backslash or an empty part is refused
+PASS  lake store (local folder): a write leaves no temporary file behind
+PASS  lake store (local folder): an unfinished temporary file from a crash is not listed
+PASS  lake store (S3): a request for another bucket is not served by the stand-in (the stand-in itself checks the bucket)
+PASS  write: one file per asset, day and hour that the readings touch
+PASS  write: the lines of a file are in time order whatever the arrival order
+PASS  write: writing the same batch again, in another order, leaves the same files with the same bytes
+PASS  read: the lake reads back as the readings written
+PASS  read: a broken file stops the read with an error instead of dropping lines
+PASS  generator: the same options give the same readings, byte for byte
+PASS  generator: another seed gives other values
+PASS  generator: the grid is one reading per minute, 1440 a day, and the clean list is the grid minus the gap and the too late reading
+PASS  generator: without defects every reading is sent once, in order, and all are expected
+PASS  generator: power follows the sun, zero at night, a peak around noon and never over the asset's limit
+PASS  generator: every clean reading passes the schema
+PASS  generator: some optional channels are missing, like a real sensor
+PASS  generator: ingest finds exactly the planted defects (1 duplicate, 1 late merge, too_late, conflicting_duplicate, out_of_range, 2 invalid_timestamp)
+PASS  generator: what ingest stored is the clean list
+PASS  generator: detectGaps finds the planted gaps (the 20 minute hole and the one missing reading), as planted
+PASS  generator: the planting refuses a lateness that leaves no room in the day
+PASS  generator: an interval that does not divide a day is refused
+PASS  pipeline: the counts of a whole day add up to what the generator planted
+PASS  pipeline: every batch's received = accepted + duplicates + quarantined
+PASS  pipeline: the lake holds reading files, a 5 minute and an hourly rollup file for the day, and a quarantine file
+PASS  pipeline: sending every batch again, same ids, changes no file
+PASS  pipeline: sending every batch again under new batch ids still changes no file (nothing new to store or quarantine)
+PASS  restart: opening the lake rebuilds every reading and quarantined input, and finds the rollup files already right
+PASS  restart: after a restart the redelivered messages find everything stored, count nothing twice and change no file
+PASS  crash: when the reading write fails the batch is rejected and memory is untouched
+PASS  crash: the retry of the same message is staged as new and stored once
+PASS  crash: the lake after a failed try and a retry equals the lake after one clean try
+PASS  crash: when a rollup write fails the readings are already stored and applied
+PASS  crash: the redelivered message is all duplicates but still writes the rollup files that were missed
+PASS  crash: the lake then equals the lake of an uninterrupted run
+PASS  restart: a deleted rollup file and a stale one are both rewritten when the lake is opened
+PASS  concurrency: the same readings arriving in three messages at once are stored once
+PASS  concurrency: a failed batch does not block the next one in the queue
+PASS  quarantine: input that is already quarantined is not written to a second file
+PASS  quarantine: the file holds the reason, asset, timestamp and the rejected input, under the day of the ingest clock
+PASS  quarantine: a failed quarantine write rejects the batch and stores none of its readings
+PASS  worker: a body with a readings array passes
+PASS  worker: a body that is not an object with a readings array is a PermanentError (dead letter, no retry)
+PASS  worker: a body with more than the limit is a PermanentError
+PASS  worker: the file name part comes from the message id, the same every time, and is a safe name
+PASS  property: 400 seeded random worlds (1 to 3 assets, gaps, repeats, conflicting repeats, junk, late and very late data, any batch size) match the reference model and obey every rule
+PASS  property: the worlds really contain late merges, too late readings, conflicts and junk (the test exercises the rules)
+PASS  control: a store that never says too late is caught
+PASS  control: a store whose allowed lateness is wrong is caught
+PASS  control: a store that drops the conflicting repeat silently, without quarantining it, is caught
+PASS  control: a store that stops counting rejected readings is caught
+
+All 160 telemetry logic checks passed
+exit 0
+
+## npm run test:telemetry-e2e
+PASS  generated 8550 readings for 3 assets over 2 days went in, in 72 batches
+PASS  ingest stored exactly the readings the generator meant to keep
+PASS  ingest found the planted defects of every asset-day: 1 duplicate, 1 late merge, 5 quarantined
+PASS  lake layout: every reading file is under asset=<id>/dt=YYYY-MM-DD/hour=HH/ and named part-<batch>.jsonl
+PASS  lake layout: every line sits in the folder of its own UTC day and hour
+PASS  lake layout: one 5 minute and one hourly rollup file per asset and day, one quarantine file per batch that had rejects, nothing else
+PASS  lake layout: the hour folders hold hours 00 to 23 for a day with data in every hour
+PASS  read back: the readings in the lake are exactly the clean readings, value for value
+PASS  read back: nothing that was quarantined was loaded (no negative power, no 2026-13 timestamp, the conflicting value 9999 is absent)
+PASS  read back: every 5 minute rollup file equals the recomputation (min, max, mean, count, energy, gap segments)
+PASS  read back: every hourly rollup file equals the recomputation
+PASS  read back: the day's energy per asset is plausible for 5 kW peak solar (over 20 kWh) and equals the recomputation
+PASS  read back: the segment from the last reading of day one to the first of day two is counted in day one's last bucket (hour 23)
+PASS  gaps: detectGaps on the readings read back from the lake finds the planted gaps of every asset-day (a 20 minute hole and one missing reading)
+PASS  gaps: no rollup row exists for a 5 minute bucket wholly inside a gap (nothing was filled in)
+PASS  gaps: missingBuckets names the three empty 5 minute buckets of each gap, and only those
+PASS  quarantine: the lake holds each distinct rejected input once with its reason: 6 too_late, 6 conflicting_duplicate, 6 out_of_range and 9 invalid_timestamp (the 12 bad timestamps were counted, but one asset sent the same impossible time on both days, which is one input)
+PASS  quarantine: each entry keeps the rejected input as sent
+PASS  replay: sending all the batches again under new ids stores nothing and leaves every file byte for byte the same
+PASS  restart: a new process opening the folder rebuilds the same readings and repairs no rollup file
+PASS  restart: redelivering everything to the new process counts nothing twice and changes no file
+
+All 21 telemetry end to end checks passed
+exit 0
+
+## npm run test:telemetry-terraform
+PASS  terraform fmt -check passes
+PASS  terraform init -backend=false passes
+PASS  terraform validate passes
+PASS  a telemetry_prefix with no trailing slash is refused
+PASS  a telemetry_prefix with capitals or a leading slash is refused
+PASS  offline terraform plan runs with dummy credentials
+PASS  the plan now creates 18 resources: the 12 Athena ones plus 4 telemetry tables and 2 telemetry policies
+PASS  the four telemetry tables are in the existing events database
+PASS  telemetry_readings: columns are exactly the ones the code writes, same names, types and order
+PASS  telemetry_readings: partition keys are asset, dt, hour as strings, and none of them is also a data column
+PASS  telemetry_readings: the projected location is the path the writer uses (telemetry/readings/asset={asset}/dt={dt}/hour={hour}/)
+PASS  telemetry_readings: the table location is the folder, the SerDe reads one JSON document per line
+PASS  telemetry_readings: every partition key in the template is a partition key of the table, in the same order
+PASS  telemetry_readings: dt is a projected date, yyyy-MM-dd, daily, from the start day to NOW
+PASS  telemetry_readings: asset is an injected projection (a query must name the asset)
+PASS  telemetry_rollup_5m: columns are exactly the ones the code writes, same names, types and order
+PASS  telemetry_rollup_5m: partition keys are asset, dt as strings, and none of them is also a data column
+PASS  telemetry_rollup_5m: the projected location is the path the writer uses (telemetry/rollups_5m/asset={asset}/dt={dt}/)
+PASS  telemetry_rollup_5m: the table location is the folder, the SerDe reads one JSON document per line
+PASS  telemetry_rollup_5m: every partition key in the template is a partition key of the table, in the same order
+PASS  telemetry_rollup_5m: dt is a projected date, yyyy-MM-dd, daily, from the start day to NOW
+PASS  telemetry_rollup_5m: asset is an injected projection (a query must name the asset)
+PASS  telemetry_rollup_1h: columns are exactly the ones the code writes, same names, types and order
+PASS  telemetry_rollup_1h: partition keys are asset, dt as strings, and none of them is also a data column
+PASS  telemetry_rollup_1h: the projected location is the path the writer uses (telemetry/rollups_1h/asset={asset}/dt={dt}/)
+PASS  telemetry_rollup_1h: the table location is the folder, the SerDe reads one JSON document per line
+PASS  telemetry_rollup_1h: every partition key in the template is a partition key of the table, in the same order
+PASS  telemetry_rollup_1h: dt is a projected date, yyyy-MM-dd, daily, from the start day to NOW
+PASS  telemetry_rollup_1h: asset is an injected projection (a query must name the asset)
+PASS  telemetry_quarantine: columns are exactly the ones the code writes, same names, types and order
+PASS  telemetry_quarantine: partition keys are dt as strings, and none of them is also a data column
+PASS  telemetry_quarantine: the projected location is the path the writer uses (telemetry/quarantine/dt={dt}/)
+PASS  telemetry_quarantine: the table location is the folder, the SerDe reads one JSON document per line
+PASS  telemetry_quarantine: every partition key in the template is a partition key of the table, in the same order
+PASS  telemetry_quarantine: dt is a projected date, yyyy-MM-dd, daily, from the start day to NOW
+PASS  telemetry_quarantine: there is no asset projection
+PASS  telemetry_readings: hour is a projected integer from 0 to 23 padded to 2 digits, so it matches hour=00 to hour=23
+PASS  the existing run_events table is unchanged by the telemetry tables (still projected over events/, no asset or hour keys)
+PASS  the lake expires telemetry files after 400 days, under telemetry/ only
+PASS  the events rule is still the first rule and still limited to events/
+PASS  telemetry_read has no wildcard action and no write or delete action
+PASS  telemetry_read sees the four telemetry tables, the database and the catalog, and nothing else in Glue
+PASS  telemetry_read reads objects under telemetry/ only and lists only with that prefix
+PASS  telemetry_write may put (and abort a multipart upload) only under telemetry/, and has no delete anywhere
+PASS  telemetry_write reads back only under telemetry/ (the worker rebuilds from the lake) and lists only with that prefix
+PASS  neither policy reaches the events, iceberg or query results files, or the results bucket
+PASS  the existing query policy is untouched: it still has no telemetry in it
+PASS  changing telemetry_prefix moves the table locations, the policies and the lifecycle rule together
+
+All 48 telemetry Terraform checks passed
+exit 0
+
+## npm run test:telemetry-rabbitmq
+PASS  8 messages of a generated solar day are all handled and the queue ends up empty
+PASS  the lake the worker wrote equals, file for file and byte for byte, the lake of a direct in-process run
+PASS  the readings in the lake are exactly the clean readings of the day
+PASS  the bad readings were quarantined, not loaded, and the messages that held them were still acked
+PASS  publishing every message again, under new ids and under the same ids, changes no file in the lake
+PASS  the replays under new ids reached the handler and found everything stored; the replays under old ids were skipped by the consumer
+PASS  the message is handled and its files are in the lake
+PASS  while the process holds the message unacked it is not on the queue
+PASS  when the process dies without acking, the broker puts the message back on the queue
+PASS  a new process opening the lake rebuilds exactly the readings that were written
+PASS  the redelivered message is handled by the new process and acked
+PASS  it found every reading already stored: the count did not move and no file changed
+PASS  each reading of the message is in the lake exactly once
+PASS  a message whose write fails is called again after the delay and then succeeds
+PASS  the failed try had applied nothing to memory
+PASS  after the retry the lake holds every accepted reading of the message once
+PASS  nothing went to the dead letter queue
+PASS  a body with no readings array goes to the dead letter queue after one try
+PASS  its dead letter reason is permanent-error
+PASS  a body with one good and two bad readings is acked: the good one is stored, the two bad ones are quarantined with their reasons
+PASS  20 messages carrying the same 200 readings are all handled while 10 are in flight
+PASS  the lake holds each reading once, not twenty times
+
+All 22 telemetry RabbitMQ checks passed
+exit 0
+
+## npx tsc --noEmit (npm run build checks the same)
+exit 0
+
+## npm run test:athena-terraform (the existing Athena Terraform test, run again with telemetry.tf in the same plan; last lines)
+PASS  GetBucketLocation has no prefix condition (the request carries none) and covers both buckets
+
+All 35 Athena Terraform checks passed
+exit 0
+
+## npm run test:pipelines (the GitHub, GitLab and Azure files stay in step with the new telemetry job; last lines)
+PASS  the schema check rejects a misspelled step key
+
+All pipeline checks passed
+exit 0

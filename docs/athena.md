@@ -36,6 +36,8 @@ The events also have an Apache Iceberg copy. `createIcebergTableSql` builds the 
 - an Athena workgroup `autoflow-events` that enforces its own result location and SSE_S3 encryption, publishes CloudWatch metrics and stops a query that would scan more than 10 GiB
 - an IAM policy that starts, reads and stops queries in that one workgroup, reads that one table, reads `events/` in the lake, and writes and reads `queries/` in the results bucket
 
+`deploy/athena/telemetry.tf` adds four more tables to the same database for time series telemetry (see [telemetry.md](telemetry.md)). The 12 resources and the rules counted in the run below are the ones listed here; the telemetry resources are checked by their own test.
+
 ## What was run
 
 Everything below is in [docs/test-runs/2026-11-07-athena-client.txt](test-runs/2026-11-07-athena-client.txt). No AWS account was used for any of it.

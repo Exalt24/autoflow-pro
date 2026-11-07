@@ -61,3 +61,6 @@ CLAUDE.md
 # Local CI runner state
 .gitlab-ci-local/
 .netlify/
+
+# Local lake folder of the telemetry worker (npm run start:telemetry)
+telemetry-lake/

@@ -93,6 +93,24 @@ resource "aws_s3_bucket_lifecycle_configuration" "lake" {
       days_after_initiation = 7
     }
   }
+
+  # Readings, rollups and quarantined input from the telemetry pipeline (telemetry.tf).
+  rule {
+    id     = "expire-telemetry"
+    status = "Enabled"
+
+    filter {
+      prefix = var.telemetry_prefix
+    }
+
+    expiration {
+      days = var.telemetry_expiry_days
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "results" {

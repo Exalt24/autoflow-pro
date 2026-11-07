@@ -1,0 +1,165 @@
+"""A moment in time as an ISO 8601 string in UTC."""
+scalar DateTime
+
+enum RunState {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  TIMED_OUT
+}
+
+type Step {
+  id: ID!
+  type: String!
+}
+
+type Workflow {
+  id: ID!
+  name: String!
+  description: String
+  steps: [Step!]!
+  createdAt: DateTime!
+
+  """How many runs this workflow has had."""
+  runCount: Int!
+
+  """Its newest run, if any."""
+  lastRun: Run
+  runs(first: Int = 20, after: String): RunConnection!
+}
+
+type Run {
+  id: ID!
+  workflow: Workflow!
+  state: RunState!
+  createdAt: DateTime!
+  startedAt: DateTime
+  finishedAt: DateTime
+  completedSteps: [String!]!
+  totalSteps: Int!
+  error: String
+
+  """
+  True once a cancel was asked for, until the run reaches its final state.
+  """
+  cancelRequested: Boolean!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+type RunEdge {
+  cursor: String!
+  node: Run!
+}
+
+type RunConnection {
+  edges: [RunEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type WorkflowEdge {
+  cursor: String!
+  node: Workflow!
+}
+
+type WorkflowConnection {
+  edges: [WorkflowEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Query {
+  workflows(first: Int = 20, after: String): WorkflowConnection!
+  workflow(id: ID!): Workflow
+  run(id: ID!): Run
+
+  """
+  Newest first. Cursor pagination: pass the endCursor of the last page as after.
+  """
+  runs(workflowId: ID, state: RunState, first: Int = 20, after: String): RunConnection!
+}
+
+input StepInput {
+  id: ID!
+  type: String!
+}
+
+input CreateWorkflowInput {
+  name: String!
+  description: String
+  steps: [StepInput!]!
+}
+
+input StartRunInput {
+  workflowId: ID!
+
+  """Budget for one step including its retries, 100 to 3600000 ms."""
+  stepTimeoutMs: Int
+}
+
+enum ErrorCode {
+  VALIDATION
+  NOT_FOUND
+  CONFLICT
+  UNAVAILABLE
+}
+
+interface UserError {
+  message: String!
+  code: ErrorCode!
+}
+
+type FieldIssue {
+  path: String!
+  message: String!
+}
+
+type ValidationError implements UserError {
+  message: String!
+  code: ErrorCode!
+  issues: [FieldIssue!]!
+}
+
+type NotFoundError implements UserError {
+  message: String!
+  code: ErrorCode!
+  resource: String!
+  id: ID!
+}
+
+type ConflictError implements UserError {
+  message: String!
+  code: ErrorCode!
+
+  """The state the run is in."""
+  state: RunState!
+}
+
+type UnavailableError implements UserError {
+  message: String!
+  code: ErrorCode!
+}
+
+union CreateWorkflowResult = Workflow | ValidationError
+
+union StartRunResult = Run | NotFoundError | ValidationError | UnavailableError
+
+union CancelRunResult = Run | NotFoundError | ConflictError | ValidationError | UnavailableError
+
+type Mutation {
+  createWorkflow(input: CreateWorkflowInput!): CreateWorkflowResult!
+
+  """Creates a run and starts its Temporal workflow."""
+  startRun(input: StartRunInput!): StartRunResult!
+
+  """
+  Sends the cancel signal to the run's Temporal workflow. The run reaches CANCELLED a moment later.
+  """
+  cancelRun(runId: ID!): CancelRunResult!
+}

@@ -7,7 +7,7 @@
 //   cli        cli/src               -> cargo test (needs cargo)
 // Run: node scripts/mutation-check-services.mjs [check|temporal|e2e|graphql|cli|all]
 // MUT_JOBS sets how many temporal/graphql mutants run at once (default 3). e2e and cli mutants run one at a time.
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, rmdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, rmdirSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,7 +52,7 @@ const mutants = [
   m("e2e", "the cancel signal handler does nothing", TW, "    cancelRequested = true;\n    cancelReason = reason;\n", "    void reason;\n"),
   m("e2e", "the step timeout is not part of the race", TW, "Promise.race([done, timer, cancel])", "Promise.race([done, cancel])"),
   m("e2e", "the same run id can be started twice", TC, "WorkflowIdReusePolicy.REJECT_DUPLICATE", "WorkflowIdReusePolicy.ALLOW_DUPLICATE"),
-  m("e2e", "cancel sends the wrong signal name", TT, 'export const CANCEL_SIGNAL = "cancelRun";', 'export const CANCEL_SIGNAL = "cancelRunX";'),
+  m("e2e", "the client sends the cancel signal under another name", TC, "signal(CANCEL_SIGNAL, reason)", 'signal("cancelRunX", reason)'),
 
   // ---- GraphQL
   m("graphql", "the depth limit is not installed", G + "server.ts", "addValidationRule(depthLimitRule(opts.maxDepth ?? DEFAULT_MAX_DEPTH));", "void depthLimitRule;"),
@@ -111,7 +111,19 @@ function scratch(mutant, kind) {
       writeFileSync(path, text.replace(e.from, () => e.to));
     }
   }
+  // Windows copies keep the old file times, and cargo trusts file times, so a copy could reuse a build of a mutant that
+  // ran before it in the shared target folder. Touching every file makes cargo rebuild what it must.
+  if (kind === "cli") touchAll(join(dir, "cli"));
   return dir;
+}
+
+function touchAll(folder) {
+  const now = new Date();
+  for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    const path = join(folder, entry.name);
+    if (entry.isDirectory()) touchAll(path);
+    else utimesSync(path, now, now);
+  }
 }
 
 function cleanup(dir) {

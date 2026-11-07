@@ -112,5 +112,10 @@
     "@graphql-codegen/typescript-resolvers": "^6.1.1",
     "@temporalio/testing": "^1.25.0",
     "tsx": "^4.23.15"
+  },
+  "overrides": {
+    "graphql-config": {
+      "minimatch": "^11.0.5"
+    }
   }
 }

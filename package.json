@@ -28,7 +28,7 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "ajv": "^8.20.0",
-    "baseline-browser-mapping": "^2.11.34",
+    "baseline-browser-mapping": "^2.11.35",
     "tsx": "^4.23.15",
     "yaml": "^2.9.1"
   }

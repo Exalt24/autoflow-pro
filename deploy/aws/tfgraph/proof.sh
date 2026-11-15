@@ -30,9 +30,8 @@ step "go test -count=1 -v ./..."
 go test -count=1 -v ./... > "$WORK/test.out" 2>&1 || { cat "$WORK/test.out"; exit 1; }
 grep -E "^(ok|FAIL|\?)" "$WORK/test.out" | sed -E 's/\t[0-9.]+s$//; s/\t\(cached\)$//'
 top="$(grep -c '^--- PASS' "$WORK/test.out" || true)"
-sub="$(grep -c '^    --- PASS' "$WORK/test.out" || true)"
 failed="$(grep -c -e '--- FAIL' "$WORK/test.out" || true)"
-echo "tests passed: ${top} test functions, ${sub} subtests, ${failed} failed"
+echo "tests passed: ${top} test functions, ${failed} failed"
 [ "$failed" = 0 ]
 
 step "mutation pass: go run ./cmd/mutate"
@@ -49,12 +48,12 @@ go build -o "$WORK/tfgraph" ./cmd/tfgraph
 
 step "tfgraph check plan.json (the repo's real plan)"
 code=0
-"$WORK/tfgraph" check "$WORK/plan.json" || code=$?
+(cd "$WORK" && ./tfgraph check plan.json) || code=$?
 echo "exit code $code (0 means clean)"
 [ "$code" = 0 ]
 
 step "tfgraph graph plan.json --resources-only"
-"$WORK/tfgraph" graph "$WORK/plan.json" --resources-only
+(cd "$WORK" && ./tfgraph graph plan.json --resources-only)
 
 step "tfgraph check on a copy of the plan with the policy widened (testdata/variants/widened-policy.json)"
 code=0
@@ -64,7 +63,7 @@ echo "exit code $code (1 means findings)"
 
 step "tfgraph check on a plan that could not be read"
 code=0
-"$WORK/tfgraph" check "$WORK/not-there.json" || code=$?
+(cd "$WORK" && ./tfgraph check not-there.json) || code=$?
 echo "exit code $code (2 means the input could not be read)"
 [ "$code" = 2 ]
 

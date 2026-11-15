@@ -1,0 +1,150 @@
+# 2026-11-15T15:23:07Z  repo commit c2b6730
+# go version go1.27.0 windows/amd64, Terraform v1.16.6
+
+## go vet ./...
+clean
+
+## gofmt -l .
+no files listed
+
+## go test -count=1 -v ./...
+?   	github.com/Exalt24/autoflow-pro/deploy/aws/tfgraph/cmd/mutate	[no test files]
+?   	github.com/Exalt24/autoflow-pro/deploy/aws/tfgraph/cmd/tfgraph	[no test files]
+ok  	github.com/Exalt24/autoflow-pro/deploy/aws/tfgraph/internal/cli
+ok  	github.com/Exalt24/autoflow-pro/deploy/aws/tfgraph/internal/graph
+ok  	github.com/Exalt24/autoflow-pro/deploy/aws/tfgraph/internal/iam
+ok  	github.com/Exalt24/autoflow-pro/deploy/aws/tfgraph/internal/plan
+ok  	github.com/Exalt24/autoflow-pro/deploy/aws/tfgraph/internal/report
+ok  	github.com/Exalt24/autoflow-pro/deploy/aws/tfgraph/internal/rules
+?   	github.com/Exalt24/autoflow-pro/deploy/aws/tfgraph/internal/testutil	[no test files]
+tests passed: 44 test functions, 0 failed
+
+## mutation pass: go run ./cmd/mutate
+# 2026-11-15T15:23:10Z  33 mutants, one broken rule each in a scratch copy of the module, go test ./... must go red
+# go version go1.27.0 windows/amd64
+BASELINE PASS  go test ./... on the unmutated copy
+CAUGHT  wildcard action only recognises a bare *
+          first red: --- FAIL: TestGolden (0.01s) | cli_test.go:194: check-widened-policy differs from golden\check-widened-policy.txt:
+CAUGHT  Allow with NotAction is ignored
+          first red: --- FAIL: TestEditedPlans (0.05s) | rules_test.go:243: Allow with NotAction:
+CAUGHT  a Deny statement is treated like an Allow
+          first red: --- FAIL: TestEditedPlans (0.04s) | rules_test.go:243: Deny with a wildcard is not a finding:
+CAUGHT  wildcard resource * is no longer flagged
+          first red: --- FAIL: TestEditedPlans (0.05s) | rules_test.go:243: wildcard resource:
+CAUGHT  an all-bucket ARN is no longer flagged
+          first red: --- FAIL: TestEditedPlans (0.06s) | rules_test.go:243: every bucket:
+CAUGHT  object keys outside the prefix are accepted
+          first red: --- FAIL: TestGolden (0.01s) | cli_test.go:194: check-widened-policy differs from golden\check-widened-policy.txt:
+CAUGHT  a list without an s3:prefix condition is accepted
+          first red: --- FAIL: TestGolden (0.01s) | cli_test.go:194: check-widened-policy differs from golden\check-widened-policy.txt:
+CAUGHT  the lifecycle prefix is not used as a claim
+          first red: --- FAIL: TestGolden (0.00s) | cli_test.go:194: check-widened-policy differs from golden\check-widened-policy.txt:
+CAUGHT  the --prefix option is ignored
+          first red: --- FAIL: TestExitCodes (0.03s) | cli_test.go:60: prefix that the policy breaks: exit 0, want 1
+CAUGHT  no prefix claim is reported clean, not UNKNOWN
+          first red: --- FAIL: TestEditedPlans (0.09s) | rules_test.go:243: no prefix claimed anywhere is UNKNOWN, never clean:
+CAUGHT  the public access block flag list loses restrict_public_buckets
+          first red: --- FAIL: TestGolden (0.01s) | cli_test.go:194: check-delete-and-replace differs from golden\check-delete-and-replace.txt:
+CAUGHT  a public access block flag set to false is accepted
+          first red: --- FAIL: TestEditedPlans (0.12s) | rules_test.go:243: block_public_acls false:
+CAUGHT  an unknown public access block flag is reported as a finding
+          first red: --- FAIL: TestExitCodes (0.01s) | cli_test.go:60: only unknowns exits 0: exit 1, want 0
+CAUGHT  a bucket with no public access block is reported clean
+          first red: --- FAIL: TestGolden (0.01s) | cli_test.go:194: check-delete-and-replace differs from golden\check-delete-and-replace.txt:
+CAUGHT  a bucket with no encryption configuration is reported clean
+          first red: --- FAIL: TestEditedPlans (0.06s) | rules_test.go:243: no encryption configuration:
+CAUGHT  an empty SSE algorithm counts as encryption
+          first red: --- FAIL: TestEditedPlans (0.04s) | rules_test.go:243: encryption rule with an empty algorithm:
+CAUGHT  versioning Suspended is accepted
+          first red: --- FAIL: TestEditedPlans (0.07s) | rules_test.go:243: versioning Suspended:
+CAUGHT  a planned delete is not reported
+          first red: --- FAIL: TestGolden (0.01s) | cli_test.go:194: check-delete-and-replace differs from golden\check-delete-and-replace.txt:
+CAUGHT  a create then delete replacement is missed
+          first red: --- FAIL: TestEditedPlans (0.05s) | rules_test.go:243: bucket replaced create then delete:
+CAUGHT  an UNKNOWN is reported as a FINDING
+          first red: --- FAIL: TestExitCodes (0.01s) | cli_test.go:60: only unknowns exits 0: exit 1, want 0
+CAUGHT  the wildcard resource rule is dropped from the rule table
+          first red: --- FAIL: TestJSONReport (0.00s) | cli_test.go:118: report {Source:variants/unknown-values.json Kind:plan Resources:10 RulesRun:8 Findings:0 Unknowns:4 Access:[{Address:aws_iam_user.archive_writer Policies:[map[address:a...
+CAUGHT  an unparseable policy document is silent
+          first red: --- FAIL: TestEditedPlans (0.05s) | rules_test.go:243: policy that is not JSON:
+CAUGHT  an unknown bucket name skips the prefix rule silently
+          first red: --- FAIL: TestEditedPlans (0.03s) | rules_test.go:243: bucket name known after apply with a known policy:
+CAUGHT  an UNKNOWN changes the exit code
+          first red: --- FAIL: TestExitCodes (0.01s) | cli_test.go:60: only unknowns exits 0: exit 1, want 0
+CAUGHT  a resource planned for delete still counts as live
+          first red: --- FAIL: TestGolden (0.01s) | cli_test.go:194: check-delete-and-replace differs from golden\check-delete-and-replace.txt:
+CAUGHT  a data source reference is cut to two tokens
+          first red: --- FAIL: TestNormalizeReference (0.00s) | plan_test.go:48: data source: NormalizeReference("", "data.aws_partition.current.partition") = "data.aws_partition", want "data.aws_partition.current"
+CAUGHT  an unknown parent block is not honoured for a nested path
+          first red: --- FAIL: TestUnknownParentBlockCoversNestedPaths (0.00s) | plan_test.go:165: [rule 0] under an unknown block must be unknown, got {Value:map[id:a status:Enabled] Found:true Unknown:false}
+CAUGHT  a future format_version is accepted
+          first red: --- FAIL: TestParseRejectsBadInput (0.00s) | plan_test.go:71: future format: want an InputError, got <nil>
+CAUGHT  an errored plan is accepted
+          first red: --- FAIL: TestParseRejectsBadInput (0.00s) | plan_test.go:71: errored plan: want an InputError, got <nil>
+CAUGHT  depends_on edges are not recorded
+          first red: --- FAIL: TestGraphJSON (0.00s) | cli_test.go:145: 10 nodes 8 edges
+CAUGHT  value edges are not built
+          first red: --- FAIL: TestGolden (0.01s) | cli_test.go:194: graph-plan differs from golden\graph-plan.txt:
+CAUGHT  grant edges are not added
+          first red: --- FAIL: TestGraphJSON (0.00s) | cli_test.go:145: 10 nodes 8 edges
+CAUGHT  a single statement object is not accepted
+          first red: --- FAIL: TestParsePolicy (0.00s) | iam_test.go:49: one statement object with string fields:
+
+mutants caught: 33 of 33
+
+## terraform plan of deploy/aws (real plan, emulator tfvars, offline)
+- Using previously-installed hashicorp/aws v6.71.0
+
+Terraform has been successfully initialized!
+Plan: 9 to add, 0 to change, 0 to destroy.
+
+## tfgraph check plan.json (the repo's real plan)
+read plan.json: plan (format 1.2, terraform 1.16.6), 10 resources, 19 edges
+
+IAM access
+  user aws_iam_user.archive_writer (autoflow-archive-user)
+    policy aws_iam_policy.archive_access (autoflow-archive-policy) via attachment aws_iam_user_policy_attachment.archive_writer
+      ArchiveObjects: Allow s3:PutObject s3:GetObject s3:GetObjectVersion s3:DeleteObject s3:DeleteObjectVersion on arn:aws:s3:::autoflow-archive-123456789012/executions/*, no condition
+      ListArchivePrefix: Allow s3:ListBucket on arn:aws:s3:::autoflow-archive-123456789012, when StringLike s3:prefix is executions/*
+
+Results
+  none
+
+Result: clean, 9 rules run on 10 resources
+exit code 0 (0 means clean)
+
+## tfgraph graph plan.json --resources-only
+aws_iam_access_key.archive_writer -> aws_iam_user.archive_writer  [config user; value user]
+aws_iam_policy.archive_access -> aws_s3_bucket.archive  [grant statement ArchiveObjects; grant statement ListArchivePrefix]
+aws_iam_user_policy_attachment.archive_writer -> aws_iam_policy.archive_access  [config policy_arn]
+aws_iam_user_policy_attachment.archive_writer -> aws_iam_user.archive_writer  [config user; value user]
+aws_s3_bucket_lifecycle_configuration.archive -> aws_s3_bucket.archive  [config bucket]
+aws_s3_bucket_lifecycle_configuration.archive -> aws_s3_bucket_versioning.archive  [depends_on]
+aws_s3_bucket_public_access_block.archive -> aws_s3_bucket.archive  [config bucket]
+aws_s3_bucket_server_side_encryption_configuration.archive -> aws_s3_bucket.archive  [config bucket]
+aws_s3_bucket_versioning.archive -> aws_s3_bucket.archive  [config bucket]
+10 nodes, 9 edges
+no edges: data.aws_partition.current
+
+## tfgraph check on a copy of the plan with the policy widened (testdata/variants/widened-policy.json)
+read testdata/variants/widened-policy.json: plan (format 1.2, terraform 1.16.6), 10 resources, 19 edges
+
+IAM access
+  user aws_iam_user.archive_writer (autoflow-archive-user)
+    policy aws_iam_policy.archive_access (autoflow-archive-policy) via attachment aws_iam_user_policy_attachment.archive_writer
+      ArchiveObjects: Allow s3:* on arn:aws:s3:::autoflow-archive-123456789012/*, no condition
+      ListArchivePrefix: Allow s3:ListBucket on arn:aws:s3:::autoflow-archive-123456789012, no condition
+
+Results
+  [TFG001] FINDING aws_iam_policy.archive_access: read statement ArchiveObjects with Allow action "s3:*", expected named actions with no wildcard, so the statement grants every matching action.
+  [TFG003] FINDING aws_iam_policy.archive_access: read Resource "arn:aws:s3:::autoflow-archive-123456789012/*" in statement ArchiveObjects, expected a resource inside "executions/" (the prefix from the lifecycle rule aws_s3_bucket_lifecycle_configuration.archive), so the statement reaches objects outside that prefix.
+  [TFG003] FINDING aws_iam_policy.archive_access: read list statement ListArchivePrefix on "arn:aws:s3:::autoflow-archive-123456789012" with no s3:prefix condition, expected a condition limiting the listing to "executions/" (the prefix from the lifecycle rule aws_s3_bucket_lifecycle_configuration.archive), so the user can list every key in the bucket.
+
+Result: 3 findings, 0 unknown, 9 rules run on 10 resources
+exit code 1 (1 means findings)
+
+## tfgraph check on a plan that could not be read
+tfgraph: could not use not-there.json: read nothing (The system cannot find the file specified.) but expected the JSON printed by `terraform show -json <planfile>` or `terraform show -json` of a state
+exit code 2 (2 means the input could not be read)
+
+tfgraph proof passed

@@ -75,6 +75,8 @@ Each target below ships as a config file and was run against the thing named bes
 
 The archive target is one setting, `ARCHIVE_PROVIDER`, and it defaults to R2 so nothing existing changes. Notes on the S3 and EKS Terraform, Athena, telemetry, Temporal, GraphQL, the Rust CLI, RabbitMQ and Cloud Run are in [docs/ci-and-deploy-details.md](docs/ci-and-deploy-details.md).
 
+`deploy/aws/tfgraph` is a Go command line, standard library only, that reads the `terraform show -json` output of a plan or a state, builds a graph of the resources and checks the IAM policy and the S3 bucket settings, with one plain sentence per failure. It was built and tested against real `terraform plan` output of this repo's own AWS stack, the moto emulator and hand broken plans, and it has not been run against a production or customer cloud; the run is in [docs/test-runs](docs/test-runs/2026-11-15-tfgraph-plan-graph-and-checks.txt) and the usage in [deploy/aws/README.md](deploy/aws/README.md).
+
 ## Next steps
 
 - The API rate limit is 100 requests per 15 minutes per client, counted in the backend process. A shared store for the counter is next. Restarting the backend clears it meanwhile.
@@ -84,7 +86,7 @@ The archive target is one setting, `ARCHIVE_PROVIDER`, and it defaults to R2 so 
 
 ## Stack
 
-Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase and Redis. Storage and messaging add Cloudflare R2, AWS S3 and RabbitMQ. Infrastructure is Terraform, Kubernetes (EKS), Helm, Traefik, Amazon Athena and Glue. The rest is Temporal, GraphQL (Yoga, zod, DataLoader), Rust (clap, reqwest, tokio) and Nixpacks. When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase and Redis. Storage and messaging add Cloudflare R2, AWS S3 and RabbitMQ. Infrastructure is Terraform, Kubernetes (EKS), Helm, Traefik, Amazon Athena and Glue. The rest is Temporal, GraphQL (Yoga, zod, DataLoader), Rust (clap, reqwest, tokio), Go (the tfgraph plan checker) and Nixpacks. When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
 
 ## License
 

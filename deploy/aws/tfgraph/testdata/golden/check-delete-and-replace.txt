@@ -1,0 +1,14 @@
+read variants/delete-and-replace-planned.json: plan (format 1.2, terraform 1.16.6), 10 resources, 19 edges
+
+IAM access
+  user aws_iam_user.archive_writer (autoflow-archive-user)
+    policy aws_iam_policy.archive_access (autoflow-archive-policy) via attachment aws_iam_user_policy_attachment.archive_writer
+      ArchiveObjects: Allow s3:PutObject s3:GetObject s3:GetObjectVersion s3:DeleteObject s3:DeleteObjectVersion on arn:aws:s3:::autoflow-archive-123456789012/executions/*, no condition
+      ListArchivePrefix: Allow s3:ListBucket on arn:aws:s3:::autoflow-archive-123456789012, when StringLike s3:prefix is executions/*
+
+Results
+  [TFG004] FINDING aws_s3_bucket.archive: read aws_s3_bucket_public_access_block for the bucket (only aws_s3_bucket_public_access_block.archive, which this plan deletes), expected one that sets block_public_acls, block_public_policy, ignore_public_acls, restrict_public_buckets to true, so the bucket can be made public.
+  [TFG007] FINDING aws_s3_bucket_public_access_block.archive: read a planned action of delete, expected create, update or no-op, so applying this plan destroys the aws_s3_bucket_public_access_block.
+  [TFG008] FINDING aws_s3_bucket.archive: read a planned action of delete then create, expected an in place update or no-op, so applying this plan destroys the aws_s3_bucket and builds a new one.
+
+Result: 3 findings, 0 unknown, 9 rules run on 10 resources

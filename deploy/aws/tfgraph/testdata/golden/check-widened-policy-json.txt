@@ -1,0 +1,72 @@
+{
+  "source": "variants/widened-policy.json",
+  "kind": "plan",
+  "format_version": "1.2",
+  "terraform_version": "1.16.6",
+  "resources": 10,
+  "edges": 19,
+  "rules_run": 9,
+  "iam_access": [
+    {
+      "address": "aws_iam_user.archive_writer",
+      "name": "autoflow-archive-user",
+      "policies": [
+        {
+          "address": "aws_iam_policy.archive_access",
+          "name": "autoflow-archive-policy",
+          "via": "attachment aws_iam_user_policy_attachment.archive_writer",
+          "policy": {
+            "version": "2012-10-17",
+            "statements": [
+              {
+                "sid": "ArchiveObjects",
+                "effect": "Allow",
+                "actions": [
+                  "s3:*"
+                ],
+                "resources": [
+                  "arn:aws:s3:::autoflow-archive-123456789012/*"
+                ]
+              },
+              {
+                "sid": "ListArchivePrefix",
+                "effect": "Allow",
+                "actions": [
+                  "s3:ListBucket"
+                ],
+                "resources": [
+                  "arn:aws:s3:::autoflow-archive-123456789012"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "code": "TFG001",
+      "name": "wildcard action",
+      "status": "FINDING",
+      "address": "aws_iam_policy.archive_access",
+      "message": "aws_iam_policy.archive_access: read statement ArchiveObjects with Allow action \"s3:*\", expected named actions with no wildcard, so the statement grants every matching action."
+    },
+    {
+      "code": "TFG003",
+      "name": "resource wider than the claimed prefix",
+      "status": "FINDING",
+      "address": "aws_iam_policy.archive_access",
+      "message": "aws_iam_policy.archive_access: read Resource \"arn:aws:s3:::autoflow-archive-123456789012/*\" in statement ArchiveObjects, expected a resource inside \"executions/\" (the prefix from the lifecycle rule aws_s3_bucket_lifecycle_configuration.archive), so the statement reaches objects outside that prefix."
+    },
+    {
+      "code": "TFG003",
+      "name": "resource wider than the claimed prefix",
+      "status": "FINDING",
+      "address": "aws_iam_policy.archive_access",
+      "message": "aws_iam_policy.archive_access: read list statement ListArchivePrefix on \"arn:aws:s3:::autoflow-archive-123456789012\" with no s3:prefix condition, expected a condition limiting the listing to \"executions/\" (the prefix from the lifecycle rule aws_s3_bucket_lifecycle_configuration.archive), so the user can list every key in the bucket."
+    }
+  ],
+  "findings": 3,
+  "unknowns": 0
+}

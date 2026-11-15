@@ -1,0 +1,14 @@
+read variants/widened-policy.json: plan (format 1.2, terraform 1.16.6), 10 resources, 19 edges
+
+IAM access
+  user aws_iam_user.archive_writer (autoflow-archive-user)
+    policy aws_iam_policy.archive_access (autoflow-archive-policy) via attachment aws_iam_user_policy_attachment.archive_writer
+      ArchiveObjects: Allow s3:* on arn:aws:s3:::autoflow-archive-123456789012/*, no condition
+      ListArchivePrefix: Allow s3:ListBucket on arn:aws:s3:::autoflow-archive-123456789012, no condition
+
+Results
+  [TFG001] FINDING aws_iam_policy.archive_access: read statement ArchiveObjects with Allow action "s3:*", expected named actions with no wildcard, so the statement grants every matching action.
+  [TFG003] FINDING aws_iam_policy.archive_access: read Resource "arn:aws:s3:::autoflow-archive-123456789012/*" in statement ArchiveObjects, expected a resource inside "executions/" (the prefix from the lifecycle rule aws_s3_bucket_lifecycle_configuration.archive), so the statement reaches objects outside that prefix.
+  [TFG003] FINDING aws_iam_policy.archive_access: read list statement ListArchivePrefix on "arn:aws:s3:::autoflow-archive-123456789012" with no s3:prefix condition, expected a condition limiting the listing to "executions/" (the prefix from the lifecycle rule aws_s3_bucket_lifecycle_configuration.archive), so the user can list every key in the bucket.
+
+Result: 3 findings, 0 unknown, 9 rules run on 10 resources

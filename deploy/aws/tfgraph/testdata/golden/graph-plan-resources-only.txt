@@ -1,0 +1,11 @@
+aws_iam_access_key.archive_writer -> aws_iam_user.archive_writer  [config user; value user]
+aws_iam_policy.archive_access -> aws_s3_bucket.archive  [grant statement ArchiveObjects; grant statement ListArchivePrefix]
+aws_iam_user_policy_attachment.archive_writer -> aws_iam_policy.archive_access  [config policy_arn]
+aws_iam_user_policy_attachment.archive_writer -> aws_iam_user.archive_writer  [config user; value user]
+aws_s3_bucket_lifecycle_configuration.archive -> aws_s3_bucket.archive  [config bucket]
+aws_s3_bucket_lifecycle_configuration.archive -> aws_s3_bucket_versioning.archive  [depends_on]
+aws_s3_bucket_public_access_block.archive -> aws_s3_bucket.archive  [config bucket]
+aws_s3_bucket_server_side_encryption_configuration.archive -> aws_s3_bucket.archive  [config bucket]
+aws_s3_bucket_versioning.archive -> aws_s3_bucket.archive  [config bucket]
+10 nodes, 9 edges
+no edges: data.aws_partition.current

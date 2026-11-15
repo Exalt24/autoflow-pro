@@ -1,0 +1,14 @@
+read variants/unknown-values.json: plan (format 1.2, terraform 1.16.6), 10 resources, 18 edges
+
+IAM access
+  user aws_iam_user.archive_writer (autoflow-archive-user)
+    aws_iam_policy.archive_access via attachment aws_iam_user_policy_attachment.archive_writer: UNRESOLVED, the policy document is known only after apply
+
+Results
+  [TFG001] UNKNOWN aws_iam_policy.archive_access: read the policy document as known after apply, expected a value at plan time to run the check for wildcard action, so this check could not run and says nothing either way.
+  [TFG002] UNKNOWN aws_iam_policy.archive_access: read the policy document as known after apply, expected a value at plan time to run the check for wildcard resource, so this check could not run and says nothing either way.
+  [TFG003] UNKNOWN aws_iam_policy.archive_access: read the policy document as known after apply, expected a value at plan time to run the check for resource wider than the claimed prefix, so this check could not run and says nothing either way.
+  [TFG004] UNKNOWN aws_s3_bucket_public_access_block.archive: read block_public_policy as known after apply, expected a value at plan time to run the check for public access block missing or off, so this check could not run and says nothing either way.
+  [TFG006] UNKNOWN aws_s3_bucket_versioning.archive: read status as known after apply, expected a value at plan time to run the check for versioning off, so this check could not run and says nothing either way.
+
+Result: no findings, 5 unknown (those checks could not run, so this is not clean), 9 rules run on 10 resources

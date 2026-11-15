@@ -33,7 +33,7 @@ def drop(plan, rtype):
 
 
 def save(name, plan):
-    (out / f"{name}.json").write_text(json.dumps(plan, indent=2) + "\n")
+    (out / f"{name}.json").write_bytes((json.dumps(plan, indent=2) + "\n").encode())
     print("wrote variants/" + name + ".json")
 
 

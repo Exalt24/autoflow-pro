@@ -90,6 +90,9 @@ jobs:
       - name: Provider switch unit tests
         run: npm run test:archive-provider
         working-directory: backend
+      - name: Security header unit tests
+        run: npm run test:security-headers
+        working-directory: backend
       - name: Terraform format, validate and plan checks
         run: |
           terraform fmt -check -recursive

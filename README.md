@@ -75,7 +75,7 @@ Each target below ships as a config file and was run against the thing named bes
 
 The archive target is one setting, `ARCHIVE_PROVIDER`, and it defaults to R2 so nothing existing changes. Notes on the S3 and EKS Terraform, Athena, telemetry, Temporal, GraphQL, the Rust CLI, RabbitMQ and Cloud Run are in [docs/ci-and-deploy-details.md](docs/ci-and-deploy-details.md).
 
-`deploy/aws/tfgraph` is a Go command line, standard library only, that reads the `terraform show -json` output of a plan or a state, builds a graph of the resources and checks the IAM policy and the S3 bucket settings, with one plain sentence per failure. It was built and tested against real `terraform plan` output of this repo's own AWS stack, the moto emulator and hand broken plans, and it has not been run against a production or customer cloud; the run is in [docs/test-runs](docs/test-runs/2026-11-15-tfgraph-plan-graph-and-checks.txt) and the usage in [deploy/aws/README.md](deploy/aws/README.md).
+`deploy/aws/tfgraph` is a Go command line, standard library only, that reads the `terraform show -json` output of a plan or a state, builds a graph of the resources and checks the IAM policy and the S3 bucket settings, with one plain sentence per failure. It was built and tested against real `terraform plan` output of this repo's own AWS stack, the moto emulator and hand broken plans; the run is in [docs/test-runs](docs/test-runs/2026-11-15-tfgraph-plan-graph-and-checks.txt) and the usage in [deploy/aws/README.md](deploy/aws/README.md).
 
 ## Next steps
 

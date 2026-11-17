@@ -1,0 +1,44 @@
+name: serverless
+
+# The Python order pipeline in serverless/: pytest against moto (in process, no account, no network) and the mutation
+# pass. A separate workflow because `paths:` filters a whole workflow, and the jobs in ci.yml must keep running on
+# every push. One Linux job, no schedule, nothing here reaches AWS.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "serverless/**"
+      - ".github/workflows/serverless.yml"
+  pull_request:
+    paths:
+      - "serverless/**"
+      - ".github/workflows/serverless.yml"
+
+concurrency:
+  group: serverless-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  serverless:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: testing
+      AWS_SECRET_ACCESS_KEY: testing
+      AWS_DEFAULT_REGION: ap-southeast-2
+    defaults:
+      run:
+        working-directory: serverless
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: serverless/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: pytest
+        run: python -m pytest -q
+      - name: Mutation pass, every deliberate break must turn a test red
+        run: python mutate.py

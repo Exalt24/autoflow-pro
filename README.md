@@ -6,7 +6,7 @@ Browser automation platform: drag steps onto a canvas, a Playwright worker runs 
 
 *Recorded against a local stack (Supabase CLI, Redis in Docker, a test page served from the same machine). It plays at 2x except for the live run.*
 
-[![CI](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml) **Proof:** 23 step types and 46 backend test scripts. CI builds both the backend and the frontend on every push. It runs the AWS S3 archive target against a local AWS emulator. It runs the RabbitMQ consumer and the telemetry worker against a real broker. It checks the Terraform and Helm files and the Athena client against a stand-in API. It also runs the Temporal workflow, the GraphQL API, the Rust CLI and a Nixpacks build.
+[![CI](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/Exalt24/autoflow-pro/actions/workflows/ci.yml) **Proof:** 23 step types and 46 backend test scripts. CI builds both the backend and the frontend on every push. It runs the AWS S3 archive target against a local AWS emulator. It runs the RabbitMQ consumer and the telemetry worker against a real broker. It checks the Terraform and Helm files and the Athena client against a stand-in API. It also runs the Temporal workflow, the GraphQL API, the Rust CLI and a Nixpacks build, and a Python order pipeline (SQS, DynamoDB, Step Functions, Bedrock) against moto.
 
 It runs locally with Docker and Node, and the recording above is one such run.
 
@@ -72,10 +72,13 @@ Each target below ships as a config file and was run against the thing named bes
 | GraphQL | `backend/src/graphql/` | the real Yoga on Fastify server over HTTP with an in-memory run store, and driving a real worker on the Temporal dev server; no authentication | `npm run test:graphql` 42 checks, `npm run test:graphql-temporal` 9 checks, 29 of 29 deliberate breaks caught, [output](docs/test-runs/2026-11-07-graphql-tests.txt) |
 | Rust CLI | `cli/` | `cargo test` against a mock GraphQL server, then the binary against the local GraphQL and Temporal servers | fmt and `clippy -D warnings` clean, 14 unit and 17 mock server tests passed, 9 of 9 deliberate breaks caught, [tests](docs/test-runs/2026-11-07-rust-cli.txt), [real run](docs/test-runs/2026-11-07-rust-cli-against-graphql.txt) |
 | Nixpacks | `backend/nixpacks.toml`, `scripts/nixpacks-*.sh` | `nixpacks build` 1.41.0 on this machine, not Railway | with no config it chose Node 18 and the container crashed at start; with Node 22 pinned `GET /health` answered 200, [output](docs/test-runs/2026-11-07-nixpacks-build.txt) |
+| AWS serverless order pipeline | `serverless/` (Python), `.github/workflows/serverless.yml` | moto 5.2.5 running inside pytest, plus stand-ins for a payment provider, a carrier and Bedrock; written from the AWS documentation, not deployed to Lambda | an SQS queue with a dead-letter queue and a redrive policy, a single table DynamoDB design with conditional writes, optimistic locking and a stream consumer, a CQRS read model, a Step Functions saga with compensating steps, an SNS and EventBridge publisher, a Bedrock Converse client with model access checks and a strangler fig router; about 460 tests (300 of them seeded saga worlds) and 50 of 50 deliberate breaks caught, [output](docs/test-runs/2026-11-17-serverless-order-pipeline.txt) |
 
 The archive target is one setting, `ARCHIVE_PROVIDER`, and it defaults to R2 so nothing existing changes. Notes on the S3 and EKS Terraform, Athena, telemetry, Temporal, GraphQL, the Rust CLI, RabbitMQ and Cloud Run are in [docs/ci-and-deploy-details.md](docs/ci-and-deploy-details.md).
 
 `deploy/aws/tfgraph` is a Go command line, standard library only, that reads the `terraform show -json` output of a plan or a state, builds a graph of the resources and checks the IAM policy and the S3 bucket settings, with one plain sentence per failure. It was built and tested against real `terraform plan` output of this repo's own AWS stack, the moto emulator and hand broken plans; the run is in [docs/test-runs](docs/test-runs/2026-11-15-tfgraph-plan-graph-and-checks.txt) and the usage in [deploy/aws/README.md](deploy/aws/README.md).
+
+`serverless/` is a small order pipeline built from AWS serverless pieces: orders arrive on an SQS queue with a dead-letter queue, Lambda-shaped handlers create them once in a single DynamoDB table with conditional writes, a Step Functions saga (an Amazon States Language definition that a local runner executes) reserves stock, charges and ships with compensating steps, a DynamoDB stream consumer builds a CQRS read model, a Bedrock Converse client with model access checks summarizes dead letters, and a strangler fig router moves read routes from a legacy handler to the new one a route at a time. It was written from the AWS documentation and tested against moto and stand-ins; the saga's failure paths are covered by a seeded property test and a mutation pass. See [serverless/README.md](serverless/README.md).
 
 ## Next steps
 
@@ -86,7 +89,7 @@ The archive target is one setting, `ARCHIVE_PROVIDER`, and it defaults to R2 so 
 
 ## Stack
 
-Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase and Redis. Storage and messaging add Cloudflare R2, AWS S3 and RabbitMQ. Infrastructure is Terraform, Kubernetes (EKS), Helm, Traefik, Amazon Athena and Glue. The rest is Temporal, GraphQL (Yoga, zod, DataLoader), Rust (clap, reqwest, tokio), Go (the tfgraph plan checker) and Nixpacks. When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase and Redis. Storage and messaging add Cloudflare R2, AWS S3 and RabbitMQ. Infrastructure is Terraform, Kubernetes (EKS), Helm, Traefik, Amazon Athena and Glue. The rest is Temporal, GraphQL (Yoga, zod, DataLoader), Rust (clap, reqwest, tokio), Go (the tfgraph plan checker), Nixpacks and Python (the serverless order pipeline: SQS, DynamoDB, Step Functions, Lambda handlers, SNS, EventBridge and Bedrock, tested with moto and pytest). When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
 
 ## License
 

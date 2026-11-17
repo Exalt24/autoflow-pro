@@ -1,0 +1,70 @@
+Order pipeline slice (serverless/), run on 2026-11-17 on Windows 11 with Python 3.13.10, moto 5.2.5, boto3 1.44.4. Every AWS call went to moto in the same process: no AWS account, no network.
+
+== tests per file (pytest --co) ==
+    333 tests/test_asl.py
+     30 tests/test_bedrock.py
+      9 tests/test_handler.py
+     10 tests/test_messaging.py
+     11 tests/test_readmodel.py
+     12 tests/test_saga.py
+     33 tests/test_store.py
+     27 tests/test_strangler.py
+
+== python -m pytest -q ==
+........................................................................ [ 92%]
+.................................                                        [100%]
+465 passed in 21.89s
+
+== python mutate.py ==
+caught    sqs       the redrive threshold is 100 instead of the configured count
+caught    sqs       the dead-letter queue keeps messages for a minute only
+caught    sqs       failed messages are deleted along with the good ones
+caught    sqs       a crashed handler deletes the batch
+caught    sqs       redrive keeps the message in the dead-letter queue after sending it
+caught    sqs       redrive deletes without sending
+caught    sqs       the handler never reports a failed message
+caught    sqs       a cancelled order is treated as a failure and retried
+caught    sqs       a malformed body is accepted with no lines
+caught    dynamodb  create no longer refuses an existing order id
+caught    dynamodb  optimistic lock: the version is not part of the condition
+caught    dynamodb  a transition no longer checks the status it comes from
+caught    dynamodb  the version is not bumped by a transition
+caught    dynamodb  stock can go below zero
+caught    dynamodb  a reservation can be written twice for one order
+caught    dynamodb  a release deletes the reservation without a condition
+caught    dynamodb  a cancelled order may be reserved again
+caught    dynamodb  an earlier step is not a no-op once the order is further along
+caught    stream    the read model applies a record whatever its version
+caught    stream    a repeated record is applied again
+caught    stream    lines, stock and payments are projected too
+caught    stream    a removed order stays in the read model
+caught    stream    the handler keeps applying records after a failed one
+caught    stream    the poller forgets where it stopped
+caught    saga      a failed payment skips the refund compensation
+caught    saga      a failed reservation skips its own release
+caught    saga      a failed shipment skips the carrier cancellation
+caught    saga      a free order is charged
+caught    saga      retries do not back off
+caught    saga      one retry more than MaxAttempts
+caught    saga      States.ALL no longer matches an error
+caught    saga      the refund relies on what the state remembers
+caught    saga      the release compensation gives nothing back
+caught    saga      a missing function is swallowed as a task failure
+caught    events    the event type is not the detail-type
+caught    events    a rejected EventBridge entry is ignored
+caught    bedrock   access denied is retried like a throttle
+caught    bedrock   throttling is not retried
+caught    bedrock   the retry wait does not grow
+caught    bedrock   retries never give up
+caught    bedrock   the account authorization is not checked
+caught    bedrock   an empty reply is returned as an answer
+caught    bedrock   triage sends the whole body
+caught    strangler a caller at the cut-off percentage is moved early
+caught    strangler the bucket is random instead of stable
+caught    strangler an unlisted route goes to the new system
+caught    strangler a 5xx from the new system is passed on
+caught    strangler the allow list is ignored
+caught    strangler the new handler lists only one order
+caught    strangler the new handler forgets who owns an order
+
+50 of 50 deliberate breaks caught

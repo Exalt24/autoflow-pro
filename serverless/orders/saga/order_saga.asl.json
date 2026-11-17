@@ -1,0 +1,113 @@
+{
+  "Comment": "Order saga. Forward steps reserve stock, charge, ship and confirm. Any failure runs the compensations of the steps already done, newest first, then cancels the order.",
+  "StartAt": "ReserveInventory",
+  "States": {
+    "ReserveInventory": {
+      "Type": "Task",
+      "Comment": "forward",
+      "Resource": "arn:aws:lambda:ap-southeast-2:123456789012:function:orders-reserve-inventory",
+      "ResultPath": "$.reservation",
+      "Retry": [
+        { "ErrorEquals": ["TransientError"], "IntervalSeconds": 1, "MaxAttempts": 3, "BackoffRate": 2.0 }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "ReleaseInventory" }
+      ],
+      "Next": "NeedsPayment"
+    },
+    "NeedsPayment": {
+      "Type": "Choice",
+      "Choices": [
+        { "Variable": "$.total_cents", "NumericGreaterThan": 0, "Next": "ChargePayment" }
+      ],
+      "Default": "CreateShipment"
+    },
+    "ChargePayment": {
+      "Type": "Task",
+      "Comment": "forward",
+      "Resource": "arn:aws:lambda:ap-southeast-2:123456789012:function:orders-charge-payment",
+      "ResultPath": "$.payment",
+      "Retry": [
+        { "ErrorEquals": ["TransientError"], "IntervalSeconds": 1, "MaxAttempts": 3, "BackoffRate": 2.0 }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "RefundPayment" }
+      ],
+      "Next": "CreateShipment"
+    },
+    "CreateShipment": {
+      "Type": "Task",
+      "Comment": "forward",
+      "Resource": "arn:aws:lambda:ap-southeast-2:123456789012:function:orders-create-shipment",
+      "ResultPath": "$.shipment",
+      "Retry": [
+        { "ErrorEquals": ["TransientError"], "IntervalSeconds": 1, "MaxAttempts": 3, "BackoffRate": 2.0 }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CancelShipment" }
+      ],
+      "Next": "ConfirmOrder"
+    },
+    "ConfirmOrder": {
+      "Type": "Task",
+      "Comment": "forward",
+      "Resource": "arn:aws:lambda:ap-southeast-2:123456789012:function:orders-confirm-order",
+      "ResultPath": "$.confirmation",
+      "Retry": [
+        { "ErrorEquals": ["TransientError"], "IntervalSeconds": 1, "MaxAttempts": 3, "BackoffRate": 2.0 }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CancelShipment" }
+      ],
+      "Next": "OrderConfirmed"
+    },
+    "OrderConfirmed": {
+      "Type": "Succeed"
+    },
+    "CancelShipment": {
+      "Type": "Task",
+      "Comment": "compensates CreateShipment",
+      "Resource": "arn:aws:lambda:ap-southeast-2:123456789012:function:orders-cancel-shipment",
+      "ResultPath": "$.cancel_shipment",
+      "Retry": [
+        { "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 5, "BackoffRate": 2.0 }
+      ],
+      "Next": "RefundPayment"
+    },
+    "RefundPayment": {
+      "Type": "Task",
+      "Comment": "compensates ChargePayment",
+      "Resource": "arn:aws:lambda:ap-southeast-2:123456789012:function:orders-refund-payment",
+      "ResultPath": "$.refund",
+      "Retry": [
+        { "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 5, "BackoffRate": 2.0 }
+      ],
+      "Next": "ReleaseInventory"
+    },
+    "ReleaseInventory": {
+      "Type": "Task",
+      "Comment": "compensates ReserveInventory",
+      "Resource": "arn:aws:lambda:ap-southeast-2:123456789012:function:orders-release-inventory",
+      "ResultPath": "$.release",
+      "Retry": [
+        { "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 5, "BackoffRate": 2.0 }
+      ],
+      "Next": "CancelOrder"
+    },
+    "CancelOrder": {
+      "Type": "Task",
+      "Comment": "ends the saga",
+      "Resource": "arn:aws:lambda:ap-southeast-2:123456789012:function:orders-cancel-order",
+      "ResultPath": "$.cancellation",
+      "Retry": [
+        { "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 5, "BackoffRate": 2.0 }
+      ],
+      "Next": "OrderCancelled"
+    },
+    "OrderCancelled": {
+      "Type": "Fail",
+      "Error": "OrderCancelled",
+      "Cause": "A step failed and the completed steps were compensated."
+    }
+  }
+}

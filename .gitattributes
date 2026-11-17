@@ -10,3 +10,7 @@ Dockerfile text eol=lf
 *.go text eol=lf
 deploy/aws/tfgraph/testdata/** text eol=lf
 deploy/aws/tfgraph/go.mod text eol=lf
+serverless/**/*.py text eol=lf
+serverless/**/*.json text eol=lf
+serverless/*.txt text eol=lf
+serverless/*.ini text eol=lf

@@ -67,3 +67,7 @@ telemetry-lake/
 
 # Temporal worker archive (JSON files per run)
 run-archive/
+
+# Python (serverless/)
+__pycache__/
+.pytest_cache/

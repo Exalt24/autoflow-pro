@@ -114,3 +114,27 @@ resource "aws_iam_access_key" "archive_writer" {
   count = var.create_access_key ? 1 : 0
   user  = aws_iam_user.archive_writer.name
 }
+
+# The backend talks to S3 through the AWS SDK over HTTPS, so refuse any request that does not:
+# a plain HTTP call to the bucket or its objects is denied for every principal.
+resource "aws_s3_bucket_policy" "archive_tls_only" {
+  bucket = aws_s3_bucket.archive.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource  = [local.bucket_arn, "${local.bucket_arn}/*"]
+        Condition = {
+          Bool = { "aws:SecureTransport" = "false" }
+        }
+      },
+    ]
+  })
+
+  depends_on = [aws_s3_bucket_public_access_block.archive]
+}

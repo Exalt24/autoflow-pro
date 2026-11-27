@@ -103,7 +103,7 @@ async function checkValueEquals(
   operator: string
 ): Promise<boolean> {
   const expected = String(expectedValue).toLowerCase();
-  const actual = String(actualValue || "").toLowerCase();
+  const actual = String(actualValue ?? "").toLowerCase();
 
   switch (operator) {
     case "equals":

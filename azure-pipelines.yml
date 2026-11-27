@@ -27,6 +27,9 @@ jobs:
       - script: npm run build
         workingDirectory: backend
         displayName: npm run build
+      - script: npm run test:condition
+        workingDirectory: backend
+        displayName: npm run test:condition
 
   - job: frontend
     timeoutInMinutes: '30'

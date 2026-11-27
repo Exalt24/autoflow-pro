@@ -16,7 +16,7 @@ console.log("2. Select your 'autoflow-pro' project");
 console.log("3. Click 'SQL Editor' in the left sidebar");
 console.log("4. Click 'New Query'");
 console.log(
-  "5. Copy the contents of: backend/migrations/001_initial_schema.sql"
+  "5. Copy the contents of: backend/migrations/001_initial_schema.sql (then 002_gdpr_data_subject_requests.sql)"
 );
 console.log("6. Paste into the SQL Editor");
 console.log("7. Click 'Run' (or press Ctrl+Enter)\n");

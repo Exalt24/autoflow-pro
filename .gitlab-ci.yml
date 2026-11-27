@@ -22,6 +22,7 @@ backend:
     - cd backend
     - npm ci
     - npm run build
+    - npm run test:condition
 
 frontend:
   stage: check

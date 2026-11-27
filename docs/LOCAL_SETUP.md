@@ -30,15 +30,17 @@ npx supabase status -o env
 
 ```bash
 docker exec -i supabase_db_autoflow-pro psql -U postgres -v ON_ERROR_STOP=1 < backend/migrations/001_initial_schema.sql
+docker exec -i supabase_db_autoflow-pro psql -U postgres -v ON_ERROR_STOP=1 < backend/migrations/002_gdpr_data_subject_requests.sql
 ```
 
    or in PowerShell:
 
 ```powershell
 Get-Content backend\migrations\001_initial_schema.sql -Raw | docker exec -i supabase_db_autoflow-pro psql -U postgres -v ON_ERROR_STOP=1
+Get-Content backend\migrations\002_gdpr_data_subject_requests.sql -Raw | docker exec -i supabase_db_autoflow-pro psql -U postgres -v ON_ERROR_STOP=1
 ```
 
-   (The hosted version applied the same file through the Supabase SQL editor.)
+   The second file adds the erasure audit table and the log retention function (see the GDPR notes in the README) and is safe to run again. (The hosted version applied the first file through the Supabase SQL editor.)
 
 4. Set up the backend:
 
@@ -85,7 +87,7 @@ See the `.env.example` files in `backend/` and `frontend/`. A local run needs th
 
 - The API allows 100 requests per 15 minutes per client, counted in the backend process. Clicking around the dashboard for a while can hit it ("Rate limit exceeded"); restarting the backend clears the counter.
 - Stop the local Supabase stack with `npx supabase stop` from the repo root, and Redis with `docker compose down`.
-- The edge function tests need the stack above and these three variables, taken from `npx supabase status -o env`: `SUPABASE_URL` (the `API_URL`), `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_KEY` (the `SERVICE_ROLE_KEY`). Then `cd backend && npm run test:edge`. Without them only the pure logic part runs and says so.
+- The edge function tests need the stack above and these three variables, taken from `npx supabase status -o env`: `SUPABASE_URL` (the `API_URL`), `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_KEY` (the `SERVICE_ROLE_KEY`). Then `cd backend && npm run test:edge`. Without them only the pure logic part runs and says so. The personal data tests (`npm run test:gdpr`) need the same three variables, both migrations and Docker, because they search every table through `docker exec` into the database container (`supabase_db_autoflow-pro`, or the name in `SUPABASE_DB_CONTAINER`).
 
 ## What a workflow can do
 

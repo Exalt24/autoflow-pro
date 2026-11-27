@@ -1,0 +1,90 @@
+# GDPR data subject requests: npm run test:gdpr against a local Supabase stack
+# Supabase CLI 3.4.0 (npx supabase@3.4.0), edge runtime supabase-edge-runtime 1.79.5 on Deno 2.1.4 (policy oneshot), auth, PostgREST, storage and Postgres 17.12 with pg_cron 1.6.4 in Docker on Windows 11.
+# Migrations backend/migrations/001_initial_schema.sql and 002_gdpr_data_subject_requests.sql applied first on a freshly started stack. Users are created through Supabase Auth, tokens from signInWithPassword.
+# The "all tables" searches run through docker exec psql over every base table in every schema except the Postgres catalogs. Run on 2026-11-27.
+# The first run of Part D failed 3 checks: auth.audit_log_entries still held A's id and email after the account was deleted. erase_auth_audit_traces was added to migration 002 and this is the run after that fix.
+
+Part A: export-my-data against a local Supabase stack, two users
+  ok    no token gives 401
+  ok    the anon key as a token gives 401 (it is not a user)
+  ok    a junk token gives 401
+  ok    POST gives 405
+  ok    A gets 200
+  ok    the answer is a download (Content-Disposition attachment, JSON)
+  ok    the document names its format and version
+  ok    account block is A's id and email
+  ok    A's workflows: exactly A's 2 rows
+  ok    A's executions: exactly A's 4 rows
+  ok    A's execution_logs: exactly A's 4 rows
+  ok    A's scheduled_jobs: exactly A's 2 rows
+  ok    A's usage quota row is there
+  ok    A's extracted content is in the document
+  ok    A's stored files are listed, sub folder included
+  ok    B gets 200
+  ok    B's workflows: exactly B's 3 rows
+  ok    B's executions: exactly B's 6 rows
+  ok    B's execution_logs: exactly B's 6 rows
+  ok    B's scheduled_jobs: exactly B's 3 rows
+  ok    A's document holds no id, email or file of B
+  ok    B's document holds no id, email or file of A
+
+Part B: the export function with the service role client swapped in must leak, and the check must catch it
+  ok    the mutant differs from the real function
+  ok    the mutant answered
+  ok    the leak check catches the mutant (A's export holds B's workflows)
+  ok    the real function is back in place
+  ok    after the restore A's export holds only A's workflows again
+
+Part C: retention (purge_old_execution_logs) removes old log lines and keeps newer ones
+  ok    seeded six log lines
+  ok    a pg_cron job runs the purge daily at 03:17 UTC with 90 days
+  ok    p_days 0 is refused
+  ok    p_days -5 is refused
+  ok    a refused call removed nothing
+  ok    a signed in user cannot run the purge
+  ok    the anon key cannot run the purge
+  ok    those refused calls removed nothing
+  ok    the 90 day purge reports 2 removed
+  ok    the 120 and 91 day old lines are gone, the other four stay
+  ok    A's and B's recent log lines were not touched
+  ok    a 30 day purge reports 2 removed (60 and 89 days old)
+  ok    the 10 day old and the new line stay
+  ok    running it again removes nothing
+
+Part D: delete-my-account
+  ok    no token gives 401
+  ok    a junk token gives 401
+  ok    GET gives 405
+  ok    no body gives 400
+  ok    an empty body gives 400
+  ok    the wrong phrase gives 400
+  ok    A still exists after the refused requests
+  ok    before erasure the all tables search finds A's id in the app tables and in auth.users
+  ok    before erasure the all tables search finds A's email in auth.users and in Auth's own event log (auth.audit_log_entries)
+  ok    C's request is accepted and erases C
+  ok    C is gone
+  ok    B still exists after C named B
+  ok    B's export is unchanged after C's request
+  ok    A's confirmed request gives 200 and erased true
+  ok    the receipt is a request id that is not A's id
+  ok    A's auth user is gone
+  ok    no workflows row is left for A
+  ok    no executions row is left for A
+  ok    no scheduled_jobs row is left for A
+  ok    no usage_quotas row is left for A
+  ok    none of A's execution logs is left
+  ok    nothing is left in workflow-attachments for A
+  ok    nothing is left in execution-screenshots for A
+  ok    A's old token no longer works
+  ok    after erasure no row in any table carries A's id
+  ok    after erasure no row in any table carries A's email
+  ok    after erasure no row in any table carries any of A's 12 row ids
+  ok    the same holds for C, erased by the same route
+  ok    an audit row exists for the request
+  ok    the audit table has only request_id, action and requested_at
+  ok    the audit time is the time of the request
+  ok    no audit row holds A's id, A's email, B's id or B's email
+  ok    a signed in user cannot read the audit table
+  ok    B's data is intact after A's erasure
+
+75 passed, 0 failed

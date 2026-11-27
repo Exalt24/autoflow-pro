@@ -117,8 +117,9 @@ jobs:
         run: tail -100 moto.log
 
   edge-function:
-    # Starts a local Supabase stack with the edge runtime, applies the repo's migration and runs the
-    # execution-summary edge function tests: two real users, the row level security boundary and a deliberate break.
+    # Starts a local Supabase stack with the edge runtime, applies the repo's migrations and runs the
+    # execution-summary edge function tests (two real users, the row level security boundary and a deliberate break)
+    # and the personal data tests (export, erasure and retention, again with two users and a deliberate break).
     # GitHub Actions only, because it needs Docker for the Supabase containers.
     timeout-minutes: 30
     runs-on: ubuntu-latest
@@ -133,13 +134,15 @@ jobs:
         working-directory: backend
       - name: Start local Supabase
         run: npx --yes supabase@3.4.0 start -x imgproxy,mailpit,postgres-meta,studio,logflare,vector,supavisor,realtime
-      - name: Apply the migration
-        run: docker exec -i supabase_db_autoflow-pro psql -U postgres -v ON_ERROR_STOP=1 < backend/migrations/001_initial_schema.sql
+      - name: Apply the migrations
+        run: |
+          docker exec -i supabase_db_autoflow-pro psql -U postgres -v ON_ERROR_STOP=1 < backend/migrations/001_initial_schema.sql
+          docker exec -i supabase_db_autoflow-pro psql -U postgres -v ON_ERROR_STOP=1 < backend/migrations/002_gdpr_data_subject_requests.sql
       - name: Edge function tests
         run: |
           eval "$(npx --yes supabase@3.4.0 status -o env | sed 's/^/export /')"
           export SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_KEY="$SERVICE_ROLE_KEY"
-          cd backend && npm run test:edge
+          cd backend && npm run test:edge && npm run test:gdpr
       - name: Stop Supabase
         if: always()
         run: npx --yes supabase@3.4.0 stop --no-backup

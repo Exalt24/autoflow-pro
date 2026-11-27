@@ -17,34 +17,25 @@ cd autoflow-pro
 docker compose up -d redis
 ```
 
-2. Start a local Supabase stack from a folder next to the repo (the Supabase CLI keeps its own project files):
+2. Start a local Supabase stack from the repo root. The repo carries its own `supabase/config.jsonc` (project id `autoflow-pro`): studio, analytics, realtime, the mail server and the vector service are switched off because the app uses none of them, and the edge runtime is on for the `execution-summary` function (`supabase/functions/`, tested by `npm run test:edge`).
 
 ```bash
-cd ..
-mkdir autoflow-supabase
-cd autoflow-supabase
-npx supabase init
-```
-
-   In `supabase/config.toml`, set `enabled = false` under `[studio]`, `[analytics]` and `[edge_runtime]` (the app uses none of them and the recording was made without them). Then:
-
-```bash
-npx supabase start
+npx supabase start -x imgproxy,mailpit,postgres-meta,studio,logflare,vector,supavisor,realtime
 npx supabase status -o env
 ```
 
    `status -o env` prints `API_URL`, `ANON_KEY` and `SERVICE_ROLE_KEY`, which the two env files below need.
 
-3. Create the tables, policies and storage buckets with the repo's migration. The database container is named `supabase_db_` plus the CLI project id, which is the folder name from step 2. This file deletes every user and all storage objects first, so only run it against a local stack. From the `autoflow-supabase` folder, in bash:
+3. Create the tables, policies and storage buckets with the repo's migration. The database container is named `supabase_db_` plus the project id from `supabase/config.jsonc`, so `supabase_db_autoflow-pro`. This file deletes every user and all storage objects first, so only run it against a local stack. From the repo root, in bash:
 
 ```bash
-docker exec -i supabase_db_autoflow-supabase psql -U postgres -v ON_ERROR_STOP=1 < ../autoflow-pro/backend/migrations/001_initial_schema.sql
+docker exec -i supabase_db_autoflow-pro psql -U postgres -v ON_ERROR_STOP=1 < backend/migrations/001_initial_schema.sql
 ```
 
    or in PowerShell:
 
 ```powershell
-Get-Content ..\autoflow-pro\backend\migrations\001_initial_schema.sql -Raw | docker exec -i supabase_db_autoflow-supabase psql -U postgres -v ON_ERROR_STOP=1
+Get-Content backend\migrations\001_initial_schema.sql -Raw | docker exec -i supabase_db_autoflow-pro psql -U postgres -v ON_ERROR_STOP=1
 ```
 
    (The hosted version applied the same file through the Supabase SQL editor.)
@@ -93,7 +84,8 @@ See the `.env.example` files in `backend/` and `frontend/`. A local run needs th
 ### Good to know
 
 - The API allows 100 requests per 15 minutes per client, counted in the backend process. Clicking around the dashboard for a while can hit it ("Rate limit exceeded"); restarting the backend clears the counter.
-- Stop the local Supabase stack with `npx supabase stop` from the folder you started it in, and Redis with `docker compose down`.
+- Stop the local Supabase stack with `npx supabase stop` from the repo root, and Redis with `docker compose down`.
+- The edge function tests need the stack above and these three variables, taken from `npx supabase status -o env`: `SUPABASE_URL` (the `API_URL`), `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_KEY` (the `SERVICE_ROLE_KEY`). Then `cd backend && npm run test:edge`. Without them only the pure logic part runs and says so.
 
 ## What a workflow can do
 

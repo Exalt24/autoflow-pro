@@ -1,0 +1,107 @@
+# GitHub Copilot CLI review of backend/src/utils/conditionEvaluator.ts, and the fix
+# Run on 2026-11-27 on Windows 11 with Node v24.18.0 for the repo tests (CI uses Node 22). Copilot CLI signed in as Exalt24.
+
+Copilot CLI version line:
+GitHub Copilot CLI 1.0.117.
+
+Plan line (from the Copilot account endpoint, free plan, the plan name is "individual" and the sku is the free tier):
+{"copilot_plan": "individual", "access_type_sku": "free_educational_quota", "chat_enabled": true, "quota_reset_date": "2026-12-01"}
+
+Prompt given to Copilot CLI (one prompt, non-interactive, in a fresh clone of this repo):
+Review the file backend/src/utils/conditionEvaluator.ts for bugs (list each with the line and why). Then write one test file backend/tests/conditionEvaluator.copilot.test.ts using node:test and node:assert that exercises evaluateCondition with a fake Page object (no browser), and run it with 'node --experimental-strip-types --test backend/tests/conditionEvaluator.copilot.test.ts' (adjust the import path or flags if needed so it actually passes or reveals a real bug). Do not touch any other file and do not run git commands that change anything. Finish by reporting the test result.
+
+Copilot's own findings text, copied as it printed:
+Bug found: `backend/src/utils/conditionEvaluator.ts:106` uses `actualValue || ""`, which converts valid falsy values such as `0` and `false` to an empty string. As a result, comparing a variable containing `0` with `"0"` returns false.
+
+Added `backend/tests/conditionEvaluator.copilot.test.ts` with a fake Page object and ran the requested command. Result: 3 tests passed, 1 failed (the zero-value comparison fails, reproducing the bug).
+
+Copilot's own test run before any fix (its file was a scratch file and is not committed; file paths shortened to the repo path):
+✔ evaluates element existence, visibility, and text conditions (0.8859ms)
+✔ evaluates string and numeric value operators (0.1987ms)
+✖ preserves zero when comparing a value variable (0.7551ms)
+✔ evaluates custom scripts against variables (0.175ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 85.9899
+
+✖ failing tests:
+
+test at backend\tests\conditionEvaluator.copilot.test.ts:130:1
+✖ preserves zero when comparing a value variable (0.7551ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (backend/tests/conditionEvaluator.copilot.test.ts:142:10)
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+Checking the claim by hand: line 106 is `const actual = String(actualValue || "").toLowerCase();` in checkValueEquals, and the call site passes `variables[config.selector || ""]`, so a stored 0 or false reached it as a falsy value and became "". The line number and the cause are right. The review named 0 and false; the same line also turned 0n into "" (checked below). Nothing else in the file was reported and nothing else was changed.
+
+The fix is one line: `String(actualValue ?? "")`. null and undefined still give an empty string, 0, false and 0n now give "0", "false" and "0".
+
+Repo test, backend/tests/test-condition-evaluator.ts (npm run test:condition in backend/), before the fix (source file reverted to main):
+PASS  element_exists finds a present element
+PASS  element_exists is false for a missing element
+PASS  element_visible is true for a visible element
+PASS  element_visible is false for a hidden element
+PASS  text_contains finds text
+PASS  text_contains is false when the text is absent
+PASS  equals ignores case
+PASS  contains matches a substring
+PASS  greater_than compares numbers
+FAIL  a variable holding 0 equals "0"
+FAIL  a variable holding 0 does not equal ""
+PASS  a variable holding 0 is not_equals "5"
+FAIL  a variable holding 0 is less_than "1"
+FAIL  a variable holding 0 is greater_than "-1"
+FAIL  a variable holding false equals "false"
+FAIL  a variable holding false does not equal ""
+FAIL  a variable holding 0n equals "0"
+PASS  a null variable equals ""
+PASS  an undefined variable equals ""
+PASS  a missing variable equals ""
+PASS  a null variable does not equal "0"
+PASS  a missing variable does not equal "false"
+PASS  an empty string variable equals ""
+PASS  custom_js reads the variables
+
+17 passed, 7 failed
+
+After the fix:
+PASS  element_exists finds a present element
+PASS  element_exists is false for a missing element
+PASS  element_visible is true for a visible element
+PASS  element_visible is false for a hidden element
+PASS  text_contains finds text
+PASS  text_contains is false when the text is absent
+PASS  equals ignores case
+PASS  contains matches a substring
+PASS  greater_than compares numbers
+PASS  a variable holding 0 equals "0"
+PASS  a variable holding 0 does not equal ""
+PASS  a variable holding 0 is not_equals "5"
+PASS  a variable holding 0 is less_than "1"
+PASS  a variable holding 0 is greater_than "-1"
+PASS  a variable holding false equals "false"
+PASS  a variable holding false does not equal ""
+PASS  a variable holding 0n equals "0"
+PASS  a null variable equals ""
+PASS  an undefined variable equals ""
+PASS  a missing variable equals ""
+PASS  a null variable does not equal "0"
+PASS  a missing variable does not equal "false"
+PASS  an empty string variable equals ""
+PASS  custom_js reads the variables
+
+24 passed, 0 failed

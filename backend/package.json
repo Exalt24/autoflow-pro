@@ -39,6 +39,7 @@
     "test:errors": "tsx tests/test-analytics-errors.ts",
     "test:r2": "tsx tests/test-r2.ts",
     "test:security-headers": "tsx tests/test-security-headers.ts",
+    "test:condition": "tsx tests/test-condition-evaluator.ts",
     "test:archive-provider": "tsx tests/test-archive-provider.ts",
     "test:s3-emulator": "tsx tests/test-s3-emulator.ts",
     "test:aws-terraform": "tsx tests/test-aws-terraform.ts",

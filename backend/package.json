@@ -61,6 +61,7 @@
     "start:temporal": "node dist/src/temporal/main.js",
     "test:graphql": "tsx tests/test-graphql.ts",
     "test:graphql-temporal": "tsx tests/test-graphql-temporal.ts",
+    "test:edge": "tsx tests/test-edge-function.ts",
     "graphql:schema": "tsx src/graphql/printSchema.ts",
     "graphql:codegen": "graphql-codegen --config codegen.ts",
     "start:graphql": "node dist/src/graphql/main.js",

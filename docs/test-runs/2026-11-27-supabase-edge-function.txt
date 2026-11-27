@@ -1,0 +1,46 @@
+# execution-summary Supabase Edge Function: npm run test:edge against a local Supabase stack
+# Supabase CLI 3.4.0 (npx supabase@3.4.0), edge runtime supabase-edge-runtime 1.79.5 on Deno 2.1.4 (policy oneshot), auth, PostgREST, storage and Postgres 17 in Docker on Windows 11.
+# Migration backend/migrations/001_initial_schema.sql applied first. Two users created through Supabase Auth, tokens from signInWithPassword. Run on 2026-11-27.
+
+Part A: summary logic
+  ok    days missing gives 7
+  ok    days 1 and 90 are accepted
+  ok    days "0" is refused
+  ok    days "91" is refused
+  ok    days "-3" is refused
+  ok    days "2.5" is refused
+  ok    days "abc" is refused
+  ok    days "1e2" is refused
+  ok    days " 5" is refused
+  ok    no rows gives an empty summary
+  ok    since is exactly days before now
+  ok    w1 counts
+  ok    w1 success rate ignores unfinished runs
+  ok    w1 average duration uses finished runs only
+  ok    w2 has no finished run so rate and duration are null
+  ok    the busiest workflow is first
+  ok    300 seeded random worlds agree with the oracle
+Part B: the function against a local Supabase stack, two users
+  ok    no token gives 401
+  ok    the anon key as a token gives 401 (it is not a user)
+  ok    a junk token gives 401
+  ok    ?days=0 gives 400
+  ok    ?days=91 gives 400
+  ok    ?days=abc gives 400
+  ok    A gets 200
+  ok    a small account is not marked truncated
+  ok    A sees exactly A's workflows
+  ok    A total is 4 inside 7 days (the 30 day old run is out)
+  ok    A workflow one: 3 runs, 2 completed, 1 failed
+  ok    A workflow one: success rate 0.667 and mean duration 2000
+  ok    A sees the 30 day old run with days=90
+  ok    B sees exactly B's workflows
+  ok    B total is 5
+  ok    nothing crosses between A and B in either direction
+Part C: the function with the service role client swapped in must leak, and the check must catch it
+  ok    the mutant differs from the real function
+  ok    the mutant answered
+  ok    the leak check catches the mutant (A sees B's workflows)
+  ok    the real function is back in place
+  ok    after the restore A sees only A's workflows again
+38 passed, 0 failed

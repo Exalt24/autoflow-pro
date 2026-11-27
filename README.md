@@ -21,6 +21,7 @@ You build a workflow out of steps (navigate, click, fill, extract, loops, condit
 - Live monitoring over Socket.IO with automatic reconnection.
 - Analytics: execution trends, success rates, error analysis.
 - Optional archival of old executions to Cloudflare R2 (the default) or AWS S3, chosen with `ARCHIVE_PROVIDER`. It stays off until the matching settings are present.
+- A Supabase Edge Function, `execution-summary` (Deno, `supabase/functions/`), returns a signed-in user's execution counts per workflow. It builds its client from the caller's own token and the anon key, so the same row level security policy that guards the tables decides which rows it can read. Tests and the run are in the table below.
 
 ## Architecture
 
@@ -74,6 +75,8 @@ Each target below ships as a config file and was run against the thing named bes
 | Nixpacks | `backend/nixpacks.toml`, `scripts/nixpacks-*.sh` | `nixpacks build` 1.41.0 on this machine, not Railway | with no config it chose Node 18 and the container crashed at start; with Node 22 pinned `GET /health` answered 200, [output](docs/test-runs/2026-11-07-nixpacks-build.txt) |
 | AWS serverless order pipeline | `serverless/` (Python), `.github/workflows/serverless.yml` | moto 5.2.5 running inside pytest, plus stand-ins for a payment provider, a carrier and Bedrock; written from the AWS documentation, not deployed to Lambda | an SQS queue with a dead-letter queue and a redrive policy, Lambda style handlers that report partial batch failures, a single table DynamoDB design with conditional writes, optimistic locking and a stream consumer, a CQRS read model, a Step Functions saga with compensating steps, an SNS and EventBridge publisher, a Bedrock Converse client with model access checks and a strangler fig router for API Gateway events; about 460 tests (300 of them seeded saga worlds) and 50 of 50 deliberate breaks caught, [output](docs/test-runs/2026-11-17-serverless-order-pipeline.txt) |
 
+| Supabase Edge Function | `supabase/functions/execution-summary/`, `backend/tests/test-edge-function.ts` | a local Supabase stack (CLI 3.4.0, edge runtime on Deno 2.1.4) with two users signed in through Supabase Auth; not a hosted project | 38 checks passed, including a deliberate break (the service role client swapped in) that leaked one user's workflows into the other's answer and was caught, [output](docs/test-runs/2026-11-27-supabase-edge-function.txt), [notes](docs/ci-and-deploy-details.md#supabase-edge-function) |
+
 The archive target is one setting, `ARCHIVE_PROVIDER`, and it defaults to R2 so nothing existing changes. Notes on the S3 and EKS Terraform, Athena, telemetry, Temporal, GraphQL, the Rust CLI, RabbitMQ and Cloud Run are in [docs/ci-and-deploy-details.md](docs/ci-and-deploy-details.md).
 
 `deploy/aws/tfgraph` is a Go command line, standard library only, that reads the `terraform show -json` output of a plan or a state, builds a graph of the resources and checks the IAM policy and the S3 bucket settings, with one plain sentence per failure. It was built and tested against real `terraform plan` output of this repo's own AWS stack, the moto emulator and hand broken plans; the run is in [docs/test-runs](docs/test-runs/2026-11-15-tfgraph-plan-graph-and-checks.txt) and the usage in [deploy/aws/README.md](deploy/aws/README.md).
@@ -89,7 +92,7 @@ The archive target is one setting, `ARCHIVE_PROVIDER`, and it defaults to R2 so 
 
 ## Stack
 
-Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase and Redis. Storage and messaging add Cloudflare R2, AWS S3 and RabbitMQ. Infrastructure is Terraform, Kubernetes (EKS), Helm, Traefik, Amazon Athena and Glue. The rest is Temporal, GraphQL (Yoga, zod, DataLoader), Rust (clap, reqwest, tokio), Go (the tfgraph plan checker), Nixpacks and Python (the serverless order pipeline: SQS, DynamoDB, Step Functions, Lambda handlers, SNS, EventBridge and Bedrock, tested with moto and pytest). When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, React Flow, Recharts, Fastify 5, Playwright, BullMQ, Socket.IO, Supabase (Postgres, Auth, Row Level Security and an Edge Function in Deno) and Redis. Storage and messaging add Cloudflare R2, AWS S3 and RabbitMQ. Infrastructure is Terraform, Kubernetes (EKS), Helm, Traefik, Amazon Athena and Glue. The rest is Temporal, GraphQL (Yoga, zod, DataLoader), Rust (clap, reqwest, tokio), Go (the tfgraph plan checker), Nixpacks and Python (the serverless order pipeline: SQS, DynamoDB, Step Functions, Lambda handlers, SNS, EventBridge and Bedrock, tested with moto and pytest). When hosted it ran on free tiers (Vercel, Render, Supabase, Upstash).
 
 ## License
 

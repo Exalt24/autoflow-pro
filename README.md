@@ -52,7 +52,7 @@ Open http://localhost:3000 and sign up (a local Supabase has email confirmation 
 
 CI runs `npm ci` and `npm run build` for the backend and the frontend, plus `npm run test:pipelines`. A fourth job, `aws-emulator`, starts moto, applies the Terraform in `deploy/aws` to it, runs the archive tests and destroys it again. The 46 scripts in `backend/tests/` run with `tsx` (such as `npm run test:queue`), print their results, and most run against a local Supabase and Redis. The frontend is checked with `npm run lint` and `npx tsc --noEmit`.
 
-- A Copilot CLI review found `0` and `false` read as empty in `conditionEvaluator.ts`. [Fix and run](docs/test-runs/2026-11-27-copilot-cli-review.txt).
+- A GitHub Copilot CLI review found `0` and `false` read as empty in `conditionEvaluator.ts`. [Fix and run](docs/test-runs/2026-11-27-copilot-cli-review.txt).
 
 ## Personal data (GDPR) notes
 
